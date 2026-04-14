@@ -22,6 +22,27 @@ textarea { resize:vertical; min-height:90px; }
 .form-actions { display:flex; gap:12px; margin-top:24px; }
 .current-img { margin-top:8px; }
 .current-img img { width:80px; height:80px; object-fit:cover; border-radius:8px; border:2px solid #ddd; }
+
+/* Section Meals */
+.meals-section { max-width:700px; margin-top:28px; }
+.meals-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.meals-header h3 { font-size:1.1rem; color:#1a1a1a; }
+.btn-add-meal { background:#2e7d32; color:#fff; padding:8px 16px; border-radius:6px; text-decoration:none; font-weight:600; font-size:.85rem; }
+.btn-add-meal:hover { background:#1b5e20; }
+.meals-table { width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.07); }
+.meals-table thead { background:#2e7d32; color:#fff; }
+.meals-table th, .meals-table td { padding:10px 14px; text-align:left; font-size:.85rem; }
+.meals-table tbody tr:nth-child(even) { background:#f9f9f9; }
+.meals-table tbody tr:hover { background:#f1f8e9; }
+.badge-cat { display:inline-block; padding:2px 8px; border-radius:10px; font-size:.75rem; font-weight:600; background:#e8f5e9; color:#2e7d32; }
+.badge-dispo { display:inline-block; padding:2px 8px; border-radius:10px; font-size:.75rem; font-weight:600; }
+.badge-yes { background:#e8f5e9; color:#2e7d32; }
+.badge-no  { background:#ffebee; color:#c62828; }
+.meal-actions { display:flex; gap:6px; }
+.btn-meal-edit   { background:#1565c0; color:#fff; padding:4px 10px; border-radius:5px; text-decoration:none; font-size:.78rem; }
+.btn-meal-delete { background:#c62828; color:#fff; padding:4px 10px; border-radius:5px; border:none; cursor:pointer; font-size:.78rem; }
+.meal-thumb { width:40px; height:40px; object-fit:cover; border-radius:5px; }
+.no-meal-img { width:40px; height:40px; background:#eee; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:1rem; }
 </style>
 
 <div class="form-card">
@@ -102,6 +123,64 @@ textarea { resize:vertical; min-height:90px; }
         </div>
     </form>
 </div>
+
+<?php if ($isEdit): ?>
+<!-- ── Section Plats ─────────────────────────────────────────────────── -->
+<div class="meals-section">
+    <div class="meals-header">
+        <h3>🍽️ Plats du restaurant</h3>
+        <a href="/2A35/Admin/meal/create?restaurant_id=<?= $restaurant['id'] ?>" class="btn-add-meal">➕ Nouveau plat</a>
+    </div>
+
+    <?php if (empty($meals)): ?>
+        <p style="color:#888;padding:20px;background:#fff;border-radius:8px;text-align:center;">Aucun plat pour ce restaurant.</p>
+    <?php else: ?>
+    <table class="meals-table">
+        <thead>
+            <tr>
+                <th>Image</th>
+                <th>Nom</th>
+                <th>Catégorie</th>
+                <th>Prix</th>
+                <th>Calories</th>
+                <th>Dispo</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($meals as $m): ?>
+            <tr>
+                <td>
+                    <?php if (!empty($m['image'])): ?>
+                        <img src="/2A35/assets/uploads/meals/<?= htmlspecialchars($m['image']) ?>" class="meal-thumb" alt="">
+                    <?php else: ?>
+                        <div class="no-meal-img">🍽️</div>
+                    <?php endif; ?>
+                </td>
+                <td><strong><?= htmlspecialchars($m['nom']) ?></strong></td>
+                <td><span class="badge-cat"><?= htmlspecialchars($m['categorie']) ?></span></td>
+                <td><?= number_format((float)$m['prix'], 2) ?> DT</td>
+                <td><?= $m['calories'] ? $m['calories'] . ' kcal' : '—' ?></td>
+                <td>
+                    <span class="badge-dispo <?= $m['disponible'] ? 'badge-yes' : 'badge-no' ?>">
+                        <?= $m['disponible'] ? '✅ Oui' : '❌ Non' ?>
+                    </span>
+                </td>
+                <td>
+                    <div class="meal-actions">
+                        <a href="/2A35/Admin/meal/edit/<?= $m['id'] ?>" class="btn-meal-edit">✏️ Modifier</a>
+                        <form method="POST" action="/2A35/Admin/meal/delete/<?= $m['id'] ?>" onsubmit="return confirm('Supprimer ce plat ?')">
+                            <button type="submit" class="btn-meal-delete">🗑</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
 
 <?php
 $content = ob_get_clean();

@@ -174,15 +174,13 @@
                     ['label' => '📋 Liste',    'url' => '/2A35/Admin/utilisateur'],
                     ['label' => '➕ Nouveau',  'url' => '/2A35/Admin/utilisateur/create'],
                 ]],
-                'partenaire' => ['🤝 Partenaire', [
-                    ['label' => '📋 Liste',    'url' => '/2A35/Admin/partenaire'],
-                    ['label' => '➕ Nouveau',  'url' => '/2A35/Admin/partenaire/create'],
-                ]],
-                'restaurant' => ['🍴 Restaurant', [
+                'restaurant' => ['🤝 Partenaire', [
                     ['label' => '📋 Liste restaurants',  'url' => '/2A35/Admin/restaurant'],
                     ['label' => '➕ Nouveau restaurant', 'url' => '/2A35/Admin/restaurant/create'],
-                    ['label' => '🍽️ Liste des plats',   'url' => '/2A35/Admin/meal'],
-                    ['label' => '➕ Nouveau plat',       'url' => '/2A35/Admin/meal/create'],
+                ]],
+                'recette' => ['🥘 Recette', [
+                    ['label' => '📋 Liste recettes',  'url' => '/2A35/Admin/recette'],
+                    ['label' => '➕ Nouvelle recette', 'url' => '/2A35/Admin/recette/create'],
                 ]],
                 'programme' => ['🏋️ Programme', [
                     ['label' => '📋 Liste',    'url' => '/2A35/Admin/programme'],

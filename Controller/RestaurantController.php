@@ -29,6 +29,7 @@ class RestaurantController {
     // ── GET /Admin/restaurant/create ──────────────────────────────────────────
     public function create(): void {
         $errors = [];
+        $meals  = [];
         require_once 'View/back/restaurant/form.php';
     }
 
@@ -49,6 +50,7 @@ class RestaurantController {
         }
 
         $restaurant = $_POST;
+        $meals      = [];
         require_once 'View/back/restaurant/form.php';
     }
 
@@ -60,6 +62,7 @@ class RestaurantController {
             header('Location: /2A35/Admin/restaurant'); exit;
         }
         $errors = [];
+        $meals  = $this->mealModel->getByRestaurant((int)$id);
         require_once 'View/back/restaurant/form.php';
     }
 
@@ -86,6 +89,7 @@ class RestaurantController {
             header('Location: /2A35/Admin/restaurant'); exit;
         }
 
+        $meals = $this->mealModel->getByRestaurant((int)$id);
         require_once 'View/back/restaurant/form.php';
     }
 

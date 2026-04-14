@@ -64,19 +64,21 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarCollapse">
                 <div class="navbar-nav ms-auto p-4 p-lg-0">
-                    <a href="/2A35/Home" class="nav-item nav-link active">Home</a>
-                    <a href="/2A35/About" class="nav-item nav-link">About Us</a>
-                    <a href="/2A35/Product" class="nav-item nav-link">Products</a>
+                    <?php $currentUrl = strtolower(explode('/', trim($_GET['url'] ?? 'home', '/'))[0]); ?>
+                    <a href="/2A35/Home" class="nav-item nav-link <?= $currentUrl === 'home' ? 'active' : '' ?>">Home</a>
+                    <a href="/2A35/About" class="nav-item nav-link <?= $currentUrl === 'about' ? 'active' : '' ?>">About Us</a>
+                    <a href="/2A35/Restaurant" class="nav-item nav-link <?= $currentUrl === 'restaurant' ? 'active' : '' ?>">Restaurants</a>
+                    <a href="/2A35/Product" class="nav-item nav-link <?= $currentUrl === 'product' ? 'active' : '' ?>">Products</a>
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Pages</a>
                         <div class="dropdown-menu m-0">
-                            <a href="/2A35/Blog" class="dropdown-item">Blog Grid</a>
-                            <a href="/2A35/Feature" class="dropdown-item">Our Features</a>
-                            <a href="/2A35/Testimonial" class="dropdown-item">Testimonial</a>
+                            <a href="/2A35/Blog" class="dropdown-item <?= $currentUrl === 'blog' ? 'active' : '' ?>">Blog</a>
+                            <a href="/2A35/Feature" class="dropdown-item <?= $currentUrl === 'feature' ? 'active' : '' ?>">Our Features</a>
+                            <a href="/2A35/Testimonial" class="dropdown-item <?= $currentUrl === 'testimonial' ? 'active' : '' ?>">Testimonial</a>
                             <a href="/2A35/Error" class="dropdown-item">404 Page</a>
                         </div>
                     </div>
-                    <a href="/2A35/Contact" class="nav-item nav-link">Contact Us</a>
+                    <a href="/2A35/Contact" class="nav-item nav-link <?= $currentUrl === 'contact' ? 'active' : '' ?>">Contact Us</a>
                 </div>
                 <div class="d-none d-lg-flex ms-2">
                     <a class="btn-sm-square bg-white rounded-circle ms-3" href="">

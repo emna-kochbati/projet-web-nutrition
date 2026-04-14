@@ -11,7 +11,15 @@ if (strtolower($url[0]) === 'admin') {
 }
 
 // 3. Format the Controller name
-$controllerName = ucfirst($url[$offset] ?? 'Home') . 'Controller';
+// Front routes use a "Front" suffix to separate from back controllers
+$segment = $url[$offset] ?? 'Home';
+$isAdmin = $offset === 1;
+
+if (!$isAdmin && in_array(strtolower($segment), ['restaurant'])) {
+    $controllerName = ucfirst($segment) . 'FrontController';
+} else {
+    $controllerName = ucfirst($segment) . 'Controller';
+}
 $controllerFile = "Controller/" . $controllerName . ".php";
 
 // 4. Check if the file exists before loading

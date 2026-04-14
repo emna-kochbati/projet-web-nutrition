@@ -28,6 +28,7 @@ class MealController {
     public function create(): void {
         $errors      = [];
         $restaurants = $this->restaurantModel->getAll();
+        $meal        = ['restaurant_id' => $_GET['restaurant_id'] ?? ''];
         require_once 'View/back/meal/form.php';
     }
 
@@ -44,7 +45,8 @@ class MealController {
             $data['image'] = $this->handleImageUpload();
             $this->mealModel->create($data);
             $_SESSION['success'] = 'Plat ajouté avec succès !';
-            header('Location: /2A35/Admin/meal'); exit;
+            $rid = $data['restaurant_id'] ?? 0;
+            header('Location: ' . ($rid ? '/2A35/Admin/restaurant/edit/'.$rid : '/2A35/Admin/meal')); exit;
         }
 
         $meal        = $_POST;
@@ -84,7 +86,8 @@ class MealController {
             $data['image'] = $newImage ?: $meal['image'];
             $this->mealModel->update((int)$id, $data);
             $_SESSION['success'] = 'Plat modifié avec succès !';
-            header('Location: /2A35/Admin/meal'); exit;
+            $rid = $data['restaurant_id'] ?? 0;
+            header('Location: ' . ($rid ? '/2A35/Admin/restaurant/edit/'.$rid : '/2A35/Admin/meal')); exit;
         }
 
         $restaurants = $this->restaurantModel->getAll();
@@ -108,8 +111,10 @@ class MealController {
             if ($meal['image'] && file_exists('assets/uploads/meals/' . $meal['image'])) {
                 unlink('assets/uploads/meals/' . $meal['image']);
             }
+            $rid = $meal['restaurant_id'] ?? 0;
             $this->mealModel->delete((int)$id);
             $_SESSION['success'] = 'Plat supprimé avec succès !';
+            header('Location: ' . ($rid ? '/2A35/Admin/restaurant/edit/'.$rid : '/2A35/Admin/meal')); exit;
         } else {
             $_SESSION['error'] = 'Plat introuvable.';
         }

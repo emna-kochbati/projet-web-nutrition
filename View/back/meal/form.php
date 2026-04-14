@@ -110,7 +110,12 @@ textarea { resize:vertical; min-height:80px; }
             <button type="submit" class="btn-submit">
                 <?= $isEdit ? '💾 Enregistrer' : '➕ Ajouter' ?>
             </button>
-            <a href="/2A35/Admin/meal" class="btn-cancel">Annuler</a>
+            <?php
+            $backUrl = '/2A35/Admin/meal';
+            $rid = $meal['restaurant_id'] ?? ($_GET['restaurant_id'] ?? '');
+            if ($rid) $backUrl = '/2A35/Admin/restaurant/edit/' . (int)$rid;
+            ?>
+            <a href="<?= $backUrl ?>" class="btn-cancel">Annuler</a>
         </div>
     </form>
 </div>
