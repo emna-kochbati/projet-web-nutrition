@@ -1,0 +1,50 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f7f6;
+}
+
+.dashboard-container {
+    display: flex;
+}
+
+.content-area {
+    margin-left: 294px; /* True Sidebar width (250 width + 40 padding + 4 border) */
+    width: calc(100% - 294px);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.top-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 15px 30px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+}
+
+.top-header h1 {
+    margin: 0;
+    font-size: 24px;
+    color: #2c3e50;
+}
+
+.header-right .user-menu {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.page-content {
+    padding: 0 30px 30px 30px;
+    flex: 1;
+}
+
+button {
+    font-family: Arial, sans-serif;
+}
