@@ -16,7 +16,23 @@ h1,h2,h3,h4,p{
 .hero{
     text-align:center;
     padding:100px 20px;
-    background: radial-gradient(circle at top,#111827,#0b0f1a);
+    min-height:80vh;
+
+    /* IMAGE EN FOND */
+    background: 
+        linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
+        url('assets/img/pro.webp');
+
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+
+    color:white;
+
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
 }
 
 .hero h1{
@@ -85,9 +101,6 @@ h1,h2,h3,h4,p{
     <h1>🌿 EcoNutri</h1>
     <p>Nutrition intelligente • Sport • Bien-être</p>
 
-    <img src="https://images.unsplash.com/photo-1490818387583-1baba5e638af" alt="EcoNutri">
-
-    <br><br>
     <a class="btn" href="#about">Découvrir EcoNutri</a>
 </div>
 
@@ -145,12 +158,12 @@ h1,h2,h3,h4,p{
         </div>
 
         <div class="card">
-            <img src="https://images.unsplash.com/photo-1553787499-6f913a6f7f0c">
+           <img src="assets/img/detox.jpg">
             🥤 Jus detox
         </div>
 
         <div class="card">
-            <img src="https://images.unsplash.com/photo-1604908177522-040e9c5b3c2f">
+            <img src="assets/img/repas.jpg">
             🍗 Repas équilibré
         </div>
 
@@ -174,7 +187,7 @@ h1,h2,h3,h4,p{
         </div>
 
         <div class="card">
-            <img src="https://images.unsplash.com/photo-1526401485004-2aa6b05a4d2e">
+            <img src="assets/img/maraton.jpg">
             Marathon Santé
         </div>
 

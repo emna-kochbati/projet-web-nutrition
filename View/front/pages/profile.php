@@ -253,14 +253,17 @@ button{
         <div class="card full">
             <h3 class="orange">✏️ Modifier Profil</h3>
 
-            <form>
-                <input type="text" value="<?= $user['nom'] ?>">
-                <input type="email" value="<?= $user['email'] ?>">
-                <input type="number" value="<?= $user['poids'] ?>">
-                <input type="number" value="<?= $user['taille'] ?>">
+            <form method="POST" action="/ProjetWeb-User/index.php?url=User/update">
 
-                <button type="button">Mettre à jour</button>
-            </form>
+    <input type="text" name="nom" value="<?= $user['nom'] ?>" required>
+    <input type="email" name="email" value="<?= $user['email'] ?>" required>
+    <input type="number" name="poids" value="<?= $user['poids'] ?>">
+    <input type="number" name="taille" value="<?= $user['taille'] ?>">
+
+    <button type="submit">Mettre à jour</button>
+
+</form>
+                
         </div>
 
     </div>

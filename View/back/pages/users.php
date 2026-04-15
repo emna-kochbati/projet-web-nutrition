@@ -180,6 +180,7 @@ select option{
     display:flex;
     gap:6px;
 }
+/* MODAL FIX PROPRE */
 .modal{
     display:none;
     position:fixed;
@@ -193,12 +194,30 @@ select option{
     z-index:9999;
 }
 
+/* IMPORTANT : quand modal est visible */
+.modal.show{
+    display:flex !important;
+}
+
+/* CONTENU BIEN LISIBLE */
 .modal-content{
     background:#111;
     color:white;
     padding:20px;
     border-radius:15px;
     width:420px;
+}
+
+/* INPUTS lisibles dans le modal */
+.modal-content .form-control{
+    background:rgba(255,255,255,0.08);
+    color:white !important;
+    border:1px solid rgba(255,255,255,0.2);
+}
+
+.modal-content .form-control:focus{
+    background:rgba(0,0,0,0.4);
+    color:white !important;
 }
 </style>
 </head>

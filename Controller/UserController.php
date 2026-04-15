@@ -1,6 +1,7 @@
+
 <?php
 
-session_start(); // 🔥 IMPORTANT
+
 
 require_once __DIR__ . '/../Model/User.php';
 
@@ -75,6 +76,36 @@ class UserController
 
         require_once __DIR__ . '/../View/front/pages/profile.php';
     }
+    public function update()
+{
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+        if (!isset($_SESSION['user'])) {
+            header("Location: /ProjetWeb-User/index.php?url=User/auth");
+            exit;
+        }
+
+        $id = $_SESSION['user']['id'];
+
+        $data = [
+            'nom' => $_POST['nom'],
+            'email' => $_POST['email'],
+            'poids' => $_POST['poids'],
+            'taille' => $_POST['taille'],
+            'objectif' => $_SESSION['user']['objectif'] // garder ancien
+        ];
+
+        // 🔥 UPDATE DATABASE
+        $this->userModel->update($id, $data);
+
+        // 🔥 UPDATE SESSION (IMPORTANT)
+        $_SESSION['user'] = $this->userModel->getById($id);
+
+        // 🔁 REDIRECTION
+        header("Location: /ProjetWeb-User/index.php?url=User/profile");
+        exit;
+    }
+}
 
     // 🚪 LOGOUT
     public function logout()

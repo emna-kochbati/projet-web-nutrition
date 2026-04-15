@@ -160,13 +160,13 @@ img{
             <img src="https://images.unsplash.com/photo-1505575967455-40e256f73376">
         </div>
 
-        <!-- ALERT -->
         <div class="card orange-border">
-            <div class="icon">⚠️</div>
-            <h3>Alerte</h3>
-            <p>Évite sucre et fast-food aujourd’hui</p>
-            <img src="https://images.unsplash.com/photo-1604908177522-040e9c5b3c2f">
-        </div>
+    <div class="icon">⚠️</div>
+    <h3>Alerte</h3>
+    <p>Évite sucre et fast-food aujourd'hui</p>
+
+    <img src="/ProjetWeb-User/assets/img/alert.png">
+</div>
 
         <!-- CONSEIL -->
         <div class="card green-border">
