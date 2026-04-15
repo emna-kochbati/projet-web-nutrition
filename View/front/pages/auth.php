@@ -18,6 +18,13 @@ body{
     backdrop-filter: blur(18px);
     box-shadow: 0 0 40px rgba(0,255,153,0.15);
 }
+.neon{
+    color:#00ff99;
+    text-shadow:
+        0 0 5px #00ff99,
+        0 0 10px #00ff99,
+        0 0 20px #00ff99;
+}
 
 /* FORM BOX */
 .form-box{
@@ -128,7 +135,8 @@ button:hover{
     <!-- LOGIN -->
     <div class="form-box signin">
 
-        <h2>Connexion 🔐</h2>
+        <h2 class="neon">Connexion 🔐</h2>
+
 
         <form method="POST" action="/ProjetWeb-User/User/login">
 
@@ -179,7 +187,7 @@ button:hover{
 
     <!-- OVERLAY -->
     <div class="overlay">
-        <h2>EcoNutri 🌿</h2>
+        <h2 class="neon">EcoNutri 🌿</h2>
         <button onclick="toggle()">Switch</button>
     </div>
 
