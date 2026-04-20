@@ -1,118 +1,138 @@
-
 <?php
 
 
-
-require_once __DIR__ . '/../Model/User.php';
+require_once __DIR__ . '/../Config/database.php';
 
 class UserController
 {
-    private User $userModel;
-
-    public function __construct()
+    // =========================
+    // INDEX → AUTH
+    // =========================
+    public function index()
     {
-        $this->userModel = new User();
+        header("Location: index.php?url=User/auth");
+        exit;
     }
 
-    // 🔐 PAGE LOGIN
+    // =========================
+    // AUTH PAGE
+    // =========================
     public function auth()
     {
         require_once __DIR__ . '/../View/front/pages/auth.php';
     }
 
-    // 🔐 LOGIN ACTION
+    // =========================
+    // LOGIN
+    // =========================
     public function login()
     {
+        $db = Database::getConnection();
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-            $email = $_POST['email'] ?? '';
-            $password = $_POST['password'] ?? '';
+            $email = $_POST['email'];
+            $password = $_POST['password'];
 
-            $user = $this->userModel->login($email, $password);
+            $stmt = $db->prepare("SELECT * FROM user WHERE email=?");
+            $stmt->execute([$email]);
 
-            if ($user) {
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
+            if ($user && $password === $user['password']) {
+
+                // ✅ SESSION OK MAINTENANT
                 $_SESSION['user'] = $user;
 
-                // ✅ REDIRECTION PROPRE (PROJET ACTUEL)
-                header("Location: /ProjetWeb-User/index.php?url=User/dashboard");
+                header("Location: index.php?url=User/home");
                 exit;
             }
 
-            echo "❌ Email ou mot de passe incorrect";
+            echo "❌ Login incorrect";
         }
     }
 
-    // 📝 REGISTER
-    public function register()
+    // =========================
+    // HOME
+    // =========================
+    public function home()
     {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-            $this->userModel->create($_POST);
-
-            header("Location: /ProjetWeb-User/index.php?url=User/auth");
-            exit;
-        }
+        require_once __DIR__ . '/../View/front/pages/home.php';
     }
 
-    // 📊 DASHBOARD
+    // =========================
+    // DASHBOARD
+    // =========================
     public function dashboard()
     {
+        // 🔥 FIX IMPORTANT
         if (!isset($_SESSION['user'])) {
-            header("Location: /ProjetWeb-User/index.php?url=User/auth");
+            header("Location: index.php?url=User/auth");
             exit;
         }
 
         require_once __DIR__ . '/../View/front/pages/dashboard.php';
     }
 
-    // 👤 PROFILE
+    // =========================
+    // PROFILE
+    // =========================
     public function profile()
     {
+        // 🔥 FIX IMPORTANT
         if (!isset($_SESSION['user'])) {
-            header("Location: /ProjetWeb-User/index.php?url=User/auth");
+            header("Location: index.php?url=User/auth");
             exit;
         }
 
         require_once __DIR__ . '/../View/front/pages/profile.php';
     }
-    public function update()
-{
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-        if (!isset($_SESSION['user'])) {
-            header("Location: /ProjetWeb-User/index.php?url=User/auth");
-            exit;
-        }
-
-        $id = $_SESSION['user']['id'];
-
-        $data = [
-            'nom' => $_POST['nom'],
-            'email' => $_POST['email'],
-            'poids' => $_POST['poids'],
-            'taille' => $_POST['taille'],
-            'objectif' => $_SESSION['user']['objectif'] // garder ancien
-        ];
-
-        // 🔥 UPDATE DATABASE
-        $this->userModel->update($id, $data);
-
-        // 🔥 UPDATE SESSION (IMPORTANT)
-        $_SESSION['user'] = $this->userModel->getById($id);
-
-        // 🔁 REDIRECTION
-        header("Location: /ProjetWeb-User/index.php?url=User/profile");
-        exit;
+    // =========================
+    // SHOW USER (PROF STYLE)
+    // =========================
+    public function showUser($user)
+    {
+        echo "
+        <table border='2'>
+            <tr>
+                <th>ID</th>
+                <th>NOM</th>
+                <th>EMAIL</th>
+                <th>PASSWORD</th>
+                <th>POIDS</th>
+                <th>TAILLE</th>
+                <th>OBJECTIF</th>
+            </tr>
+            <tr>
+                <td>".$user->getId()."</td>
+                <td>".$user->getNom()."</td>
+                <td>".$user->getEmail()."</td>
+                <td>".$user->getPassword()."</td>
+                <td>".$user->getPoids()."</td>
+                <td>".$user->getTaille()."</td>
+                <td>".$user->getObjectif()."</td>
+            </tr>
+        </table>
+        ";
     }
-}
 
-    // 🚪 LOGOUT
+    // =========================
+    // CRUD (VIDE PROF)
+    // =========================
+    public function addUser($user) {}
+    public function getUser($id) {}
+    public function updateUser($user) {}
+    public function deleteUser($id) {}
+
+    // =========================
+    // LOGOUT
+    // =========================
     public function logout()
     {
         session_destroy();
-
-        header("Location: /ProjetWeb-User/index.php?url=User/auth");
+        header("Location: index.php?url=User/auth");
         exit;
     }
 }
+?>

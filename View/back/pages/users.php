@@ -1,8 +1,10 @@
 <?php
 require_once __DIR__ . '/../../../Model/User.php';
+require_once __DIR__ . '/../../../Config/database.php';
 
-$userModel = new User();
-$users = $userModel->getAll();
+$db = Database::getConnection();
+$stmt = $db->query("SELECT * FROM user");
+$users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 /* GROUP BY OBJECTIF */
 $grouped = [

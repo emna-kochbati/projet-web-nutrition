@@ -1,14 +1,14 @@
 <?php
 
-require_once __DIR__ . '/../Model/User.php';
+require_once __DIR__ . '/../Config/database.php';
 
 class AdminController
 {
-    private User $userModel;
+    private PDO $db;
 
     public function __construct()
     {
-        $this->userModel = new User();
+        $this->db = Database::getConnection();
     }
 
     /* ================= DASHBOARD ================= */
@@ -17,10 +17,12 @@ class AdminController
         require_once __DIR__ . '/../View/back/pages/dashboard.php';
     }
 
-    /* ================= LIST USERS ================= */
+    /* ================= USERS LIST ================= */
     public function users()
     {
-        $users = $this->userModel->getAll();
+        $stmt = $this->db->query("SELECT * FROM user ORDER BY id DESC");
+        $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
         require_once __DIR__ . '/../View/back/pages/users.php';
     }
 
@@ -29,37 +31,63 @@ class AdminController
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-            // sécurité basique (trim)
-            $data = [
-                'nom' => trim($_POST['nom']),
-                'email' => trim($_POST['email']),
-                'password' => trim($_POST['password']),
-                'poids' => $_POST['poids'] ?? null,
-                'taille' => $_POST['taille'] ?? null,
-                'objectif' => $_POST['objectif'] ?? 'Autre'
-            ];
+            $stmt = $this->db->prepare("
+                INSERT INTO user (nom, email, password, poids, taille, objectif)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ");
 
-            $this->userModel->create($data);
+            $stmt->execute([
+                $_POST['nom'],
+                $_POST['email'],
+                $_POST['password'],
+                $_POST['poids'],
+                $_POST['taille'],
+                $_POST['objectif']
+            ]);
         }
 
-        header("Location: /ProjetWeb-User/Admin/users");
+        header("Location: /ProjetWeb-User/index.php?url=Admin/users");
         exit;
     }
 
-    /* ================= VIEW USER (AJAX MODAL) ================= */
+    /* ================= SHOW USER (STYLE PROF COMME BOOK) ================= */
+    public function showUser($user)
+    {
+        echo "
+        <table border='2'>
+            <tr>
+                <th>ID</th>
+                <th>NOM</th>
+                <th>EMAIL</th>
+                <th>POIDS</th>
+                <th>TAILLE</th>
+                <th>OBJECTIF</th>
+            </tr>
+            <tr>
+                <td>".$user['id']."</td>
+                <td>".$user['nom']."</td>
+                <td>".$user['email']."</td>
+                <td>".$user['poids']."</td>
+                <td>".$user['taille']."</td>
+                <td>".$user['objectif']."</td>
+            </tr>
+        </table>
+        ";
+    }
+
+    /* ================= VIEW USER ================= */
     public function viewUser($id)
     {
-        $user = $this->userModel->getById($id);
+        $stmt = $this->db->prepare("SELECT * FROM user WHERE id=?");
+        $stmt->execute([$id]);
 
-        if (!$user) {
-            http_response_code(404);
-            echo json_encode(["error" => "User not found"]);
-            exit;
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($user) {
+            $this->showUser($user);
+        } else {
+            echo "User not found";
         }
-
-        header('Content-Type: application/json');
-        echo json_encode($user);
-        exit;
     }
 
     /* ================= UPDATE USER ================= */
@@ -67,29 +95,34 @@ class AdminController
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-            $data = [
-                'nom' => trim($_POST['nom']),
-                'email' => trim($_POST['email']),
-                'poids' => $_POST['poids'],
-                'taille' => $_POST['taille'],
-                'objectif' => $_POST['objectif']
-            ];
+            $stmt = $this->db->prepare("
+                UPDATE user 
+                SET nom=?, email=?, password=?, poids=?, taille=?, objectif=?
+                WHERE id=?
+            ");
 
-            $this->userModel->update($id, $data);
+            $stmt->execute([
+                $_POST['nom'],
+                $_POST['email'],
+                $_POST['password'],
+                $_POST['poids'],
+                $_POST['taille'],
+                $_POST['objectif'],
+                $id
+            ]);
         }
 
-        header("Location: /ProjetWeb-User/Admin/users");
+        header("Location: /ProjetWeb-User/index.php?url=Admin/users");
         exit;
     }
 
     /* ================= DELETE USER ================= */
     public function deleteUser($id)
     {
-        if ($id) {
-            $this->userModel->delete($id);
-        }
+        $stmt = $this->db->prepare("DELETE FROM user WHERE id=?");
+        $stmt->execute([$id]);
 
-        header("Location: /ProjetWeb-User/Admin/users");
+        header("Location: /ProjetWeb-User/index.php?url=Admin/users");
         exit;
     }
 }

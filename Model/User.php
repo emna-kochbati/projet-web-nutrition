@@ -1,98 +1,134 @@
 <?php
 
-require_once __DIR__ . '/../Config/database.php';
+// attr -> private + getters & setters + ctor + show()
+class User
+{
+    // attributs
+    private ?int $id;
+    private string $nom;
+    private string $email;
+    private string $password;
+    private float $poids;
+    private float $taille;
+    private string $objectif;
 
-class User {
-
-    private PDO $db;
-
-    public function __construct() {
-        $this->db = Database::getConnection();
+    // constructeur
+    public function __construct($n, $e, $p, $poids, $taille, $obj)
+    {
+        $this->id = null;
+        $this->nom = $n;
+        $this->email = $e;
+        $this->password = $p;
+        $this->poids = $poids;
+        $this->taille = $taille;
+        $this->objectif = $obj;
     }
 
-    /* =========================
-       LOGIN
-    ========================== */
-    public function login($email, $password) {
-
-        $stmt = $this->db->prepare("SELECT * FROM user WHERE email = ?");
-        $stmt->execute([$email]);
-
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        // ✔ login simple (cours)
-        if ($user && $password === $user['password']) {
-            return $user;
-        }
-
-        return false;
+    // fonction show (comme la prof)
+    function show()
+    {
+        echo "
+        <table border='2'>
+            <tr>
+                <th>ID</th>
+                <th>NOM</th>
+                <th>EMAIL</th>
+                <th>PASSWORD</th>
+                <th>POIDS</th>
+                <th>TAILLE</th>
+                <th>OBJECTIF</th>
+            </tr>
+            <tr>
+                <td>".$this->id."</td>
+                <td>".$this->nom."</td>
+                <td>".$this->email."</td>
+                <td>".$this->password."</td>
+                <td>".$this->poids."</td>
+                <td>".$this->taille."</td>
+                <td>".$this->objectif."</td>
+            </tr>
+        </table>
+        ";
     }
 
-    /* =========================
-       CREATE USER
-    ========================== */
-    public function create($data) {
+    // getters & setters
 
-        $stmt = $this->db->prepare("
-            INSERT INTO user (nom, email, password, poids, taille, objectif)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ");
-
-        return $stmt->execute([
-            $data['nom'] ?? '',
-            $data['email'] ?? '',
-            $data['password'] ?? '',
-            $data['poids'] ?? null,
-            $data['taille'] ?? null,
-            $data['objectif'] ?? 'Autre'
-        ]);
+    public function getId()
+    {
+        return $this->id;
     }
 
-    /* =========================
-       GET ALL USERS
-    ========================== */
-    public function getAll() {
-        $stmt = $this->db->query("SELECT * FROM user ORDER BY id DESC");
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    public function setId($id)
+    {
+        $this->id = $id;
+        return $this;
     }
 
-    /* =========================
-       GET USER BY ID
-    ========================== */
-    public function getById($id) {
-        $stmt = $this->db->prepare("SELECT * FROM user WHERE id = ?");
-        $stmt->execute([$id]);
-
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+    public function getNom()
+    {
+        return $this->nom;
     }
 
-    /* =========================
-       UPDATE USER
-    ========================== */
-    public function update($id, $data) {
-
-        $stmt = $this->db->prepare("
-            UPDATE user 
-            SET nom = ?, email = ?, poids = ?, taille = ?, objectif = ?
-            WHERE id = ?
-        ");
-
-        return $stmt->execute([
-            $data['nom'] ?? '',
-            $data['email'] ?? '',
-            $data['poids'] ?? null,
-            $data['taille'] ?? null,
-            $data['objectif'] ?? 'Autre',
-            $id
-        ]);
+    public function setNom($nom)
+    {
+        $this->nom = $nom;
+        return $this;
     }
 
-    /* =========================
-       DELETE USER
-    ========================== */
-    public function delete($id) {
+    public function getEmail()
+    {
+        return $this->email;
+    }
 
-        $stmt = $this->db->prepare("DELETE FROM user WHERE id = ?");
-        return $stmt->execute([$id]);
+    public function setEmail($email)
+    {
+        $this->email = $email;
+        return $this;
+    }
+
+    public function getPassword()
+    {
+        return $this->password;
+    }
+
+    public function setPassword($password)
+    {
+        $this->password = $password;
+        return $this;
+    }
+
+    public function getPoids()
+    {
+        return $this->poids;
+    }
+
+    public function setPoids($poids)
+    {
+        $this->poids = $poids;
+        return $this;
+    }
+
+    public function getTaille()
+    {
+        return $this->taille;
+    }
+
+    public function setTaille($taille)
+    {
+        $this->taille = $taille;
+        return $this;
+    }
+
+    public function getObjectif()
+    {
+        return $this->objectif;
+    }
+
+    public function setObjectif($objectif)
+    {
+        $this->objectif = $objectif;
+        return $this;
     }
 }
+
+?>

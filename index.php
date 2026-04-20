@@ -34,16 +34,10 @@ if (!class_exists($controllerName)) {
 $controller = new $controllerName();
 
 /* ======================
-   METHOD CHECK + FALLBACK
+   METHOD CHECK (FIX IMPORTANT)
 ====================== */
 if (!method_exists($controller, $method)) {
-
-    // fallback propre vers index
-    $method = "index";
-
-    if (!method_exists($controller, $method)) {
-        die("❌ Method not found: index in " . $controllerName);
-    }
+    die("❌ Method '$method' not found in " . $controllerName);
 }
 
 /* ======================

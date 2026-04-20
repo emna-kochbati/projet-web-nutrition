@@ -1,7 +1,9 @@
 <?php 
-session_start();
+
 
 $user = $_SESSION['user'] ?? null;
+
+
 
 if(!$user){
     header("Location: /ProjetWeb-User/User/auth");
