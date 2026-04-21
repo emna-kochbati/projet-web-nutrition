@@ -1,4 +1,4 @@
-<?php 
+<?php
 session_start();
 
 $user = $_SESSION['user'] ?? null;
@@ -14,7 +14,6 @@ $imc = ($user['poids'] > 0 && $user['taille'] > 0)
     ? $user['poids'] / (($user['taille']/100)**2)
     : 0;
 
-/* INTERPRETATION IMC */
 if($imc < 18.5) $etat = "Maigre";
 elseif($imc < 25) $etat = "Normal";
 elseif($imc < 30) $etat = "Surpoids";
@@ -24,250 +23,347 @@ else $etat = "Obésité";
 <style>
 body{
     margin:0;
-    font-family:'Segoe UI', sans-serif;
-    background: radial-gradient(circle at top,#0a0f1c,#020617);
+    font-family:Segoe UI;
+    background:#070b14;
     color:white;
 }
 
-/* CONTAINER */
-.container{
-    padding:40px;
+/* HERO WOW */
+.hero{
+    height:260px;
+    background:url('https://images.unsplash.com/photo-1517838277536-f5f99be501cd') center/cover;
+    position:relative;
+    border-bottom-left-radius:40px;
+    border-bottom-right-radius:40px;
+}
+.hero::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:linear-gradient(180deg, rgba(0,0,0,0.2), #070b14);
 }
 
-/* HEADER */
-.header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:30px;
-}
-
+/* PROFILE */
 .profile{
     display:flex;
     align-items:center;
     gap:20px;
+    padding:0 30px;
+    margin-top:-70px;
 }
 
 .avatar{
-    width:100px;
-    height:100px;
+    width:95px;
+    height:95px;
     border-radius:50%;
     background:linear-gradient(135deg,#00ff88,#ffb300);
     display:flex;
     align-items:center;
     justify-content:center;
-    font-size:35px;
+    font-size:30px;
     font-weight:bold;
     color:black;
-    box-shadow:0 0 25px rgba(0,255,140,0.4);
+    box-shadow:0 0 30px rgba(0,255,140,0.4);
+}
+
+/* NAME */
+.name-box h2{
+    margin:0;
+    font-size:26px;
+    font-weight:800;
+    background:linear-gradient(90deg,#00ff88,#ffb300);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
 }
 
 /* BADGE */
 .badge{
     background:linear-gradient(90deg,#00ff88,#ffb300);
     color:black;
-    padding:10px 20px;
-    border-radius:30px;
+    padding:6px 14px;
+    border-radius:25px;
     font-weight:bold;
+    font-size:12px;
+    display:inline-block;
+    margin-top:6px;
 }
 
 /* GRID */
 .grid{
     display:grid;
-    grid-template-columns:repeat(4,1fr);
+    grid-template-columns:repeat(3,1fr);
     gap:20px;
+    padding:30px;
 }
 
-/* CARD */
+/* CARD WOW BORDER */
 .card{
     background:rgba(255,255,255,0.05);
-    padding:20px;
-    border-radius:18px;
-    border:1px solid rgba(255,255,255,0.08);
-    backdrop-filter: blur(15px);
-    transition:0.3s;
-    position:relative;
-}
-
-.card:hover{
-    transform:translateY(-8px);
-    box-shadow:0 0 30px rgba(0,255,140,0.2);
-}
-
-/* COLORS */
-.green{ color:#00ff88; }
-.orange{ color:#ffb300; }
-
-/* BIG CARD */
-.big{ grid-column:span 2; }
-
-/* FULL */
-.full{ grid-column:span 4; }
-
-/* IMG */
-img{
-    width:100%;
-    border-radius:12px;
-    margin-top:10px;
-}
-
-/* PROGRESS BAR */
-.progress{
-    height:12px;
-    background:rgba(255,255,255,0.1);
     border-radius:20px;
     overflow:hidden;
-    margin-top:10px;
+    border:1px solid rgba(0,255,140,0.15);
+    backdrop-filter:blur(18px);
+    transition:0.3s;
+    box-shadow:0 0 0 rgba(0,0,0,0);
+}
+.card:hover{
+    transform:translateY(-8px) scale(1.02);
+    border:1px solid rgba(0,255,140,0.4);
+    box-shadow:0 0 25px rgba(0,255,140,0.15);
 }
 
-.progress-bar{
-    height:100%;
-    background:linear-gradient(90deg,#00ff88,#ffb300);
-    width:<?= min(100, $imc*4) ?>%;
-    box-shadow:0 0 10px #00ff88;
+/* IMAGE */
+.img{
+    height:140px;
+    background-size:cover;
+    background-position:center;
+    position:relative;
+}
+.img::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:linear-gradient(to top, rgba(0,0,0,0.6), transparent);
 }
 
-/* BADGES */
-.badges span{
-    display:inline-block;
-    padding:6px 12px;
-    margin:5px;
-    border-radius:20px;
-    background:rgba(255,255,255,0.1);
+/* CONTENT */
+.content{
+    padding:16px;
 }
 
-/* FORM */
-input{
+/* ===== NEW INFO WITH IMAGES ===== */
+
+.icon-img{
     width:100%;
-    padding:10px;
-    margin:6px 0;
-    border-radius:10px;
-    border:none;
-    outline:none;
+    height:120px;
+    border-radius:12px;
+    object-fit:cover;
+    margin-bottom:10px;
+    box-shadow:0 0 15px rgba(0,255,140,0.1);
 }
 
 /* BUTTON */
-button{
-    background:linear-gradient(90deg,#00ff88,#ffb300);
+.btn{
+    width:calc(100% - 60px);
+    margin:0 30px 30px;
+    padding:13px;
     border:none;
-    padding:10px;
-    width:100%;
-    border-radius:10px;
+    border-radius:14px;
     font-weight:bold;
     cursor:pointer;
+    background:linear-gradient(90deg,#00ff88,#ffb300);
 }
 
-/* STATS */
-.stat{
-    font-size:32px;
-    font-weight:bold;
+/* FORM PANEL WOW */
+.form-panel{
+    position:fixed;
+    top:0;
+    right:-430px;
+    width:400px;
+    height:100%;
+    background:rgba(255,255,255,0.07);
+    backdrop-filter:blur(30px);
+    border-left:1px solid rgba(0,255,140,0.2);
+    padding:25px;
+    transition:0.45s ease;
+    overflow-y:auto;
+    z-index:999;
 }
+.form-panel.active{
+    right:0;
+}
+
+/* TITLE */
+.form-title{
+    font-size:20px;
+    margin-bottom:18px;
+    color:#ffb300;
+}
+
+/* SECTION GLASS */
+.section{
+    background:rgba(255,255,255,0.04);
+    padding:14px;
+    border-radius:14px;
+    margin-bottom:14px;
+    border:1px solid rgba(0,255,140,0.1);
+}
+
+/* LABEL */
+label{
+    font-size:11px;
+    opacity:0.7;
+    display:block;
+    margin-top:10px;
+}
+
+/* INPUT */
+input,select{
+    width:100%;
+    padding:12px;
+    margin-top:6px;
+    border-radius:12px;
+    border:none;
+    background:rgba(255,255,255,0.08);
+    color:white;
+}
+
+/* BUTTONS */
+.action-btn{
+    width:100%;
+    padding:13px;
+    border:none;
+    border-radius:14px;
+    font-weight:bold;
+    cursor:pointer;
+    margin-top:12px;
+}
+
+.save{
+    background:linear-gradient(90deg,#00ff88,#ffb300);
+}
+
+.close{
+    background:rgba(255,60,60,0.2);
+    border:1px solid rgba(255,60,60,0.4);
+    color:#ff6b6b;
+}
+
+/* COLORS */
+.green{color:#00ff88;}
+.orange{color:#ffb300;}
 </style>
 
-<div class="container">
+<!-- HERO -->
+<div class="hero"></div>
 
-    <!-- HEADER -->
-    <div class="header">
+<!-- PROFILE -->
+<div class="profile">
 
-        <div class="profile">
-            <div class="avatar">
-                <?= strtoupper(substr($user['nom'],0,1)) ?>
-            </div>
-
-            <div>
-                <h2><?= $user['nom'] ?></h2>
-                <p class="green">Utilisateur EcoNutri</p>
-            </div>
-        </div>
-
-        <div class="badge">🔥 Profil MAX</div>
+    <div class="avatar">
+        <?= strtoupper(substr($user['nom'],0,1)) ?>
     </div>
 
-    <!-- PROGRESS GLOBAL -->
-    <div class="card full">
-        <h3 class="green">🌿 Progression Santé</h3>
-        <p>Ton niveau global basé sur ton IMC</p>
-
-        <div class="progress">
-            <div class="progress-bar"></div>
-        </div>
-    </div>
-
-    <!-- GRID -->
-    <div class="grid">
-
-        <!-- IMC -->
-        <div class="card">
-            <h3 class="orange">⚖️ IMC</h3>
-            <div class="stat"><?= round($imc,1) ?></div>
-            <p><?= $etat ?></p>
-        </div>
-
-        <!-- CALORIES -->
-        <div class="card">
-            <h3 class="green">🔥 Calories</h3>
-            <div class="stat"><?= ($user['objectif']=='Perte de poids') ? '1600' : '2200' ?></div>
-        </div>
-
-        <!-- OBJECTIF -->
-        <div class="card">
-            <h3 class="orange">🎯 Objectif</h3>
-            <p><?= $user['objectif'] ?></p>
-        </div>
-
-        <!-- EMAIL -->
-        <div class="card">
-            <h3 class="green">📧 Email</h3>
-            <p><?= $user['email'] ?></p>
-        </div>
-
-        <!-- IMAGE SPORT -->
-        <div class="card big">
-            <h3 class="orange">🏋️ Activité</h3>
-            <img src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438">
-        </div>
-
-        <!-- IMAGE FOOD -->
-        <div class="card big">
-            <h3 class="green">🥗 Nutrition</h3>
-            <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c">
-        </div>
-
-        <!-- BADGES -->
-        <div class="card">
-            <h3 class="orange">🏆 Badges</h3>
-            <div class="badges">
-                <span>Débutant</span>
-                <span>Motivé</span>
-                <span>Healthy</span>
-            </div>
-        </div>
-
-        <!-- CONSEIL -->
-        <div class="card">
-            <h3 class="green">💡 Conseil</h3>
-            <p>Hydratation + sommeil = performance 💧</p>
-        </div>
-
-        <!-- FORM UPDATE -->
-        <div class="card full">
-            <h3 class="orange">✏️ Modifier Profil</h3>
-
-            <form method="POST" action="/ProjetWeb-User/index.php?url=User/update">
-
-    <input type="text" name="nom" value="<?= $user['nom'] ?>" required>
-    <input type="email" name="email" value="<?= $user['email'] ?>" required>
-    <input type="number" name="poids" value="<?= $user['poids'] ?>">
-    <input type="number" name="taille" value="<?= $user['taille'] ?>">
-
-    <button type="submit">Mettre à jour</button>
-
-</form>
-                
-        </div>
-
+    <div class="name-box">
+        <h2><?= $user['nom'] ?></h2>
+        <p class="green">🔥 Elite Fitness Dashboard</p>
+        <span class="badge"><?= $user['objectif'] ?></span>
     </div>
 
 </div>
+
+<!-- DASHBOARD -->
+<div class="grid">
+
+    <div class="card">
+        <img class="icon-img" src="https://images.unsplash.com/photo-1517838277536-f5f99be501cd">
+        <div class="content">
+            <h4 class="orange">🏋 Training Power</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <img class="icon-img" src="https://images.unsplash.com/photo-1554284126-aa88f22d8b74">
+        <div class="content">
+            <h4 class="green">🔥 Calories</h4>
+            <p><?= ($user['poids'] * 24) ?> kcal</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <img class="icon-img" src="https://images.unsplash.com/photo-1505751172876-fa1923c5c528">
+        <div class="content">
+            <h4 class="orange">⚖ IMC</h4>
+            <p><?= round($imc,1) ?> - <?= $etat ?></p>
+        </div>
+    </div>
+
+</div>
+
+<!-- NEW INFO WOW -->
+<div class="grid">
+
+    <div class="card">
+        <img class="icon-img" src="https://images.unsplash.com/photo-1558611848-73f7eb4001a1">
+        <div class="content">
+            <h4 class="green">💧 Hydratation</h4>
+            <p><?= round($user['poids'] * 0.033,1) ?> L / jour</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <img class="icon-img" src="https://images.unsplash.com/photo-1526506118085-60ce8714f8c5">
+        <div class="content">
+            <h4 class="green">🎯 Objectif</h4>
+            <p><?= $user['objectif'] ?></p>
+        </div>
+    </div>
+
+    <div class="card">
+        <img class="icon-img" src="https://images.unsplash.com/photo-1554284115-5c0a8c3a8b0a">
+        <div class="content">
+            <h4 class="orange">📊 Score santé</h4>
+            <p><?= min(100, round(($user['poids'] + $user['taille']) / 3)) ?>/100</p>
+        </div>
+    </div>
+
+</div>
+
+<!-- BUTTON -->
+<button class="btn" onclick="openForm()">✏ Modifier mon profil</button>
+
+<!-- FORM WOW -->
+<div class="form-panel" id="formPanel">
+
+    <div class="form-title">🧑 Profile Editor Pro</div>
+
+    <form method="POST" action="/ProjetWeb-User/index.php?url=User/update">
+
+        <div class="section">
+            <label>Nom</label>
+            <input name="nom" value="<?= $user['nom'] ?>">
+
+            <label>Email</label>
+            <input name="email" value="<?= $user['email'] ?>">
+
+            <label>Password</label>
+            <input name="password" placeholder="••••••">
+        </div>
+
+        <div class="section">
+            <label>Age</label>
+            <input name="age" value="<?= $user['age'] ?? '' ?>">
+
+            <label>Poids</label>
+            <input name="poids" value="<?= $user['poids'] ?>">
+
+            <label>Taille</label>
+            <input name="taille" value="<?= $user['taille'] ?>">
+        </div>
+
+        <div class="section">
+            <label>Objectif</label>
+            <select name="objectif">
+                <option>Sportif</option>
+                <option>Perte de poids</option>
+                <option>Prise de masse</option>
+            </select>
+        </div>
+
+        <button type="submit" class="action-btn save">💾 Save Profile</button>
+        <button type="button" class="action-btn close" onclick="closeForm()">✖ Close</button>
+
+    </form>
+
+</div>
+
+<script>
+function openForm(){
+    document.getElementById("formPanel").classList.add("active");
+}
+function closeForm(){
+    document.getElementById("formPanel").classList.remove("active");
+}
+</script>
 
 <?php include __DIR__ . '/../partials/footer.php'; ?>
