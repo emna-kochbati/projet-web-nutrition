@@ -96,11 +96,6 @@ textarea { resize:vertical; min-height:90px; }
                 </select>
                 <?php if (!empty($errors['type_cuisine'])): ?><div class="error-msg">⚠ <?= $errors['type_cuisine'] ?></div><?php endif; ?>
             </div>
-            <div class="form-group">
-                <label for="capacite">Capacité (places)</label>
-                <input type="number" id="capacite" name="capacite" min="1" value="<?= htmlspecialchars($restaurant['capacite'] ?? '') ?>" placeholder="Ex: 50">
-                <?php if (!empty($errors['capacite'])): ?><div class="error-msg">⚠ <?= $errors['capacite'] ?></div><?php endif; ?>
-            </div>
         </div>
 
         <div class="form-group">
@@ -115,6 +110,52 @@ textarea { resize:vertical; min-height:90px; }
             <?php endif; ?>
         </div>
 
+        <!-- ── Section Plats inline ──────────────────────────────────────── -->
+        <div style="margin-top:28px;border-top:2px solid #e8f5e9;padding-top:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h3 style="font-size:1.05rem;color:#1a1a1a;margin:0;">🍽️ Plats du restaurant</h3>
+                <button type="button" onclick="addMealRow()" style="background:#2e7d32;color:#fff;padding:8px 16px;border-radius:6px;border:none;font-weight:600;font-size:.85rem;cursor:pointer;">➕ Ajouter un plat</button>
+            </div>
+            <div id="meals-container">
+                <?php foreach ($meals ?? [] as $idx => $m): ?>
+                <div class="meal-row" style="background:#f9fbe7;border:1px solid #c5e1a5;border-radius:8px;padding:16px;margin-bottom:12px;position:relative;">
+                    <button type="button" onclick="removeMealRow(this)" style="position:absolute;top:10px;right:10px;background:#c62828;color:#fff;border:none;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:.8rem;">✕</button>
+                    <input type="hidden" name="meals[<?= $idx ?>][id]" value="<?= $m['id'] ?>">
+                    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:12px;margin-bottom:10px;">
+                        <div>
+                            <label style="font-size:.8rem;">Nom du plat *</label>
+                            <input type="text" name="meals[<?= $idx ?>][nom]" value="<?= htmlspecialchars($m['nom']) ?>" placeholder="Ex: Couscous" required>
+                        </div>
+                        <div>
+                            <label style="font-size:.8rem;">Catégorie *</label>
+                            <select name="meals[<?= $idx ?>][categorie]" required>
+                                <?php foreach (['entree'=>'Entrée','plat_principal'=>'Plat principal','dessert'=>'Dessert','boisson'=>'Boisson','snack'=>'Snack'] as $v=>$l): ?>
+                                <option value="<?= $v ?>" <?= ($m['categorie']===$v)?'selected':'' ?>><?= $l ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:.8rem;">Prix (DT) *</label>
+                            <input type="number" name="meals[<?= $idx ?>][prix]" value="<?= $m['prix'] ?>" step="0.01" min="0" placeholder="0.00" required>
+                        </div>
+                        <div>
+                            <label style="font-size:.8rem;">Calories</label>
+                            <input type="number" name="meals[<?= $idx ?>][calories]" value="<?= $m['calories'] ?>" min="0" placeholder="kcal">
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <input type="checkbox" name="meals[<?= $idx ?>][disponible]" id="dispo-<?= $idx ?>" value="1" <?= $m['disponible']?'checked':'' ?>>
+                        <label for="dispo-<?= $idx ?>" style="font-size:.82rem;font-weight:400;margin:0;">Disponible</label>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <p id="no-meals-msg" style="color:#aaa;font-size:.85rem;<?= !empty($meals) ? 'display:none' : '' ?>">
+                Aucun plat ajouté. Cliquez sur "Ajouter un plat" pour commencer.
+            </p>
+        </div>
+        <!-- ── Fin Section Plats ─────────────────────────────────────────── -->
+
         <div class="form-actions">
             <button type="submit" class="btn-submit">
                 <?= $isEdit ? '💾 Enregistrer' : '➕ Ajouter' ?>
@@ -123,6 +164,55 @@ textarea { resize:vertical; min-height:90px; }
         </div>
     </form>
 </div>
+
+<script>
+let mealIndex = <?= count($meals ?? []) ?>;
+
+function addMealRow() {
+    const idx = mealIndex++;
+    document.getElementById('no-meals-msg').style.display = 'none';
+    const html = `
+    <div class="meal-row" style="background:#f9fbe7;border:1px solid #c5e1a5;border-radius:8px;padding:16px;margin-bottom:12px;position:relative;">
+        <button type="button" onclick="removeMealRow(this)" style="position:absolute;top:10px;right:10px;background:#c62828;color:#fff;border:none;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:.8rem;">✕</button>
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:12px;margin-bottom:10px;">
+            <div>
+                <label style="font-size:.8rem;">Nom du plat *</label>
+                <input type="text" name="meals[${idx}][nom]" placeholder="Ex: Couscous" required>
+            </div>
+            <div>
+                <label style="font-size:.8rem;">Catégorie *</label>
+                <select name="meals[${idx}][categorie]" required>
+                    <option value="entree">Entrée</option>
+                    <option value="plat_principal" selected>Plat principal</option>
+                    <option value="dessert">Dessert</option>
+                    <option value="boisson">Boisson</option>
+                    <option value="snack">Snack</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size:.8rem;">Prix (DT) *</label>
+                <input type="number" name="meals[${idx}][prix]" step="0.01" min="0" placeholder="0.00" required>
+            </div>
+            <div>
+                <label style="font-size:.8rem;">Calories</label>
+                <input type="number" name="meals[${idx}][calories]" min="0" placeholder="kcal">
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" name="meals[${idx}][disponible]" id="dispo-${idx}" value="1" checked>
+            <label for="dispo-${idx}" style="font-size:.82rem;font-weight:400;margin:0;">Disponible</label>
+        </div>
+    </div>`;
+    document.getElementById('meals-container').insertAdjacentHTML('beforeend', html);
+}
+
+function removeMealRow(btn) {
+    btn.closest('.meal-row').remove();
+    if (document.querySelectorAll('.meal-row').length === 0) {
+        document.getElementById('no-meals-msg').style.display = '';
+    }
+}
+</script>
 
 <?php if ($isEdit): ?>
 <!-- ── Section Plats ─────────────────────────────────────────────────── -->

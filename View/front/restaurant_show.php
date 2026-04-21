@@ -90,17 +90,6 @@
                         </div>
                     </div>
                 </div>
-                <?php if (!empty($restaurant['capacite'])): ?>
-                <div class="col-sm-6">
-                    <div class="d-flex align-items-start gap-3">
-                        <i class="fa fa-chair fa-lg text-primary mt-1"></i>
-                        <div>
-                            <small class="text-muted d-block">Capacité</small>
-                            <span class="fw-semibold"><?= $restaurant['capacite'] ?> places</span>
-                        </div>
-                    </div>
-                </div>
-                <?php endif; ?>
             </div>
         </div>
     </div>

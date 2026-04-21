@@ -56,10 +56,6 @@ th, td { padding:10px 14px; text-align:left; font-size:.87rem; border-bottom:1px
             <p><?= htmlspecialchars($restaurant['email'] ?? '—') ?></p>
         </div>
         <div class="info-item">
-            <label>🪑 Capacité</label>
-            <p><?= $restaurant['capacite'] ? $restaurant['capacite'] . ' places' : '—' ?></p>
-        </div>
-        <div class="info-item">
             <label>📅 Ajouté le</label>
             <p><?= date('d/m/Y', strtotime($restaurant['created_at'])) ?></p>
         </div>

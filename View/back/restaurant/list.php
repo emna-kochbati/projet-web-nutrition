@@ -59,7 +59,6 @@ tbody tr:hover { background:#f1f8e9; }
             <th>Nom</th>
             <th>Adresse</th>
             <th>Cuisine</th>
-            <th>Capacité</th>
             <th>Téléphone</th>
             <th>Actions</th>
         </tr>
@@ -78,7 +77,6 @@ tbody tr:hover { background:#f1f8e9; }
             <td><strong><?= htmlspecialchars($r['nom']) ?></strong></td>
             <td><?= htmlspecialchars($r['adresse']) ?></td>
             <td><span class="badge badge-cuisine"><?= htmlspecialchars($r['type_cuisine']) ?></span></td>
-            <td><?= $r['capacite'] ? $r['capacite'] . ' places' : '—' ?></td>
             <td><?= htmlspecialchars($r['telephone'] ?? '—') ?></td>
             <td>
                 <div class="actions">

@@ -20,8 +20,8 @@ class Restaurant {
     }
 
     public function create(array $data): int {
-        $sql = "INSERT INTO restaurant (nom, description, adresse, telephone, email, type_cuisine, capacite, image)
-                VALUES (:nom, :description, :adresse, :telephone, :email, :type_cuisine, :capacite, :image)";
+        $sql = "INSERT INTO restaurant (nom, description, adresse, telephone, email, type_cuisine, image)
+                VALUES (:nom, :description, :adresse, :telephone, :email, :type_cuisine, :image)";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             ':nom'          => $data['nom'],
@@ -30,7 +30,6 @@ class Restaurant {
             ':telephone'    => $data['telephone'] ?? null,
             ':email'        => $data['email'] ?? null,
             ':type_cuisine' => $data['type_cuisine'],
-            ':capacite'     => isset($data['capacite']) ? (int)$data['capacite'] : null,
             ':image'        => $data['image'] ?? null,
         ]);
         return (int)$this->db->lastInsertId();
@@ -40,7 +39,7 @@ class Restaurant {
         $sql = "UPDATE restaurant
                 SET nom=:nom, description=:description, adresse=:adresse,
                     telephone=:telephone, email=:email, type_cuisine=:type_cuisine,
-                    capacite=:capacite, image=:image
+                    image=:image
                 WHERE id=:id";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([
@@ -50,7 +49,6 @@ class Restaurant {
             ':telephone'    => $data['telephone'] ?? null,
             ':email'        => $data['email'] ?? null,
             ':type_cuisine' => $data['type_cuisine'],
-            ':capacite'     => isset($data['capacite']) ? (int)$data['capacite'] : null,
             ':image'        => $data['image'] ?? null,
             ':id'           => $id,
         ]);

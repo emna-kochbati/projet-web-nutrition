@@ -44,7 +44,11 @@ class RestaurantController {
         if (empty($errors)) {
             $data          = $this->sanitizeRestaurant($_POST);
             $data['image'] = $this->handleImageUpload('restaurants');
-            $this->restaurantModel->create($data);
+            $restaurantId  = $this->restaurantModel->create($data);
+
+            // Sauvegarder les plats soumis
+            $this->saveMeals($restaurantId, $_POST['meals'] ?? []);
+
             $_SESSION['success'] = 'Restaurant ajouté avec succès !';
             header('Location: /2A35/Admin/restaurant'); exit;
         }
@@ -85,6 +89,10 @@ class RestaurantController {
             $newImage      = $this->handleImageUpload('restaurants');
             $data['image'] = $newImage ?: $restaurant['image'];
             $this->restaurantModel->update((int)$id, $data);
+
+            // Mettre à jour les plats
+            $this->saveMeals((int)$id, $_POST['meals'] ?? []);
+
             $_SESSION['success'] = 'Restaurant modifié avec succès !';
             header('Location: /2A35/Admin/restaurant'); exit;
         }
@@ -145,10 +153,6 @@ class RestaurantController {
             $errors['email'] = 'L\'adresse email n\'est pas valide.';
         }
 
-        if (!empty($post['capacite']) && (!is_numeric($post['capacite']) || (int)$post['capacite'] < 1)) {
-            $errors['capacite'] = 'La capacité doit être un nombre entier positif.';
-        }
-
         if (!empty($_FILES['image']['name'])) {
             $allowed = ['image/jpeg', 'image/png', 'image/webp'];
             if (!in_array($_FILES['image']['type'], $allowed)) {
@@ -169,7 +173,6 @@ class RestaurantController {
             'telephone'    => htmlspecialchars(trim($post['telephone'] ?? '')),
             'email'        => trim($post['email'] ?? ''),
             'type_cuisine' => $post['type_cuisine'],
-            'capacite'     => !empty($post['capacite']) ? (int)$post['capacite'] : null,
         ];
     }
 
@@ -181,5 +184,48 @@ class RestaurantController {
         $filename = uniqid($folder . '_') . '.' . strtolower($ext);
         move_uploaded_file($_FILES['image']['tmp_name'], $uploadDir . $filename);
         return $filename;
+    }
+
+    private function saveMeals(int $restaurantId, array $mealsPost): void {
+        if (empty($mealsPost)) return;
+
+        // Récupérer les IDs existants pour ce restaurant
+        $existing = $this->mealModel->getByRestaurant($restaurantId);
+        $existingIds = array_column($existing, 'id');
+        $submittedIds = [];
+
+        foreach ($mealsPost as $m) {
+            if (empty(trim($m['nom'] ?? ''))) continue;
+
+            $data = [
+                'restaurant_id' => $restaurantId,
+                'nom'           => htmlspecialchars(trim($m['nom'])),
+                'description'   => '',
+                'prix'          => is_numeric($m['prix'] ?? '') ? (float)$m['prix'] : 0,
+                'categorie'     => $m['categorie'] ?? 'plat_principal',
+                'calories'      => !empty($m['calories']) ? (int)$m['calories'] : null,
+                'disponible'    => isset($m['disponible']) ? 1 : 0,
+                'image'         => null,
+            ];
+
+            if (!empty($m['id']) && in_array((int)$m['id'], $existingIds)) {
+                // Mise à jour
+                $existingMeal = $this->mealModel->getById((int)$m['id']);
+                $data['image'] = $existingMeal['image'] ?? null;
+                $this->mealModel->update((int)$m['id'], $data);
+                $submittedIds[] = (int)$m['id'];
+            } else {
+                // Création
+                $newId = $this->mealModel->create($data);
+                $submittedIds[] = $newId;
+            }
+        }
+
+        // Supprimer les plats retirés du formulaire
+        foreach ($existingIds as $eid) {
+            if (!in_array($eid, $submittedIds)) {
+                $this->mealModel->delete($eid);
+            }
+        }
     }
 }

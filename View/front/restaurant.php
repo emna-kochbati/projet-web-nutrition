@@ -109,11 +109,6 @@
                                 <i class="fa fa-phone me-1 text-primary"></i><?= htmlspecialchars($r['telephone']) ?>
                             </small>
                             <?php endif; ?>
-                            <?php if (!empty($r['capacite'])): ?>
-                            <small class="text-muted">
-                                <i class="fa fa-chair me-1 text-primary"></i><?= $r['capacite'] ?> places
-                            </small>
-                            <?php endif; ?>
                         </div>
 
                         <div class="mt-auto">
