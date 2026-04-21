@@ -68,9 +68,21 @@ tbody td { padding:11px 16px; vertical-align:middle; }
 </div>
 
 <form class="search-form" method="GET" action="/2A35/Admin/recette">
-    <input type="text" name="search" placeholder="Rechercher une recette..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
+    <input type="text" name="search" placeholder="Rechercher par nom..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
+    <select name="categorie" style="padding:10px 14px; border:2px solid var(--border); border-radius:6px; font-size:0.9rem; outline:none; min-width:160px;">
+        <option value="">Toutes catégories</option>
+        <?php foreach (['petit-dejeuner'=>'Petit-déjeuner','dejeuner'=>'Déjeuner','diner'=>'Dîner','collation'=>'Collation','dessert'=>'Dessert','vegetarien'=>'Végétarien','regime'=>'Régime','sportif'=>'Sportif'] as $v=>$l): ?>
+            <option value="<?= $v ?>" <?= ($_GET['categorie'] ?? '') === $v ? 'selected' : '' ?>><?= $l ?></option>
+        <?php endforeach; ?>
+    </select>
+    <select name="difficulte" style="padding:10px 14px; border:2px solid var(--border); border-radius:6px; font-size:0.9rem; outline:none; min-width:140px;">
+        <option value="">Toutes difficultés</option>
+        <option value="facile"    <?= ($_GET['difficulte'] ?? '') === 'facile'    ? 'selected' : '' ?>>🟢 Facile</option>
+        <option value="moyen"     <?= ($_GET['difficulte'] ?? '') === 'moyen'     ? 'selected' : '' ?>>🟡 Moyen</option>
+        <option value="difficile" <?= ($_GET['difficulte'] ?? '') === 'difficile' ? 'selected' : '' ?>>🔴 Difficile</option>
+    </select>
     <button type="submit" class="btn-orange">🔍 Rechercher</button>
-    <?php if (!empty($_GET['search'])): ?>
+    <?php if (!empty($_GET['search']) || !empty($_GET['categorie']) || !empty($_GET['difficulte'])): ?>
         <a href="/2A35/Admin/recette" class="btn-clear">✕ Effacer</a>
     <?php endif; ?>
 </form>
@@ -81,7 +93,7 @@ tbody td { padding:11px 16px; vertical-align:middle; }
 <?php else: ?>
     <table>
         <thead>
-            <tr><th>#</th><th>Image</th><th>Nom</th><th>Catégorie</th><th>Durée</th><th>Difficulté</th><th>Calories</th><th>Actions</th></tr>
+            <tr><th>#</th><th>Image</th><th>Nom</th><th>Description</th><th>Catégorie</th><th>Durée</th><th>Difficulté</th><th>Calories</th><th>Actions</th></tr>
         </thead>
         <tbody>
         <?php foreach ($recettes as $r): ?>
@@ -89,6 +101,13 @@ tbody td { padding:11px 16px; vertical-align:middle; }
                 <td><?= $r['id'] ?></td>
                 <td><?php if ($r['image']): ?><img src="/2A35/assets/uploads/recettes/<?= htmlspecialchars($r['image']) ?>" class="rec-img" alt=""><?php else: ?><div class="no-img">🍽️</div><?php endif; ?></td>
                 <td><strong><?= htmlspecialchars($r['nom']) ?></strong></td>
+                <td style="max-width:180px; color:#555; font-size:0.85rem;">
+                    <?php if (!empty($r['description'])): ?>
+                        <?= htmlspecialchars(mb_strimwidth($r['description'], 0, 50, '...')) ?>
+                    <?php else: ?>
+                        <span style="color:#bbb; font-style:italic;">—</span>
+                    <?php endif; ?>
+                </td>
                 <td><span class="badge b-cat"><?= htmlspecialchars($r['categorie']) ?></span></td>
                 <td>⏱ <?= $r['duree'] ?> min</td>
                 <td><?php $bc=match($r['difficulte']){'facile'=>'b-easy','moyen'=>'b-med','difficile'=>'b-hard',default=>'b-easy'}; ?><span class="badge <?= $bc ?>"><?= $r['difficulte'] ?></span></td>

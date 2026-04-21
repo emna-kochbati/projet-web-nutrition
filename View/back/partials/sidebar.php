@@ -179,8 +179,10 @@
                     ['label' => '➕ Nouveau',  'url' => '/2A35/Admin/partenaire/create'],
                 ]],
                 'recette' => ['🍽️ Recette', [
-                    ['label' => '📋 Liste des recettes',  'url' => '/2A35/Admin/recette'],
-                    ['label' => '➕ Nouvelle recette',    'url' => '/2A35/Admin/recette/create'],
+                    ['label' => '📋 Liste des recettes',    'url' => '/2A35/Admin/recette'],
+                    ['label' => '➕ Nouvelle recette',      'url' => '/2A35/Admin/recette/create'],
+                    ['label' => '🥦 Liste des ingrédients', 'url' => '/2A35/Admin/ingredient'],
+                    ['label' => '➕ Nouvel ingrédient',     'url' => '/2A35/Admin/ingredient/create'],
                 ]],
                 'programme' => ['🏋️ Programme', [
                     ['label' => '📋 Liste',    'url' => '/2A35/Admin/programme'],

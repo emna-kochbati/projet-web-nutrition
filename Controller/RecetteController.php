@@ -1,28 +1,31 @@
 <?php
+require_once 'Config/database.php';
 require_once 'Model/Recette.php';
 require_once 'Model/Ingredient.php';
 
 class RecetteController {
 
-    private Recette    $model;
+    private Recette    $recetteModel;
     private Ingredient $ingredientModel;
 
     public function __construct() {
-        $this->model           = new Recette();
+        $this->recetteModel    = new Recette();
         $this->ingredientModel = new Ingredient();
     }
 
-    // Liste
+    // ── Liste toutes les recettes ─────────────────────────────────────────────
     public function index(): void {
-        $search   = trim($_GET['search'] ?? '');
-        $recettes = $search ? $this->model->search($search) : $this->model->getAll();
-        $success  = $_SESSION['success'] ?? null;
-        $error    = $_SESSION['error']   ?? null;
+        $search     = trim($_GET['search']     ?? '');
+        $categorie  = trim($_GET['categorie']  ?? '');
+        $difficulte = trim($_GET['difficulte'] ?? '');
+        $recettes   = $this->recetteModel->filter($search, $categorie, $difficulte);
+        $success    = $_SESSION['success'] ?? null;
+        $error      = $_SESSION['error']   ?? null;
         unset($_SESSION['success'], $_SESSION['error']);
         require_once 'View/back/recette/list.php';
     }
 
-    // Formulaire ajout
+    // ── Afficher formulaire ajout ─────────────────────────────────────────────
     public function create(): void {
         $recette     = [];
         $ingredients = [];
@@ -30,13 +33,22 @@ class RecetteController {
         require_once 'View/back/recette/form.php';
     }
 
-    // Traiter ajout
+    // ── Ajouter une recette ───────────────────────────────────────────────────
     public function store(): void {
         $errors = $this->valider($_POST);
         if (empty($errors)) {
-            $data          = $this->nettoyer($_POST);
-            $data['image'] = $this->uploadImage();
-            $recetteId     = $this->model->create($data);
+            // Créer l'objet Recette avec les getters/setters
+            $recette = new Recette(
+                null,
+                htmlspecialchars(trim($_POST['nom'])),
+                htmlspecialchars(trim($_POST['description'] ?? '')),
+                $_POST['categorie'],
+                (int)$_POST['duree'],
+                $_POST['difficulte'],
+                (int)$_POST['calories'],
+                $this->uploadImage()
+            );
+            $recetteId = $this->addRecette($recette);
             $this->sauvegarderIngredients($recetteId, $_POST);
             $_SESSION['success'] = 'Recette ajoutée avec succès !';
             header('Location: /2A35/Admin/recette'); exit;
@@ -46,9 +58,9 @@ class RecetteController {
         require_once 'View/back/recette/form.php';
     }
 
-    // Formulaire modification
+    // ── Afficher formulaire modification ──────────────────────────────────────
     public function edit(string $id): void {
-        $recette = $this->model->getById((int)$id);
+        $recette = $this->showRecette((int)$id);
         if (!$recette) {
             $_SESSION['error'] = 'Recette introuvable.';
             header('Location: /2A35/Admin/recette'); exit;
@@ -58,19 +70,27 @@ class RecetteController {
         require_once 'View/back/recette/form.php';
     }
 
-    // Traiter modification
+    // ── Modifier une recette ──────────────────────────────────────────────────
     public function update(string $id): void {
-        $recette = $this->model->getById((int)$id);
+        $recette = $this->showRecette((int)$id);
         if (!$recette) {
             $_SESSION['error'] = 'Recette introuvable.';
             header('Location: /2A35/Admin/recette'); exit;
         }
         $errors = $this->valider($_POST);
         if (empty($errors)) {
-            $data          = $this->nettoyer($_POST);
             $nouvelleImage = $this->uploadImage();
-            $data['image'] = $nouvelleImage ?: $recette['image'];
-            $this->model->update((int)$id, $data);
+            $obj = new Recette(
+                (int)$id,
+                htmlspecialchars(trim($_POST['nom'])),
+                htmlspecialchars(trim($_POST['description'] ?? '')),
+                $_POST['categorie'],
+                (int)$_POST['duree'],
+                $_POST['difficulte'],
+                (int)$_POST['calories'],
+                $nouvelleImage ?: $recette['image']
+            );
+            $this->updateRecette($obj, (int)$id);
             $this->ingredientModel->deleteByRecette((int)$id);
             $this->sauvegarderIngredients((int)$id, $_POST);
             $_SESSION['success'] = 'Recette modifiée avec succès !';
@@ -80,9 +100,9 @@ class RecetteController {
         require_once 'View/back/recette/form.php';
     }
 
-    // Détail
+    // ── Détail recette ────────────────────────────────────────────────────────
     public function show(string $id): void {
-        $recette = $this->model->getById((int)$id);
+        $recette = $this->showRecette((int)$id);
         if (!$recette) {
             $_SESSION['error'] = 'Recette introuvable.';
             header('Location: /2A35/Admin/recette'); exit;
@@ -91,14 +111,14 @@ class RecetteController {
         require_once 'View/back/recette/show.php';
     }
 
-    // Supprimer
+    // ── Supprimer une recette ─────────────────────────────────────────────────
     public function delete(string $id): void {
-        $recette = $this->model->getById((int)$id);
+        $recette = $this->showRecette((int)$id);
         if ($recette) {
             if ($recette['image'] && file_exists('assets/uploads/recettes/' . $recette['image'])) {
                 unlink('assets/uploads/recettes/' . $recette['image']);
             }
-            $this->model->delete((int)$id);
+            $this->deleteRecette((int)$id);
             $_SESSION['success'] = 'Recette supprimée avec succès !';
         } else {
             $_SESSION['error'] = 'Recette introuvable.';
@@ -106,16 +126,102 @@ class RecetteController {
         header('Location: /2A35/Admin/recette'); exit;
     }
 
-    // ── Validation PHP côté serveur ───────────────────────────────────────────
+    // =========================================================================
+    // Méthodes PDO (structure comme l'exemple de la prof)
+    // =========================================================================
+
+    public function addRecette(Recette $recette): int {
+        $sql = "INSERT INTO recette (nom, description, categorie, duree, difficulte, calories, image)
+                VALUES (:nom, :description, :categorie, :duree, :difficulte, :calories, :image)";
+        $db  = Database::getConnection();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute([
+                'nom'         => $recette->getNom(),
+                'description' => $recette->getDescription(),
+                'categorie'   => $recette->getCategorie(),
+                'duree'       => $recette->getDuree(),
+                'difficulte'  => $recette->getDifficulte(),
+                'calories'    => $recette->getCalories(),
+                'image'       => $recette->getImage(),
+            ]);
+            return (int)$db->lastInsertId();
+        } catch (Exception $e) {
+            echo 'Error: ' . $e->getMessage();
+            return 0;
+        }
+    }
+
+    public function updateRecette(Recette $recette, int $id): void {
+        $sql = "UPDATE recette SET nom=:nom, description=:description, categorie=:categorie,
+                duree=:duree, difficulte=:difficulte, calories=:calories, image=:image WHERE id=:id";
+        $db  = Database::getConnection();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute([
+                'id'          => $id,
+                'nom'         => $recette->getNom(),
+                'description' => $recette->getDescription(),
+                'categorie'   => $recette->getCategorie(),
+                'duree'       => $recette->getDuree(),
+                'difficulte'  => $recette->getDifficulte(),
+                'calories'    => $recette->getCalories(),
+                'image'       => $recette->getImage(),
+            ]);
+        } catch (PDOException $e) {
+            echo 'Error: ' . $e->getMessage();
+        }
+    }
+
+    public function deleteRecette(int $id): void {
+        $sql = "DELETE FROM recette WHERE id = :id";
+        $db  = Database::getConnection();
+        $req = $db->prepare($sql);
+        $req->bindValue(':id', $id);
+        try {
+            $req->execute();
+        } catch (Exception $e) {
+            die('Error: ' . $e->getMessage());
+        }
+    }
+
+    public function showRecette(int $id): array|false {
+        $sql = "SELECT * FROM recette WHERE id = :id";
+        $db  = Database::getConnection();
+        $query = $db->prepare($sql);
+        try {
+            $query->execute([':id' => $id]);
+            return $query->fetch();
+        } catch (Exception $e) {
+            die('Error: ' . $e->getMessage());
+        }
+    }
+
+    public function listRecettes(): array {
+        $sql = "SELECT * FROM recette ORDER BY created_at DESC";
+        $db  = Database::getConnection();
+        try {
+            return $db->query($sql)->fetchAll();
+        } catch (Exception $e) {
+            die('Error: ' . $e->getMessage());
+        }
+    }
+
+    // =========================================================================
+    // Méthodes privées utilitaires
+    // =========================================================================
+
     private function valider(array $post): array {
         $errors = [];
-
         $nom = trim($post['nom'] ?? '');
         if ($nom === '')            $errors['nom'] = 'Le nom est obligatoire.';
         elseif (strlen($nom) < 3)   $errors['nom'] = 'Le nom doit contenir au moins 3 caractères.';
         elseif (strlen($nom) > 150) $errors['nom'] = 'Le nom ne peut pas dépasser 150 caractères.';
         elseif (preg_match('/\d/', $nom)) $errors['nom'] = 'Le nom ne doit pas contenir de chiffres.';
-        elseif (!preg_match('/^[\p{L}\s\-\'\,\.]+$/u', $nom)) $errors['nom'] = 'Le nom ne doit contenir que des lettres.';
+
+        $desc = trim($post['description'] ?? '');
+        if ($desc === '')           $errors['description'] = 'La description est obligatoire.';
+        elseif (strlen($desc) < 10) $errors['description'] = 'La description doit contenir au moins 10 caractères.';
 
         $cats = ['petit-dejeuner','dejeuner','diner','collation','dessert','vegetarien','regime','sportif'];
         if (empty($post['categorie']) || !in_array($post['categorie'], $cats, true))
@@ -127,7 +233,7 @@ class RecetteController {
 
         $duree = $post['duree'] ?? '';
         if (!ctype_digit((string)$duree) || (int)$duree < 1)
-            $errors['duree'] = 'La durée doit être un entier positif (en minutes).';
+            $errors['duree'] = 'La durée doit être un entier positif.';
         elseif ((int)$duree > 1440)
             $errors['duree'] = 'La durée ne peut pas dépasser 1440 minutes.';
 
@@ -140,34 +246,11 @@ class RecetteController {
         if (!empty($_FILES['image']['name'])) {
             $allowed = ['image/jpeg','image/png','image/webp'];
             if (!in_array($_FILES['image']['type'], $allowed))
-                $errors['image'] = 'Format non accepté (JPG, PNG, WEBP uniquement).';
+                $errors['image'] = 'Format non accepté (JPG, PNG, WEBP).';
             elseif ($_FILES['image']['size'] > 2 * 1024 * 1024)
                 $errors['image'] = "L'image ne doit pas dépasser 2 Mo.";
         }
-
-        // Validation ingrédients
-        $noms = $post['ing_nom'] ?? [];
-        foreach ($noms as $i => $nom) {
-            if (empty(trim($nom))) continue;
-            $qte   = $post['ing_quantite'][$i] ?? '';
-            $unite = trim($post['ing_unite'][$i] ?? '');
-            if (!is_numeric($qte) || (float)$qte <= 0)
-                $errors["ing_quantite_$i"] = "Quantité invalide pour l'ingrédient " . ($i+1) . ".";
-            if ($unite === '')
-                $errors["ing_unite_$i"] = "Unité manquante pour l'ingrédient " . ($i+1) . ".";
-        }
-
         return $errors;
-    }
-
-    private function nettoyer(array $post): array {
-        return [
-            'nom'        => htmlspecialchars(trim($post['nom'])),
-            'categorie'  => $post['categorie'],
-            'duree'      => (int)$post['duree'],
-            'difficulte' => $post['difficulte'],
-            'calories'   => (int)$post['calories'],
-        ];
     }
 
     private function uploadImage(): ?string {
@@ -181,26 +264,26 @@ class RecetteController {
     }
 
     private function sauvegarderIngredients(int $recetteId, array $post): void {
-        $noms = $post['ing_nom'] ?? [];
-        foreach ($noms as $i => $nom) {
-            if (empty(trim($nom))) continue;
-            $this->ingredientModel->create([
-                'recette_id' => $recetteId,
-                'nom'        => htmlspecialchars(trim($nom)),
-                'quantite'   => (float)($post['ing_quantite'][$i] ?? 0),
-                'unite'      => htmlspecialchars(trim($post['ing_unite'][$i] ?? '')),
-            ]);
+        $ids    = $post['ing_id']       ?? [];
+        $qtes   = $post['ing_quantite'] ?? [];
+        $unites = $post['ing_unite']    ?? [];
+        foreach ($ids as $i => $ingId) {
+            if (empty($ingId)) continue;
+            $qte   = (float)($qtes[$i] ?? 0);
+            $unite = trim($unites[$i] ?? '');
+            if ($qte <= 0 || $unite === '') continue;
+            $this->ingredientModel->addToRecette($recetteId, (int)$ingId, $qte, $unite);
         }
     }
 
     private function rebuildIngredients(array $post): array {
         $result = [];
-        $noms   = $post['ing_nom'] ?? [];
-        foreach ($noms as $i => $nom) {
+        foreach ($post['ing_id'] ?? [] as $i => $id) {
             $result[] = [
-                'nom'      => $nom,
-                'quantite' => $post['ing_quantite'][$i] ?? '',
-                'unite'    => $post['ing_unite'][$i]    ?? '',
+                'ingredient_id' => $id,
+                'nom'           => $post['ing_nom'][$i]      ?? '',
+                'quantite'      => $post['ing_quantite'][$i] ?? '',
+                'unite'         => $post['ing_unite'][$i]    ?? '',
             ];
         }
         return $result;

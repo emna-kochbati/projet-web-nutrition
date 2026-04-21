@@ -68,8 +68,17 @@
 
         <!-- Détails -->
         <div class="col-lg-7 wow fadeInRight" data-wow-delay="0.1s">
-            <h2 class="fw-bold mb-4" style="color:#2e7d32;"><?= htmlspecialchars($recette['nom']) ?></h2>
+            <h2 class="fw-bold mb-3" style="color:#2e7d32;"><?= htmlspecialchars($recette['nom']) ?></h2>
 
+            <!-- Description -->
+            <?php if (!empty($recette['description'])): ?>
+            <div class="mb-4">
+                <h6 class="fw-bold mb-2" style="color:#2e7d32;">📝 Description</h6>
+                <p style="color:#555; line-height:1.8; font-size:0.97rem; background:#f9fbe7; border-left:4px solid #2e7d32; padding:14px 18px; border-radius:6px; margin:0;">
+                    <?= nl2br(htmlspecialchars($recette['description'])) ?>
+                </p>
+            </div>
+            <?php endif; ?>
             <!-- Ingrédients -->
             <?php if (!empty($ingredients)): ?>
             <h5 class="fw-bold mb-3"><i class="fa fa-leaf me-2 text-success"></i>Ingrédients</h5>
