@@ -153,7 +153,7 @@
 <aside class="sidebar">
     <!-- Header -->
     <div class="sidebar-header">
-        <div class="site-name">🥗 NutriSmart</div>
+        <div class="site-name">🥗 EcoNutri</div>
     </div>
 
     <!-- Navigation -->
@@ -220,7 +220,7 @@
     </nav>
 
     <div class="sidebar-footer">
-        NutriSmart Admin © 2026
+        EcoNutri Admin © 2026
     </div>
 </aside>
 
