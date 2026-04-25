@@ -20,150 +20,184 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 .content-area{ margin-left:220px; }
 
-/* ===== GLOBAL ===== */
+/* ===== BASE DESIGN (GARDÉ) ===== */
 body{
     background: radial-gradient(circle at top,#0b1220,#020617);
     color:white;
-    font-family:Arial;
+    font-family:Segoe UI;
 }
 
-/* TITLE */
+/* TITLE WOW */
 .page-title{
-    font-size:26px;
-    font-weight:bold;
-    margin-bottom:20px;
-    color:#00e676;
-}
-
-/* FORM */
-.form-box{
-    background:linear-gradient(135deg, rgba(0,255,120,0.1), rgba(255,255,255,0.02));
-    padding:20px;
-    border-radius:15px;
+    font-size:30px;
+    font-weight:900;
     margin-bottom:25px;
-    border:1px solid rgba(0,255,120,0.2);
+    color:#00e676;
+    text-shadow:0 0 18px rgba(0,255,120,0.25);
+    letter-spacing:1px;
 }
 
-/* INPUT */
+/* FORM WOW */
+.form-box{
+    background:linear-gradient(135deg, rgba(0,255,120,0.12), rgba(255,255,255,0.03));
+    padding:25px;
+    border-radius:20px;
+    margin-bottom:25px;
+    border:1px solid rgba(0,255,120,0.25);
+    backdrop-filter:blur(14px);
+}
+
+/* INPUT WOW */
 .form-control{
-    background:rgba(255,255,255,0.08);
+    background:rgba(255,255,255,0.06);
     color:white;
-    border:none;
-}
-.form-control::placeholder{
-    color:rgba(255,255,255,0.6);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:12px;
+    padding:10px;
 }
 
-/* BUTTON */
+.form-control::placeholder{
+    color:rgba(255,255,255,0.5);
+}
+
+.form-control:focus{
+    border-color:#00e676;
+    box-shadow:0 0 12px rgba(0,255,120,0.35);
+}
+
+/* BUTTON WOW */
 .btn-wow{
     background:linear-gradient(90deg,#00e676,#00c853);
     border:none;
-    font-weight:bold;
+    font-weight:800;
+    color:black;
+    padding:12px;
+    border-radius:14px;
+    transition:0.3s;
 }
 
-/* TABLE */
+.btn-wow:hover{
+    transform:translateY(-2px);
+    box-shadow:0 0 25px rgba(0,255,120,0.4);
+}
+
+/* TABLE WOW */
 .table{
-    background:rgba(255,255,255,0.04);
-    backdrop-filter:blur(10px);
-    border-radius:15px;
+    background:rgba(255,255,255,0.03);
+    backdrop-filter:blur(12px);
+    border-radius:18px;
     overflow:hidden;
+    border:1px solid rgba(255,255,255,0.08);
 }
+
 .table thead{
-    background:rgba(0,255,120,0.15);
+    background:rgba(0,255,120,0.12);
 }
+
 .table th{
     color:#00e676;
-}
-.table tbody tr:hover{
-    background:rgba(0,255,120,0.08);
+    font-weight:700;
 }
 
-/* BUTTONS */
+.table tbody tr{
+    transition:0.25s;
+}
+
+.table tbody tr:hover{
+    background:rgba(0,255,120,0.08);
+    transform:scale(1.01);
+}
+
+/* ACTION BUTTONS */
 .btn-icon{
     border:none;
-    padding:6px 10px;
+    padding:7px 10px;
     border-radius:8px;
     margin:2px;
+    transition:0.3s;
 }
+
+.btn-icon:hover{
+    transform:scale(1.15);
+}
+
 .view{background:#2196f3;color:white;}
 .edit{background:#ffb300;color:white;}
 .delete{background:#ef5350;color:white;}
 
-/* MODAL */
+/* ===== MINI USER CARD (WOW ADDITION) ===== */
+.user-badge{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.avatar{
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    background:linear-gradient(135deg,#00e676,#ffb300);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:bold;
+    color:black;
+}
+
+/* MODAL (GARDÉ + CLEAN) */
 .modal{
     display:none;
     position:fixed;
-    top:0; left:0;
-    width:100%; height:100%;
+    inset:0;
     background:rgba(0,0,0,0.85);
-    backdrop-filter:blur(6px);
+    backdrop-filter:blur(8px);
     justify-content:center;
     align-items:center;
 }
 
 .modal.show{
     display:flex;
-    animation:fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn{
-    from{opacity:0;}
-    to{opacity:1;}
 }
 
 .modal-content{
     background:linear-gradient(135deg,#0b1220,#020617);
     padding:25px;
     border-radius:20px;
-    width:450px;
-    box-shadow:0 0 40px rgba(0,255,120,0.4);
+    width:460px;
     border:1px solid rgba(0,255,120,0.2);
+    box-shadow:0 0 40px rgba(0,255,120,0.25);
 }
 
-/* HEADER */
+/* MODAL HEADER */
 .modal-header{
     text-align:center;
     margin-bottom:15px;
 }
+
 .modal-header i{
-    font-size:28px;
+    font-size:30px;
     color:#00e676;
 }
+
 .modal-title{
     color:#00e676;
+    font-weight:800;
 }
 
-/* LABEL */
-.form-label{
-    font-size:13px;
-    margin-top:10px;
-    opacity:0.8;
-}
-
-/* INPUT MODAL */
-.modal-content .form-control{
-    background:rgba(255,255,255,0.07);
-    border:1px solid rgba(255,255,255,0.1);
-    border-radius:10px;
-    padding:10px;
-}
-.modal-content .form-control:focus{
-    border-color:#00e676;
-    box-shadow:0 0 10px rgba(0,255,120,0.5);
-}
-
-/* BUTTON MODAL */
+/* MODAL BUTTONS */
 .btn-save{
     background:linear-gradient(90deg,#00e676,#00c853);
     border:none;
     border-radius:12px;
-    font-weight:bold;
+    font-weight:800;
+    color:black;
     padding:10px;
 }
 
 .btn-close-modal{
-    background:#ef5350;
-    border:none;
+    background:rgba(255,80,80,0.15);
+    border:1px solid rgba(255,80,80,0.4);
+    color:#ff6b6b;
     border-radius:12px;
     padding:10px;
 }
@@ -183,6 +217,7 @@ body{
 <form method="POST" action="/ProjetWeb-User/index.php?url=Admin/addUser">
 
 <div class="row g-2">
+
 <input name="nom" class="form-control col" placeholder="Nom">
 <input name="email" class="form-control col" placeholder="Email">
 <input type="password" name="password" class="form-control col" placeholder="Password">
@@ -203,18 +238,19 @@ body{
 <input name="poids" class="form-control col" placeholder="Poids">
 <input name="taille" class="form-control col" placeholder="Taille">
 
-<button class="btn-wow mt-2 w-100">🚀 Ajouter</button>
+<button class="btn-wow mt-2 w-100">🚀 Ajouter utilisateur</button>
+
 </div>
 
 </form>
 </div>
 
 <!-- TABLE -->
-<table class="table table-bordered text-center">
+<table class="table table-bordered text-center align-middle">
 <thead>
 <tr>
 <th>ID</th>
-<th>Nom</th>
+<th>Utilisateur</th>
 <th>Email</th>
 <th>Objectif</th>
 <th>Poids</th>
@@ -226,12 +262,22 @@ body{
 <tbody>
 <?php foreach($users as $u){ ?>
 <tr>
+
 <td><?= $u['id'] ?></td>
-<td><?= $u['nom'] ?></td>
+
+<td>
+<div class="user-badge">
+<div class="avatar">
+<?= strtoupper(substr($u['nom'],0,1)) ?>
+</div>
+<strong><?= $u['nom'] ?></strong>
+</div>
+</td>
+
 <td><?= $u['email'] ?></td>
 <td><?= $u['objectif'] ?></td>
-<td><?= $u['poids'] ?></td>
-<td><?= $u['taille'] ?></td>
+<td><?= $u['poids'] ?> kg</td>
+<td><?= $u['taille'] ?> cm</td>
 
 <td>
 <button class="btn-icon view"
@@ -250,6 +296,7 @@ onclick="return confirm('Supprimer ?')">
 <i class="fa fa-trash"></i>
 </a>
 </td>
+
 </tr>
 <?php } ?>
 </tbody>
@@ -330,10 +377,6 @@ let saveBtn = document.getElementById("saveBtn");
 if(mode === "view"){
     document.getElementById("modalTitle").innerText="👁 Voir utilisateur";
 
-    // ❌ ancien bug: bloquait tout le modal
-    // form.style.pointerEvents = "none";
-
-    // ✅ nouveau: on désactive فقط les champs
     document.querySelectorAll("#userForm input, #userForm select").forEach(el=>{
         el.disabled = true;
     });
@@ -356,7 +399,6 @@ else{
 function closeModal(){
 document.getElementById("userModal").classList.remove("show");
 
-// 🔥 reset des champs (optionnel mais propre)
 document.querySelectorAll("#userForm input, #userForm select").forEach(el=>{
     el.disabled = false;
 });

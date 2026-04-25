@@ -1,46 +1,32 @@
 <?php
 session_start();
 
-/* ======================
-   URL PARSING
-====================== */
 $url = isset($_GET['url']) ? explode('/', trim($_GET['url'], '/')) : [];
 
-/* ======================
-   CONTROLLER DEFAULT
-====================== */
-$controllerName = ucfirst($url[0] ?? 'Home') . 'Controller';
-$method = $url[1] ?? 'index';
+/* CONTROLLER */
+$controllerName = ucfirst($url[0] ?? 'User') . 'Controller';
+$method = $url[1] ?? 'auth';
 $params = array_slice($url, 2);
 
-/* ======================
-   CONTROLLER PATH
-====================== */
+/* FILE */
 $controllerFile = __DIR__ . "/Controller/$controllerName.php";
 
 if (!file_exists($controllerFile)) {
-    die("❌ Controller not found: " . $controllerName);
+    die("Controller introuvable: $controllerName");
 }
 
 require_once $controllerFile;
 
-/* ======================
-   CLASS CHECK
-====================== */
 if (!class_exists($controllerName)) {
-    die("❌ Class not found: " . $controllerName);
+    die("Class introuvable: $controllerName");
 }
 
 $controller = new $controllerName();
 
-/* ======================
-   METHOD CHECK (FIX IMPORTANT)
-====================== */
+/* SECURITY CHECK */
 if (!method_exists($controller, $method)) {
-    die("❌ Method '$method' not found in " . $controllerName);
+    $method = 'auth'; // fallback sécurisé
 }
 
-/* ======================
-   EXECUTE CONTROLLER
-====================== */
+/* EXECUTE */
 call_user_func_array([$controller, $method], $params);

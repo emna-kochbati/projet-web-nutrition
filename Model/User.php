@@ -1,6 +1,6 @@
 <?php
 
-// attr -> private + getters & setters + ctor + show()
+
 class User
 {
     // attributs
@@ -24,7 +24,7 @@ class User
         $this->objectif = $obj;
     }
 
-    // fonction show (comme la prof)
+    // fonction show 
     function show()
     {
         echo "

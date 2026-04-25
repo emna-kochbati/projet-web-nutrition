@@ -1,64 +1,81 @@
-function openUser(id, mode){
+document.addEventListener("DOMContentLoaded", function () {
 
-    console.log("CLICK OK", id, mode);
+    window.openUser = function (user, mode) {
 
-    fetch("/ProjetWeb-User/Admin/viewUser/" + id)
-    .then(res => res.json())
-    .then(data => {
+        document.getElementById("userModal").classList.add("show");
 
-        document.getElementById("userModal").style.display = "flex";
-
-        document.getElementById("uid").value = data.id;
-        document.getElementById("nom").value = data.nom;
-        document.getElementById("email").value = data.email;
-        document.getElementById("poids").value = data.poids;
-        document.getElementById("taille").value = data.taille;
-        document.getElementById("objectif").value = data.objectif;
+        document.getElementById("uid").value = user.id;
+        document.getElementById("nom").value = user.nom;
+        document.getElementById("email").value = user.email;
+        document.getElementById("poids").value = user.poids;
+        document.getElementById("taille").value = user.taille;
+        document.getElementById("objectif").value = user.objectif;
+        document.getElementById("status").value = user.status;
 
         let inputs = document.querySelectorAll("#userForm input, #userForm select");
+        let saveBtn = document.getElementById("saveBtn");
 
-        if(mode === "view"){
-            document.getElementById("modalTitle").innerText = "👁 Profil";
-            inputs.forEach(e => e.disabled = true);
+        if (mode === "view") {
+            inputs.forEach(i => i.disabled = true);
+            saveBtn.style.display = "none";
         }
 
-        if(mode === "edit"){
-            document.getElementById("modalTitle").innerText = "✏ Modifier";
-            inputs.forEach(e => e.disabled = false);
+        if (mode === "edit") {
+            inputs.forEach(i => i.disabled = false);
+            saveBtn.style.display = "block";
 
             document.getElementById("userForm").action =
-                "/ProjetWeb-User/Admin/updateUser/" + id;
+                "/ProjetWeb-User/index.php?url=Admin/updateUser/" + user.id;
         }
+    };
 
-    })
-    .catch(() => alert("Erreur chargement utilisateur"));
+    window.closeModal = function () {
+        document.getElementById("userModal").classList.remove("show");
+    };
 
-}
-
-function closeModal(){
-    document.getElementById("userModal").style.display = "none";
-}
-
-/* VALIDATION JS */
-function validateForm(){
-
-    let valid = true;
-
-    let nom = document.getElementById("nom").value.trim();
-    let email = document.getElementById("email").value.trim();
-
-    document.getElementById("err_nom").innerText = "";
-    document.getElementById("err_email").innerText = "";
-
-    if(nom.length < 3){
-        document.getElementById("err_nom").innerText = "Nom invalide";
-        valid = false;
+    function setError(input, condition) {
+        if (condition) input.classList.add("error");
+        else input.classList.remove("error");
     }
 
-    if(!email.includes("@")){
-        document.getElementById("err_email").innerText = "Email invalide";
-        valid = false;
+    function isNumber(v) {
+        return v !== "" && !isNaN(v);
     }
 
-    return valid;
-}
+    const form = document.getElementById("userForm");
+
+    if (form) {
+        form.addEventListener("submit", function (e) {
+
+            let valid = true;
+
+            let nom = document.getElementById("nom");
+            let email = document.getElementById("email");
+            let poids = document.getElementById("poids");
+            let taille = document.getElementById("taille");
+
+            if (nom.value.length < 3) {
+                setError(nom, true);
+                valid = false;
+            } else setError(nom, false);
+
+            if (!email.value.includes("@")) {
+                setError(email, true);
+                valid = false;
+            } else setError(email, false);
+
+            if (!isNumber(poids.value) || poids.value < 30) {
+                setError(poids, true);
+                valid = false;
+            } else setError(poids, false);
+
+            if (!isNumber(taille.value) || taille.value < 100) {
+                setError(taille, true);
+                valid = false;
+            } else setError(taille, false);
+
+            if (!valid) e.preventDefault();
+        });
+    }
+
+});
