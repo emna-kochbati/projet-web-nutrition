@@ -1,54 +1,80 @@
 <?php
-require_once 'config.php';
 
 class Event {
-    public function getAll() {
-        $db = Db::getConnexion();
-        $req = $db->query('SELECT e.*, t.label as type_label FROM event e JOIN event_type t ON e.id_type = t.id');
-        return $req->fetchAll();
+    private ?int $id;
+    private string $title;
+    private int $idType;
+    private string $date;
+    private string $location;
+    private int $numberOfParticipants;
+
+    public function __construct(
+        ?int $id = null,
+        string $title = '',
+        int $idType = 0,
+        string $date = '',
+        string $location = '',
+        int $numberOfParticipants = 0
+    ) {
+        $this->id = $id;
+        $this->title = $title;
+        $this->idType = $idType;
+        $this->date = $date;
+        $this->location = $location;
+        $this->numberOfParticipants = $numberOfParticipants;
     }
 
-    public function getById($id) {
-        $db = Db::getConnexion();
-        $req = $db->prepare('SELECT e.*, t.label as type_label FROM event e JOIN event_type t ON e.id_type = t.id WHERE e.id = :id');
-        $req->execute(['id' => $id]);
-        return $req->fetch();
+    public function getId(): ?int {
+        return $this->id;
     }
 
-    public function create($name, $id_type, $date, $location, $number_of_participants) {
-        $db = Db::getConnexion();
-        $req = $db->prepare('INSERT INTO event (name, id_type, date, location, number_of_participants) VALUES (:name, :id_type, :date, :location, :number_of_participants)');
-        $req->execute([
-            'name' => $name,
-            'id_type' => $id_type,
-            'date' => $date,
-            'location' => $location,
-            'number_of_participants' => $number_of_participants
-        ]);
+    public function setId(?int $id): self {
+        $this->id = $id;
+        return $this;
     }
 
-    public function update($id, $name, $id_type, $date, $location, $number_of_participants) {
-        $db = Db::getConnexion();
-        $req = $db->prepare('UPDATE event SET name = :name, id_type = :id_type, date = :date, location = :location, number_of_participants = :number_of_participants WHERE id = :id');
-        $req->execute([
-            'id' => $id,
-            'name' => $name,
-            'id_type' => $id_type,
-            'date' => $date,
-            'location' => $location,
-            'number_of_participants' => $number_of_participants
-        ]);
+    public function getTitle(): string {
+        return $this->title;
     }
 
-    public function delete($id) {
-        $db = Db::getConnexion();
-        $req = $db->prepare('DELETE FROM event WHERE id = :id');
-        $req->execute(['id' => $id]);
+    public function setTitle(string $title): self {
+        $this->title = $title;
+        return $this;
     }
 
-    public function incrementParticipants($id) {
-        $db = Db::getConnexion();
-        $req = $db->prepare('UPDATE event SET number_of_participants = number_of_participants + 1 WHERE id = :id');
-        $req->execute(['id' => $id]);
+    public function getIdType(): int {
+        return $this->idType;
+    }
+
+    public function setIdType(int $idType): self {
+        $this->idType = $idType;
+        return $this;
+    }
+
+    public function getDate(): string {
+        return $this->date;
+    }
+
+    public function setDate(string $date): self {
+        $this->date = $date;
+        return $this;
+    }
+
+    public function getLocation(): string {
+        return $this->location;
+    }
+
+    public function setLocation(string $location): self {
+        $this->location = $location;
+        return $this;
+    }
+
+    public function getNumberOfParticipants(): int {
+        return $this->numberOfParticipants;
+    }
+
+    public function setNumberOfParticipants(int $numberOfParticipants): self {
+        $this->numberOfParticipants = $numberOfParticipants;
+        return $this;
     }
 }
