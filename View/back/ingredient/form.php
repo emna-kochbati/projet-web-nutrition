@@ -75,6 +75,33 @@ ob_start();
             <?php if (isset($errors['type'])): ?><span class="err">⚠ <?= $errors['type'] ?></span><?php endif; ?>
         </div>
 
+        <!-- Valeurs nutritionnelles -->
+        <div style="margin-top:20px;padding-top:16px;border-top:2px solid var(--border);">
+            <div style="font-size:0.9rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;">🧪 Valeurs nutritionnelles (pour 100g)</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                <div class="form-group">
+                    <label for="proteines">💪 Protéines (g)</label>
+                    <input type="number" id="proteines" name="proteines" step="0.01" min="0"
+                           value="<?= htmlspecialchars($ingredient['proteines'] ?? '0') ?>" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="calcium">🦴 Calcium (mg)</label>
+                    <input type="number" id="calcium" name="calcium" step="0.01" min="0"
+                           value="<?= htmlspecialchars($ingredient['calcium'] ?? '0') ?>" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="glucides">⚡ Glucides (g)</label>
+                    <input type="number" id="glucides" name="glucides" step="0.01" min="0"
+                           value="<?= htmlspecialchars($ingredient['glucides'] ?? '0') ?>" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="lipides">🫧 Lipides (g)</label>
+                    <input type="number" id="lipides" name="lipides" step="0.01" min="0"
+                           value="<?= htmlspecialchars($ingredient['lipides'] ?? '0') ?>" placeholder="0.00">
+                </div>
+            </div>
+        </div>
+
         <!-- Image -->
         <div class="form-group">
             <label for="image">Image</label>
@@ -128,8 +155,35 @@ function setMsg(el, msg, ok) {
 nomEl.addEventListener('input',   function(){ validerNomIng(this); });
 typeEl.addEventListener('change', function(){ validerTypeIng(this); });
 
+// ── Validation valeurs nutritionnelles ────────────────────────────────────────
+function validerNutri(el, label) {
+    const v = el.value;
+    if (v === '') return true; // optionnel
+    if (isNaN(v) || parseFloat(v) < 0) {
+        setMsg(el, label + ' ne peut pas être négatif.', false);
+        return false;
+    }
+    if (parseFloat(v) > 9999) {
+        setMsg(el, label + ' semble incorrecte (max 9999).', false);
+        return false;
+    }
+    setMsg(el, '✔ Correct', true);
+    return true;
+}
+
+['proteines','calcium','glucides','lipides'].forEach(id => {
+    const labels = { proteines:'Protéines', calcium:'Calcium', glucides:'Glucides', lipides:'Lipides' };
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', function(){ validerNutri(this, labels[id]); });
+});
+
 document.getElementById('formIngredient').addEventListener('submit', function(e) {
-    const ok = [validerNomIng(nomEl), validerTypeIng(typeEl)].every(Boolean);
+    const labels = { proteines:'Protéines', calcium:'Calcium', glucides:'Glucides', lipides:'Lipides' };
+    let ok = [validerNomIng(nomEl), validerTypeIng(typeEl)].every(Boolean);
+    ['proteines','calcium','glucides','lipides'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !validerNutri(el, labels[id])) ok = false;
+    });
     if (!ok) e.preventDefault();
 });
 </script>

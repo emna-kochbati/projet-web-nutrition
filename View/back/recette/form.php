@@ -133,10 +133,13 @@ ob_start();
 
             <div class="form-group">
                 <label for="calories">Calories (kcal) <span class="req">*</span></label>
-                <input type="number" id="calories" name="calories" min="0" max="10000"
-                       value="<?= htmlspecialchars($recette['calories'] ?? '') ?>"
+                <input type="number" id="calories" name="calories" min="0" max="99999"
+                       value="<?= htmlspecialchars($recette['calories'] ?? '0') ?>"
                        class="<?= isset($errors['calories']) ? 'is-invalid' : '' ?>"
-                       placeholder="Ex : 350">
+                       placeholder="Calculé automatiquement"
+                       readonly
+                       style="background:#f1f8e9;cursor:default;border-color:#2e7d32;font-weight:700;color:#2e7d32;">
+                <span style="font-size:0.78rem;color:#888;">Calculé automatiquement à partir des ingrédients.</span>
                 <?php if (isset($errors['calories'])): ?><span class="err">⚠ <?= $errors['calories'] ?></span><?php endif; ?>
             </div>
 
@@ -184,10 +187,10 @@ ob_start();
                             <span class="msg-ing"></span>
                         </td>
                         <td>
-                            <input type="text" name="ing_unite[]"
-                                   value="<?= htmlspecialchars($ing['unite']) ?>" placeholder="g, ml..."
-                                   oninput="validerIngUnite(this)">
-                            <span class="msg-ing"></span>
+                            <select name="ing_unite[]" style="width:100%;padding:8px 10px;border:2px solid var(--border);border-radius:6px;font-size:0.87rem;outline:none;background:#fafafa;">
+                                <option value="g" <?= ($ing['unite'] ?? '') === 'g'  ? 'selected' : '' ?>>g</option>
+                                <option value="ml" <?= ($ing['unite'] ?? '') === 'ml' ? 'selected' : '' ?>>ml</option>
+                            </select>
                         </td>
                         <td><button type="button" class="btn-remove" onclick="supprimerLigne(this)">✕</button></td>
                     </tr>
@@ -234,6 +237,30 @@ ob_start();
 <script>
 const tousIngredients = <?= json_encode($tousIngredients) ?>;
 
+// ── Calcul automatique des calories ──────────────────────────────────────────
+function calculerCalories() {
+    const ids  = document.querySelectorAll('input[name="ing_id[]"]');
+    const qtes = document.querySelectorAll('input[name="ing_quantite[]"]');
+    let total  = 0;
+
+    ids.forEach((idEl, i) => {
+        const ingId = parseInt(idEl.value);
+        const qte   = parseFloat(qtes[i]?.value) || 0;
+        if (!ingId || qte <= 0) return;
+
+        const ing = tousIngredients.find(x => x.id == ingId);
+        if (!ing) return;
+
+        const p = parseFloat(ing.proteines) || 0;
+        const g = parseFloat(ing.glucides)  || 0;
+        const l = parseFloat(ing.lipides)   || 0;
+
+        total += ((p * 4) + (g * 4) + (l * 9)) * qte / 100;
+    });
+
+    document.getElementById('calories').value = Math.round(total);
+}
+
 function ouvrirModal() {
     document.getElementById('modalSearch').value = '';
     filtrerIngredients();
@@ -278,12 +305,14 @@ function selectionnerIngredient(id, nom) {
         </td>
         <td>
             <input type="number" name="ing_quantite[]" step="0.01" min="0.01"
-                   placeholder="Ex : 200" oninput="validerIngQte(this)">
+                   placeholder="Ex : 200" oninput="validerIngQte(this); calculerCalories();">
             <span class="msg-ing"></span>
         </td>
         <td>
-            <input type="text" name="ing_unite[]"
-                   placeholder="g, ml, pièce..." oninput="validerIngUnite(this)">
+            <select name="ing_unite[]" style="width:100%;padding:8px 10px;border:2px solid var(--border);border-radius:6px;font-size:0.87rem;outline:none;background:#fafafa;">
+                <option value="g">g</option>
+                <option value="ml">ml</option>
+            </select>
             <span class="msg-ing"></span>
         </td>
         <td><button type="button" class="btn-remove" onclick="supprimerLigne(this)">✕</button></td>
@@ -291,6 +320,7 @@ function selectionnerIngredient(id, nom) {
     tbody.appendChild(tr);
     tr.querySelectorAll('input')[1].focus();
     fermerModal();
+    calculerCalories();
 }
 
 function supprimerLigne(btn) {
@@ -302,6 +332,7 @@ function supprimerLigne(btn) {
         tr.innerHTML = '<td colspan="4" style="text-align:center;color:#999;padding:16px;font-style:italic;">Aucun ingrédient. Cliquez sur "Sélectionner un ingrédient".</td>';
         tbody.appendChild(tr);
     }
+    calculerCalories();
 }
 
 // ── Validation temps réel ─────────────────────────────────────────────────────
@@ -386,7 +417,6 @@ document.getElementById('formRecette').addEventListener('submit', function(e) {
         validerCategorie(document.getElementById('categorie')),
         validerDifficulte(document.getElementById('difficulte')),
         validerDuree(document.getElementById('duree')),
-        validerCalories(document.getElementById('calories')),
     ].every(Boolean);
 
     // Au moins un ingrédient

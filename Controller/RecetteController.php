@@ -107,7 +107,8 @@ class RecetteController {
             $_SESSION['error'] = 'Recette introuvable.';
             header('Location: /2A35/Admin/recette'); exit;
         }
-        $ingredients = $this->ingredientModel->getByRecette((int)$id);
+        $ingredients        = $this->ingredientModel->getByRecette((int)$id);
+        $valeursNutri       = $this->ingredientModel->getValeursNutritionnelles((int)$id);
         require_once 'View/back/recette/show.php';
     }
 
@@ -205,6 +206,43 @@ class RecetteController {
         } catch (Exception $e) {
             die('Error: ' . $e->getMessage());
         }
+    }
+
+    // ── Statistiques des recettes ─────────────────────────────────────────────
+    public function stats(): void {
+        $db = Database::getConnection();
+
+        // Stats par catégorie
+        $q = $db->query("SELECT categorie, COUNT(*) as total FROM recette GROUP BY categorie ORDER BY total DESC");
+        $statsCat = $q->fetchAll();
+
+        // Stats par difficulté
+        $q = $db->query("SELECT difficulte, COUNT(*) as total FROM recette GROUP BY difficulte");
+        $statsDiff = $q->fetchAll();
+
+        // Stats calories
+        $q = $db->query("SELECT 
+            SUM(CASE WHEN calories < 300 THEN 1 ELSE 0 END) as moins300,
+            SUM(CASE WHEN calories BETWEEN 300 AND 600 THEN 1 ELSE 0 END) as entre300_600,
+            SUM(CASE WHEN calories BETWEEN 601 AND 900 THEN 1 ELSE 0 END) as entre600_900,
+            SUM(CASE WHEN calories > 900 THEN 1 ELSE 0 END) as plus900
+            FROM recette");
+        $statsCal = $q->fetch();
+
+        $totalRecettes = array_sum(array_column($statsDiff, 'total'));
+
+        require_once 'View/back/recette/stats.php';
+    }
+
+    // ── Endpoint AJAX recherche dynamique ─────────────────────────────────────
+    public function ajax(): void {
+        header('Content-Type: application/json');
+        $search     = trim($_GET['search']     ?? '');
+        $categorie  = trim($_GET['categorie']  ?? '');
+        $difficulte = trim($_GET['difficulte'] ?? '');
+        $recettes   = $this->recetteModel->filter($search, $categorie, $difficulte);
+        echo json_encode($recettes);
+        exit;
     }
 
     // =========================================================================

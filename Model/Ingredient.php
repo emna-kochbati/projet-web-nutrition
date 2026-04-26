@@ -8,6 +8,10 @@ class Ingredient {
     private ?string $nom;
     private ?string $type;
     private ?string $image;
+    private ?float  $proteines;
+    private ?float  $calcium;
+    private ?float  $glucides;
+    private ?float  $lipides;
     private ?string $createdAt;
 
     // ── Constructeur ──────────────────────────────────────────────────────────
@@ -16,12 +20,20 @@ class Ingredient {
         ?string $nom       = null,
         ?string $type      = null,
         ?string $image     = null,
+        ?float  $proteines = 0,
+        ?float  $calcium   = 0,
+        ?float  $glucides  = 0,
+        ?float  $lipides   = 0,
         ?string $createdAt = null
     ) {
         $this->id        = $id;
         $this->nom       = $nom;
         $this->type      = $type;
         $this->image     = $image;
+        $this->proteines = $proteines;
+        $this->calcium   = $calcium;
+        $this->glucides  = $glucides;
+        $this->lipides   = $lipides;
         $this->createdAt = $createdAt;
     }
 
@@ -30,13 +42,21 @@ class Ingredient {
     public function getNom(): ?string   { return $this->nom; }
     public function getType(): ?string  { return $this->type; }
     public function getImage(): ?string { return $this->image; }
+    public function getProteines(): ?float { return $this->proteines; }
+    public function getCalcium(): ?float   { return $this->calcium; }
+    public function getGlucides(): ?float  { return $this->glucides; }
+    public function getLipides(): ?float   { return $this->lipides; }
     public function getCreatedAt(): ?string { return $this->createdAt; }
 
     // ── Setters ───────────────────────────────────────────────────────────────
-    public function setId(?int $id): void       { $this->id = $id; }
-    public function setNom(?string $n): void    { $this->nom = $n; }
-    public function setType(?string $t): void   { $this->type = $t; }
-    public function setImage(?string $i): void  { $this->image = $i; }
+    public function setId(?int $id): void          { $this->id = $id; }
+    public function setNom(?string $n): void       { $this->nom = $n; }
+    public function setType(?string $t): void      { $this->type = $t; }
+    public function setImage(?string $i): void     { $this->image = $i; }
+    public function setProteines(?float $v): void  { $this->proteines = $v; }
+    public function setCalcium(?float $v): void    { $this->calcium = $v; }
+    public function setGlucides(?float $v): void   { $this->glucides = $v; }
+    public function setLipides(?float $v): void    { $this->lipides = $v; }
     public function setCreatedAt(?string $c): void { $this->createdAt = $c; }
 
     // ── Convertir un tableau PDO en objet Ingredient ──────────────────────────
@@ -46,6 +66,10 @@ class Ingredient {
             $row['nom'],
             $row['type']       ?? null,
             $row['image']      ?? null,
+            (float)($row['proteines'] ?? 0),
+            (float)($row['calcium']   ?? 0),
+            (float)($row['glucides']  ?? 0),
+            (float)($row['lipides']   ?? 0),
             $row['created_at'] ?? null
         );
     }
@@ -57,6 +81,10 @@ class Ingredient {
             'nom'        => $this->nom,
             'type'       => $this->type,
             'image'      => $this->image,
+            'proteines'  => $this->proteines,
+            'calcium'    => $this->calcium,
+            'glucides'   => $this->glucides,
+            'lipides'    => $this->lipides,
             'created_at' => $this->createdAt,
         ];
     }
@@ -191,7 +219,8 @@ class Ingredient {
             $pdo   = Database::getConnection();
             $query = $pdo->prepare("
                 SELECT ri.id, ri.quantite, ri.unite,
-                       i.id AS ingredient_id, i.nom, i.type
+                       i.id AS ingredient_id, i.nom, i.type,
+                       i.proteines, i.calcium, i.glucides, i.lipides
                 FROM recette_ingredient ri
                 JOIN ingredient i ON i.id = ri.ingredient_id
                 WHERE ri.recette_id = :recette_id
@@ -202,6 +231,36 @@ class Ingredient {
         } catch (PDOException $e) {
             echo $e->getMessage();
             return [];
+        }
+    }
+
+    // ── Calcul valeurs nutritionnelles totales d'une recette (jointure) ───────
+    public function getValeursNutritionnelles(int $recetteId): array {
+        try {
+            $pdo   = Database::getConnection();
+            $query = $pdo->prepare("
+                SELECT
+                    SUM(i.proteines * ri.quantite / 100) AS total_proteines,
+                    SUM(i.calcium   * ri.quantite / 100) AS total_calcium,
+                    SUM(i.glucides  * ri.quantite / 100) AS total_glucides,
+                    SUM(i.lipides   * ri.quantite / 100) AS total_lipides,
+                    SUM(((i.proteines * 4) + (i.glucides * 4) + (i.lipides * 9)) * ri.quantite / 100) AS total_calories
+                FROM recette_ingredient ri
+                JOIN ingredient i ON i.id = ri.ingredient_id
+                WHERE ri.recette_id = :recette_id
+            ");
+            $query->execute([':recette_id' => $recetteId]);
+            $row = $query->fetch();
+            return [
+                'proteines' => round((float)($row['total_proteines'] ?? 0), 1),
+                'calcium'   => round((float)($row['total_calcium']   ?? 0), 1),
+                'glucides'  => round((float)($row['total_glucides']  ?? 0), 1),
+                'lipides'   => round((float)($row['total_lipides']   ?? 0), 1),
+                'calories'  => round((float)($row['total_calories']  ?? 0), 1),
+            ];
+        } catch (PDOException $e) {
+            echo $e->getMessage();
+            return ['proteines'=>0,'calcium'=>0,'glucides'=>0,'lipides'=>0,'calories'=>0];
         }
     }
 

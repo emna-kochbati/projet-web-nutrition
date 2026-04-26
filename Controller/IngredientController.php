@@ -33,11 +33,18 @@ class IngredientController {
     public function store(): void {
         $errors = $this->valider($_POST);
         if (empty($errors)) {
+            // Convertir virgule → point pour les décimales
+            $toFloat = fn($v) => (float)str_replace(',', '.', $v ?? '0');
+
             $ingredient = new Ingredient(
                 null,
                 htmlspecialchars(trim($_POST['nom'])),
                 $_POST['type'],
-                $this->uploadImage()
+                $this->uploadImage(),
+                $toFloat($_POST['proteines'] ?? 0),
+                $toFloat($_POST['calcium']   ?? 0),
+                $toFloat($_POST['glucides']  ?? 0),
+                $toFloat($_POST['lipides']   ?? 0)
             );
             $this->addIngredient($ingredient);
             $_SESSION['success'] = 'Ingrédient ajouté avec succès !';
@@ -68,11 +75,18 @@ class IngredientController {
         $errors = $this->valider($_POST);
         if (empty($errors)) {
             $nouvelleImage = $this->uploadImage();
+            // Convertir virgule → point pour les décimales
+            $toFloat = fn($v) => (float)str_replace(',', '.', $v ?? '0');
+
             $obj = new Ingredient(
                 (int)$id,
                 htmlspecialchars(trim($_POST['nom'])),
                 $_POST['type'],
-                $nouvelleImage ?: $ingredient['image']
+                $nouvelleImage ?: $ingredient['image'],
+                $toFloat($_POST['proteines'] ?? 0),
+                $toFloat($_POST['calcium']   ?? 0),
+                $toFloat($_POST['glucides']  ?? 0),
+                $toFloat($_POST['lipides']   ?? 0)
             );
             $this->updateIngredient($obj, (int)$id);
             $_SESSION['success'] = 'Ingrédient modifié avec succès !';
@@ -120,15 +134,46 @@ class IngredientController {
         }
     }
 
+    // ── Statistiques ──────────────────────────────────────────────────────────
+    public function stats(): void {
+        $db = Database::getConnection();
+
+        $q = $db->query("SELECT type, COUNT(*) as total FROM ingredient GROUP BY type ORDER BY total DESC");
+        $statsType = $q->fetchAll();
+
+        $q = $db->query("SELECT COUNT(*) as total FROM ingredient");
+        $totalIngredients = $q->fetch()['total'];
+
+        $q = $db->query("SELECT AVG(proteines) as moy_prot, AVG(calcium) as moy_cal,
+                         AVG(glucides) as moy_gluc, AVG(lipides) as moy_lip FROM ingredient");
+        $moyennes = $q->fetch();
+
+        require_once 'View/back/ingredient/stats.php';
+    }
+
+    // ── Endpoint AJAX recherche dynamique ─────────────────────────────────────
+    public function ajax(): void {        header('Content-Type: application/json');
+        $search = trim($_GET['search'] ?? '');
+        $type   = trim($_GET['type']   ?? '');
+        $ingredients = $this->ingredientModel->filter($search, $type);
+        echo json_encode($ingredients);
+        exit;
+    }
+
     public function addIngredient(Ingredient $ingredient): void {
-        $sql = "INSERT INTO ingredient (nom, type, image) VALUES (:nom, :type, :image)";
+        $sql = "INSERT INTO ingredient (nom, type, image, proteines, calcium, glucides, lipides)
+                VALUES (:nom, :type, :image, :proteines, :calcium, :glucides, :lipides)";
         $db  = Database::getConnection();
         try {
             $query = $db->prepare($sql);
             $query->execute([
-                'nom'   => $ingredient->getNom(),
-                'type'  => $ingredient->getType(),
-                'image' => $ingredient->getImage(),
+                'nom'       => $ingredient->getNom(),
+                'type'      => $ingredient->getType(),
+                'image'     => $ingredient->getImage(),
+                'proteines' => $ingredient->getProteines(),
+                'calcium'   => $ingredient->getCalcium(),
+                'glucides'  => $ingredient->getGlucides(),
+                'lipides'   => $ingredient->getLipides(),
             ]);
         } catch (Exception $e) {
             echo 'Error: ' . $e->getMessage();
@@ -136,15 +181,21 @@ class IngredientController {
     }
 
     public function updateIngredient(Ingredient $ingredient, int $id): void {
-        $sql = "UPDATE ingredient SET nom=:nom, type=:type, image=:image WHERE id=:id";
+        $sql = "UPDATE ingredient SET nom=:nom, type=:type, image=:image,
+                proteines=:proteines, calcium=:calcium, glucides=:glucides, lipides=:lipides
+                WHERE id=:id";
         $db  = Database::getConnection();
         try {
             $query = $db->prepare($sql);
             $query->execute([
-                'id'    => $id,
-                'nom'   => $ingredient->getNom(),
-                'type'  => $ingredient->getType(),
-                'image' => $ingredient->getImage(),
+                'id'        => $id,
+                'nom'       => $ingredient->getNom(),
+                'type'      => $ingredient->getType(),
+                'image'     => $ingredient->getImage(),
+                'proteines' => $ingredient->getProteines(),
+                'calcium'   => $ingredient->getCalcium(),
+                'glucides'  => $ingredient->getGlucides(),
+                'lipides'   => $ingredient->getLipides(),
             ]);
         } catch (PDOException $e) {
             echo 'Error: ' . $e->getMessage();

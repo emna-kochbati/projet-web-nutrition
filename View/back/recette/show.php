@@ -83,6 +83,33 @@ ob_start();
             <p style="color:#999;font-style:italic;margin-bottom:20px;">Aucun ingrédient enregistré.</p>
         <?php endif; ?>
 
+        <!-- Valeurs nutritionnelles calculées par jointure -->
+        <?php if (!empty($valeursNutri) && ($valeursNutri['proteines'] + $valeursNutri['calcium'] + $valeursNutri['glucides'] + $valeursNutri['lipides']) > 0): ?>
+        <div class="section-title">🧪 Valeurs nutritionnelles</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:20px;">
+            <div style="background:#e8f5e9;border-radius:8px;padding:14px;text-align:center;border:1px solid #c8e6c9;">
+                <div style="font-size:1.4rem;">💪</div>
+                <div style="font-size:1.1rem;font-weight:700;color:#2e7d32;"><?= $valeursNutri['proteines'] ?> g</div>
+                <div style="font-size:0.76rem;color:#777;">Protéines</div>
+            </div>
+            <div style="background:#e3f2fd;border-radius:8px;padding:14px;text-align:center;border:1px solid #bbdefb;">
+                <div style="font-size:1.4rem;">🦴</div>
+                <div style="font-size:1.1rem;font-weight:700;color:#1565c0;"><?= $valeursNutri['calcium'] ?> mg</div>
+                <div style="font-size:0.76rem;color:#777;">Calcium</div>
+            </div>
+            <div style="background:#fff3e0;border-radius:8px;padding:14px;text-align:center;border:1px solid #ffe0b2;">
+                <div style="font-size:1.4rem;">⚡</div>
+                <div style="font-size:1.1rem;font-weight:700;color:#f57c00;"><?= $valeursNutri['glucides'] ?> g</div>
+                <div style="font-size:0.76rem;color:#777;">Glucides</div>
+            </div>
+            <div style="background:#fce4ec;border-radius:8px;padding:14px;text-align:center;border:1px solid #f8bbd0;">
+                <div style="font-size:1.4rem;">🫧</div>
+                <div style="font-size:1.1rem;font-weight:700;color:#c62828;"><?= $valeursNutri['lipides'] ?> g</div>
+                <div style="font-size:0.76rem;color:#777;">Lipides</div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- Actions -->
         <div class="show-actions">
             <a href="/2A35/Admin/recette/edit/<?= $recette['id'] ?>" class="btn-edit-s">✏️ Modifier</a>

@@ -68,14 +68,14 @@ tbody td { padding:11px 16px; vertical-align:middle; }
 </div>
 
 <form class="search-form" method="GET" action="/2A35/Admin/recette">
-    <input type="text" name="search" placeholder="Rechercher par nom..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
-    <select name="categorie" style="padding:10px 14px; border:2px solid var(--border); border-radius:6px; font-size:0.9rem; outline:none; min-width:160px;">
+    <input type="text" id="searchInput" name="search" placeholder="Rechercher par nom..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>" autocomplete="off">
+    <select id="categorieFilter" name="categorie" style="padding:10px 14px; border:2px solid var(--border); border-radius:6px; font-size:0.9rem; outline:none; min-width:160px;">
         <option value="">Toutes catégories</option>
         <?php foreach (['petit-dejeuner'=>'Petit-déjeuner','dejeuner'=>'Déjeuner','diner'=>'Dîner','collation'=>'Collation','dessert'=>'Dessert','vegetarien'=>'Végétarien','regime'=>'Régime','sportif'=>'Sportif'] as $v=>$l): ?>
             <option value="<?= $v ?>" <?= ($_GET['categorie'] ?? '') === $v ? 'selected' : '' ?>><?= $l ?></option>
         <?php endforeach; ?>
     </select>
-    <select name="difficulte" style="padding:10px 14px; border:2px solid var(--border); border-radius:6px; font-size:0.9rem; outline:none; min-width:140px;">
+    <select id="difficulteFilter" name="difficulte" style="padding:10px 14px; border:2px solid var(--border); border-radius:6px; font-size:0.9rem; outline:none; min-width:140px;">
         <option value="">Toutes difficultés</option>
         <option value="facile"    <?= ($_GET['difficulte'] ?? '') === 'facile'    ? 'selected' : '' ?>>🟢 Facile</option>
         <option value="moyen"     <?= ($_GET['difficulte'] ?? '') === 'moyen'     ? 'selected' : '' ?>>🟡 Moyen</option>
@@ -86,6 +86,9 @@ tbody td { padding:11px 16px; vertical-align:middle; }
         <a href="/2A35/Admin/recette" class="btn-clear">✕ Effacer</a>
     <?php endif; ?>
 </form>
+
+<!-- Résultats AJAX -->
+<div id="ajaxResults"></div>
 
 <div class="table-wrap">
 <?php if (empty($recettes)): ?>
@@ -146,6 +149,89 @@ function confirmer(id, nom) {
 document.getElementById('modalDel').addEventListener('click', function(e) {
     if (e.target === this) this.classList.remove('show');
 });
+
+// ── Recherche AJAX dynamique ──────────────────────────────────────────────────
+const searchInput     = document.getElementById('searchInput');
+const categorieFilter = document.getElementById('categorieFilter');
+const difficulteFilter= document.getElementById('difficulteFilter');
+const tableWrap       = document.querySelector('.table-wrap');
+const ajaxResults     = document.getElementById('ajaxResults');
+
+function rechercheAjax() {
+    const search     = searchInput.value.trim();
+    const categorie  = categorieFilter.value;
+    const difficulte = difficulteFilter.value;
+
+    // Si tout est vide, afficher le tableau normal
+    if (!search && !categorie && !difficulte) {
+        tableWrap.style.display = '';
+        ajaxResults.innerHTML   = '';
+        return;
+    }
+
+    const url = `/2A35/Admin/recette/ajax?search=${encodeURIComponent(search)}&categorie=${encodeURIComponent(categorie)}&difficulte=${encodeURIComponent(difficulte)}`;
+
+    fetch(url)
+        .then(r => r.json())
+        .then(recettes => {
+            tableWrap.style.display = 'none';
+
+            if (recettes.length === 0) {
+                ajaxResults.innerHTML = '<div style="background:#fff;border-radius:10px;padding:40px;text-align:center;color:#999;box-shadow:0 2px 12px rgba(0,0,0,.07);">Aucune recette trouvée.</div>';
+                return;
+            }
+
+            const diffClass = { facile:'b-easy', moyen:'b-med', difficile:'b-hard' };
+
+            let html = `<div class="table-wrap">
+                <table>
+                    <thead><tr><th>#</th><th>Image</th><th>Nom</th><th>Description</th><th>Catégorie</th><th>Durée</th><th>Difficulté</th><th>Calories</th><th>Actions</th></tr></thead>
+                    <tbody>`;
+
+            recettes.forEach(r => {
+                const img = r.image
+                    ? `<img src="/2A35/assets/uploads/recettes/${r.image}" class="rec-img" alt="">`
+                    : `<div class="no-img">🍽️</div>`;
+                const desc = r.description ? r.description.substring(0, 50) + (r.description.length > 50 ? '...' : '') : '<span style="color:#bbb;font-style:italic;">—</span>';
+                const dc   = diffClass[r.difficulte] || 'b-easy';
+
+                html += `<tr>
+                    <td>${r.id}</td>
+                    <td>${img}</td>
+                    <td><strong>${r.nom}</strong></td>
+                    <td style="max-width:180px;color:#555;font-size:.85rem;">${desc}</td>
+                    <td><span class="badge b-cat">${r.categorie}</span></td>
+                    <td>⏱ ${r.duree} min</td>
+                    <td><span class="badge ${dc}">${r.difficulte}</span></td>
+                    <td>🔥 ${r.calories} kcal</td>
+                    <td>
+                        <div class="actions">
+                            <a href="/2A35/Admin/recette/show/${r.id}" class="btn-voir">👁 Voir</a>
+                            <a href="/2A35/Admin/recette/edit/${r.id}" class="btn-edit">✏️ Modifier</a>
+                            <button class="btn-del" onclick="confirmer(${r.id}, '${r.nom.replace(/'/g,"\\'")}')">🗑 Supprimer</button>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+
+            html += `</tbody></table></div>`;
+            ajaxResults.innerHTML = html;
+        })
+        .catch(() => {
+            ajaxResults.innerHTML = '<div style="color:red;padding:10px;">Erreur de recherche.</div>';
+        });
+}
+
+// Déclencher à chaque frappe (avec délai 300ms)
+let timer;
+searchInput.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(rechercheAjax, 300);
+});
+
+// Déclencher aussi au changement des selects
+categorieFilter.addEventListener('change',  rechercheAjax);
+difficulteFilter.addEventListener('change', rechercheAjax);
 </script>
 
 <?php $content = ob_get_clean(); require_once 'View/back/layout.php'; ?>

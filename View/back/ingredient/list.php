@@ -103,8 +103,8 @@ tbody td { padding:11px 16px; vertical-align:middle; }
 
 <!-- Recherche -->
 <form class="search-form" method="GET" action="/2A35/Admin/ingredient">
-    <input type="text" name="search" placeholder="Rechercher par nom..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
-    <select name="type" style="padding:10px 14px; border:2px solid var(--border); border-radius:6px; font-size:0.9rem; outline:none; min-width:170px;">
+    <input type="text" id="searchIngInput" name="search" placeholder="Rechercher par nom..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>" autocomplete="off">
+    <select id="typeFilter" name="type" style="padding:10px 14px; border:2px solid var(--border); border-radius:6px; font-size:0.9rem; outline:none; min-width:170px;">
         <option value="">Tous les types</option>
         <?php foreach ($types as $key => $t): ?>
             <option value="<?= $key ?>" <?= ($_GET['type'] ?? '') === $key ? 'selected' : '' ?>>
@@ -117,6 +117,9 @@ tbody td { padding:11px 16px; vertical-align:middle; }
         <a href="/2A35/Admin/ingredient" class="btn-clear">✕ Effacer</a>
     <?php endif; ?>
 </form>
+
+<!-- Résultats AJAX -->
+<div id="ajaxIngResults"></div>
 </form>
 
 <!-- Tableau -->
@@ -126,7 +129,7 @@ tbody td { padding:11px 16px; vertical-align:middle; }
 <?php else: ?>
     <table>
         <thead>
-            <tr><th>#</th><th>Image</th><th>Nom</th><th>Type</th><th>Actions</th></tr>
+            <tr><th>#</th><th>Image</th><th>Nom</th><th>Type</th><th>Protéines</th><th>Calcium</th><th>Glucides</th><th>Lipides</th><th>Actions</th></tr>
         </thead>
         <tbody>
         <?php foreach ($ingredients as $ing): ?>
@@ -146,6 +149,10 @@ tbody td { padding:11px 16px; vertical-align:middle; }
                         <?= $t['icon'] ?> <?= $t['label'] ?>
                     </span>
                 </td>
+                <td style="color:#2e7d32;font-weight:600;"><?= $ing['proteines'] ?? 0 ?> g</td>
+                <td style="color:#1565c0;font-weight:600;"><?= $ing['calcium']   ?? 0 ?> mg</td>
+                <td style="color:#f57c00;font-weight:600;"><?= $ing['glucides']  ?? 0 ?> g</td>
+                <td style="color:#c62828;font-weight:600;"><?= $ing['lipides']   ?? 0 ?> g</td>
                 <td>
                     <div class="actions">
                         <a href="/2A35/Admin/ingredient/show/<?= $ing['id'] ?>" class="btn-voir">👁 Voir</a>
@@ -181,6 +188,78 @@ function confirmer(id, nom) {
 document.getElementById('modalDel').addEventListener('click', function(e) {
     if (e.target === this) this.classList.remove('show');
 });
+
+// ── Recherche AJAX dynamique ──────────────────────────────────────────────────
+const searchIngInput = document.getElementById('searchIngInput');
+const typeFilter     = document.getElementById('typeFilter');
+const tableWrapIng   = document.querySelector('.table-wrap');
+const ajaxIngResults = document.getElementById('ajaxIngResults');
+
+const typesData = <?= json_encode($types) ?>;
+
+function rechercheIngAjax() {
+    const search = searchIngInput.value.trim();
+    const type   = typeFilter.value;
+
+    if (!search && !type) {
+        tableWrapIng.style.display = '';
+        ajaxIngResults.innerHTML   = '';
+        return;
+    }
+
+    const url = `/2A35/Admin/ingredient/ajax?search=${encodeURIComponent(search)}&type=${encodeURIComponent(type)}`;
+
+    fetch(url)
+        .then(r => r.json())
+        .then(ingredients => {
+            tableWrapIng.style.display = 'none';
+
+            if (ingredients.length === 0) {
+                ajaxIngResults.innerHTML = '<div style="background:#fff;border-radius:10px;padding:40px;text-align:center;color:#999;box-shadow:0 2px 12px rgba(0,0,0,.07);">Aucun ingrédient trouvé.</div>';
+                return;
+            }
+
+            let html = `<div class="table-wrap">
+                <table>
+                    <thead><tr><th>#</th><th>Image</th><th>Nom</th><th>Type</th><th>Actions</th></tr></thead>
+                    <tbody>`;
+
+            ingredients.forEach(ing => {
+                const t   = typesData[ing.type] || typesData['autre'];
+                const img = ing.image
+                    ? `<img src="/2A35/assets/uploads/ingredients/${ing.image}" class="ing-img" alt="">`
+                    : `<div class="no-img">${t.icon}</div>`;
+
+                html += `<tr>
+                    <td>${ing.id}</td>
+                    <td>${img}</td>
+                    <td><strong>${ing.nom}</strong></td>
+                    <td><span class="badge-type" style="background:${t.color};color:${t.text};border:1px solid ${t.border};">${t.icon} ${t.label}</span></td>
+                    <td>
+                        <div class="actions">
+                            <a href="/2A35/Admin/ingredient/show/${ing.id}" class="btn-voir">👁 Voir</a>
+                            <a href="/2A35/Admin/ingredient/edit/${ing.id}" class="btn-edit">✏️ Modifier</a>
+                            <button class="btn-del" onclick="confirmer(${ing.id}, '${ing.nom.replace(/'/g,"\\'")}')">🗑 Supprimer</button>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+
+            html += `</tbody></table></div>`;
+            ajaxIngResults.innerHTML = html;
+        })
+        .catch(() => {
+            ajaxIngResults.innerHTML = '<div style="color:red;padding:10px;">Erreur de recherche.</div>';
+        });
+}
+
+let timerIng;
+searchIngInput.addEventListener('input', () => {
+    clearTimeout(timerIng);
+    timerIng = setTimeout(rechercheIngAjax, 300);
+});
+
+typeFilter.addEventListener('change', rechercheIngAjax);
 </script>
 
 <?php $content = ob_get_clean(); require_once 'View/back/layout.php'; ?>
