@@ -1,67 +1,61 @@
 <?php
-require_once 'Config/database.php';
-
 class Restaurant {
-    private PDO $db;
+    private ?int    $id;
+    private string  $nom;
+    private ?string $description;
+    private string  $adresse;
+    private ?string $telephone;
+    private ?string $email;
+    private string  $type_cuisine;
+    private ?string $image;
+    private ?string $created_at;
 
-    public function __construct() {
-        $this->db = Database::getConnection();
+    public function __construct(
+        ?int    $id           = null,
+        string  $nom          = '',
+        ?string $description  = null,
+        string  $adresse      = '',
+        ?string $telephone    = null,
+        ?string $email        = null,
+        string  $type_cuisine = '',
+        ?string $image        = null,
+        ?string $created_at   = null
+    ) {
+        $this->id           = $id;
+        $this->nom          = $nom;
+        $this->description  = $description;
+        $this->adresse      = $adresse;
+        $this->telephone    = $telephone;
+        $this->email        = $email;
+        $this->type_cuisine = $type_cuisine;
+        $this->image        = $image;
+        $this->created_at   = $created_at;
     }
 
-    public function getAll(): array {
-        $stmt = $this->db->query("SELECT * FROM restaurant ORDER BY created_at DESC");
-        return $stmt->fetchAll();
-    }
+    public function getId(): ?int { return $this->id; }
+    public function setId(?int $id): self { $this->id = $id; return $this; }
 
-    public function getById(int $id): array|false {
-        $stmt = $this->db->prepare("SELECT * FROM restaurant WHERE id = ?");
-        $stmt->execute([$id]);
-        return $stmt->fetch();
-    }
+    public function getNom(): string { return $this->nom; }
+    public function setNom(string $nom): self { $this->nom = $nom; return $this; }
 
-    public function create(array $data): int {
-        $sql = "INSERT INTO restaurant (nom, description, adresse, telephone, email, type_cuisine, image)
-                VALUES (:nom, :description, :adresse, :telephone, :email, :type_cuisine, :image)";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
-            ':nom'          => $data['nom'],
-            ':description'  => $data['description'] ?? null,
-            ':adresse'      => $data['adresse'],
-            ':telephone'    => $data['telephone'] ?? null,
-            ':email'        => $data['email'] ?? null,
-            ':type_cuisine' => $data['type_cuisine'],
-            ':image'        => $data['image'] ?? null,
-        ]);
-        return (int)$this->db->lastInsertId();
-    }
+    public function getDescription(): ?string { return $this->description; }
+    public function setDescription(?string $description): self { $this->description = $description; return $this; }
 
-    public function update(int $id, array $data): bool {
-        $sql = "UPDATE restaurant
-                SET nom=:nom, description=:description, adresse=:adresse,
-                    telephone=:telephone, email=:email, type_cuisine=:type_cuisine,
-                    image=:image
-                WHERE id=:id";
-        $stmt = $this->db->prepare($sql);
-        return $stmt->execute([
-            ':nom'          => $data['nom'],
-            ':description'  => $data['description'] ?? null,
-            ':adresse'      => $data['adresse'],
-            ':telephone'    => $data['telephone'] ?? null,
-            ':email'        => $data['email'] ?? null,
-            ':type_cuisine' => $data['type_cuisine'],
-            ':image'        => $data['image'] ?? null,
-            ':id'           => $id,
-        ]);
-    }
+    public function getAdresse(): string { return $this->adresse; }
+    public function setAdresse(string $adresse): self { $this->adresse = $adresse; return $this; }
 
-    public function delete(int $id): bool {
-        $stmt = $this->db->prepare("DELETE FROM restaurant WHERE id = ?");
-        return $stmt->execute([$id]);
-    }
+    public function getTelephone(): ?string { return $this->telephone; }
+    public function setTelephone(?string $telephone): self { $this->telephone = $telephone; return $this; }
 
-    public function search(string $q): array {
-        $stmt = $this->db->prepare("SELECT * FROM restaurant WHERE nom LIKE ? OR adresse LIKE ? ORDER BY created_at DESC");
-        $stmt->execute(['%'.$q.'%', '%'.$q.'%']);
-        return $stmt->fetchAll();
-    }
+    public function getEmail(): ?string { return $this->email; }
+    public function setEmail(?string $email): self { $this->email = $email; return $this; }
+
+    public function getTypeCuisine(): string { return $this->type_cuisine; }
+    public function setTypeCuisine(string $type_cuisine): self { $this->type_cuisine = $type_cuisine; return $this; }
+
+    public function getImage(): ?string { return $this->image; }
+    public function setImage(?string $image): self { $this->image = $image; return $this; }
+
+    public function getCreatedAt(): ?string { return $this->created_at; }
+    public function setCreatedAt(?string $created_at): self { $this->created_at = $created_at; return $this; }
 }

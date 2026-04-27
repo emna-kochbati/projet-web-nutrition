@@ -1,21 +1,35 @@
 <?php
 require_once 'Model/Meal.php';
 require_once 'Model/Restaurant.php';
+require_once 'Config/database.php';
 
 class MealController {
 
-    private Meal       $mealModel;
-    private Restaurant $restaurantModel;
+    private PDO $db;
 
     public function __construct() {
-        $this->mealModel       = new Meal();
-        $this->restaurantModel = new Restaurant();
+        $this->db = Database::getConnection();
     }
 
     // ── GET /Admin/meal ───────────────────────────────────────────────────────
     public function index(): void {
         $search = trim($_GET['search'] ?? '');
-        $meals  = $search ? $this->mealModel->search($search) : $this->mealModel->getAll();
+
+        if ($search) {
+            $stmt = $this->db->prepare(
+                "SELECT m.*, r.nom AS restaurant_nom FROM meal m
+                 JOIN restaurant r ON r.id = m.restaurant_id
+                 WHERE m.nom LIKE ? ORDER BY m.created_at DESC"
+            );
+            $stmt->execute(['%'.$search.'%']);
+        } else {
+            $stmt = $this->db->query(
+                "SELECT m.*, r.nom AS restaurant_nom FROM meal m
+                 JOIN restaurant r ON r.id = m.restaurant_id
+                 ORDER BY m.created_at DESC"
+            );
+        }
+        $meals = $stmt->fetchAll();
 
         $success = $_SESSION['success'] ?? null;
         $error   = $_SESSION['error']   ?? null;
@@ -27,7 +41,7 @@ class MealController {
     // ── GET /Admin/meal/create ────────────────────────────────────────────────
     public function create(): void {
         $errors      = [];
-        $restaurants = $this->restaurantModel->getAll();
+        $restaurants = $this->db->query("SELECT * FROM restaurant ORDER BY nom")->fetchAll();
         $meal        = ['restaurant_id' => $_GET['restaurant_id'] ?? ''];
         require_once 'View/back/meal/form.php';
     }
@@ -41,28 +55,42 @@ class MealController {
         $errors = $this->validateMeal($_POST);
 
         if (empty($errors)) {
-            $data          = $this->sanitizeMeal($_POST);
-            $data['image'] = $this->handleImageUpload();
-            $this->mealModel->create($data);
+            $m = new Meal(
+                null,
+                (int)$_POST['restaurant_id'],
+                htmlspecialchars(trim($_POST['nom'])),
+                htmlspecialchars(trim($_POST['description'] ?? '')),
+                (float)$_POST['prix'],
+                $_POST['categorie'],
+                !empty($_POST['calories']) ? (int)$_POST['calories'] : null,
+                isset($_POST['disponible']) ? 1 : 0,
+                $this->handleImageUpload()
+            );
+
+            $this->db->prepare(
+                "INSERT INTO meal (restaurant_id, nom, description, prix, categorie, calories, disponible, image)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+            )->execute([
+                $m->getRestaurantId(), $m->getNom(), $m->getDescription(),
+                $m->getPrix(), $m->getCategorie(), $m->getCalories(),
+                $m->getDisponible(), $m->getImage()
+            ]);
+
             $_SESSION['success'] = 'Plat ajouté avec succès !';
-            $rid = $data['restaurant_id'] ?? 0;
+            $rid = $m->getRestaurantId();
             header('Location: ' . ($rid ? '/2A35/Admin/restaurant/edit/'.$rid : '/2A35/Admin/meal')); exit;
         }
 
         $meal        = $_POST;
-        $restaurants = $this->restaurantModel->getAll();
+        $restaurants = $this->db->query("SELECT * FROM restaurant ORDER BY nom")->fetchAll();
         require_once 'View/back/meal/form.php';
     }
 
     // ── GET /Admin/meal/edit/{id} ─────────────────────────────────────────────
     public function edit(string $id): void {
-        $meal = $this->mealModel->getById((int)$id);
-        if (!$meal) {
-            $_SESSION['error'] = 'Plat introuvable.';
-            header('Location: /2A35/Admin/meal'); exit;
-        }
+        $meal = $this->findMealOrRedirect((int)$id);
         $errors      = [];
-        $restaurants = $this->restaurantModel->getAll();
+        $restaurants = $this->db->query("SELECT * FROM restaurant ORDER BY nom")->fetchAll();
         require_once 'View/back/meal/form.php';
     }
 
@@ -72,52 +100,64 @@ class MealController {
             header('Location: /2A35/Admin/meal'); exit;
         }
 
-        $meal = $this->mealModel->getById((int)$id);
-        if (!$meal) {
-            $_SESSION['error'] = 'Plat introuvable.';
-            header('Location: /2A35/Admin/meal'); exit;
-        }
-
+        $meal   = $this->findMealOrRedirect((int)$id);
         $errors = $this->validateMeal($_POST);
 
         if (empty($errors)) {
-            $data          = $this->sanitizeMeal($_POST);
-            $newImage      = $this->handleImageUpload();
-            $data['image'] = $newImage ?: $meal['image'];
-            $this->mealModel->update((int)$id, $data);
+            $newImage = $this->handleImageUpload();
+            $m = new Meal(
+                (int)$id,
+                (int)$_POST['restaurant_id'],
+                htmlspecialchars(trim($_POST['nom'])),
+                htmlspecialchars(trim($_POST['description'] ?? '')),
+                (float)$_POST['prix'],
+                $_POST['categorie'],
+                !empty($_POST['calories']) ? (int)$_POST['calories'] : null,
+                isset($_POST['disponible']) ? 1 : 0,
+                $newImage ?: $meal['image']
+            );
+
+            $this->db->prepare(
+                "UPDATE meal SET restaurant_id=?, nom=?, description=?, prix=?, categorie=?, calories=?, disponible=?, image=?
+                 WHERE id=?"
+            )->execute([
+                $m->getRestaurantId(), $m->getNom(), $m->getDescription(),
+                $m->getPrix(), $m->getCategorie(), $m->getCalories(),
+                $m->getDisponible(), $m->getImage(), $m->getId()
+            ]);
+
             $_SESSION['success'] = 'Plat modifié avec succès !';
-            $rid = $data['restaurant_id'] ?? 0;
+            $rid = $m->getRestaurantId();
             header('Location: ' . ($rid ? '/2A35/Admin/restaurant/edit/'.$rid : '/2A35/Admin/meal')); exit;
         }
 
-        $restaurants = $this->restaurantModel->getAll();
+        $restaurants = $this->db->query("SELECT * FROM restaurant ORDER BY nom")->fetchAll();
         require_once 'View/back/meal/form.php';
     }
 
     // ── GET /Admin/meal/show/{id} ─────────────────────────────────────────────
     public function show(string $id): void {
-        $meal = $this->mealModel->getById((int)$id);
-        if (!$meal) {
-            $_SESSION['error'] = 'Plat introuvable.';
-            header('Location: /2A35/Admin/meal'); exit;
-        }
+        $meal = $this->findMealOrRedirect((int)$id);
         require_once 'View/back/meal/show.php';
     }
 
     // ── POST /Admin/meal/delete/{id} ──────────────────────────────────────────
     public function delete(string $id): void {
-        $meal = $this->mealModel->getById((int)$id);
+        $stmt = $this->db->prepare("SELECT * FROM meal WHERE id = ?");
+        $stmt->execute([(int)$id]);
+        $meal = $stmt->fetch();
+
         if ($meal) {
-            if ($meal['image'] && file_exists('assets/uploads/meals/' . $meal['image'])) {
+            if (!empty($meal['image']) && file_exists('assets/uploads/meals/' . $meal['image'])) {
                 unlink('assets/uploads/meals/' . $meal['image']);
             }
             $rid = $meal['restaurant_id'] ?? 0;
-            $this->mealModel->delete((int)$id);
+            $this->db->prepare("DELETE FROM meal WHERE id = ?")->execute([(int)$id]);
             $_SESSION['success'] = 'Plat supprimé avec succès !';
             header('Location: ' . ($rid ? '/2A35/Admin/restaurant/edit/'.$rid : '/2A35/Admin/meal')); exit;
-        } else {
-            $_SESSION['error'] = 'Plat introuvable.';
         }
+
+        $_SESSION['error'] = 'Plat introuvable.';
         header('Location: /2A35/Admin/meal'); exit;
     }
 
@@ -125,32 +165,40 @@ class MealController {
     // Méthodes privées
     // ─────────────────────────────────────────────────────────────────────────
 
+    private function findMealOrRedirect(int $id): array {
+        $stmt = $this->db->prepare(
+            "SELECT m.*, r.nom AS restaurant_nom FROM meal m
+             JOIN restaurant r ON r.id = m.restaurant_id WHERE m.id = ?"
+        );
+        $stmt->execute([$id]);
+        $meal = $stmt->fetch();
+        if (!$meal) {
+            $_SESSION['error'] = 'Plat introuvable.';
+            header('Location: /2A35/Admin/meal'); exit;
+        }
+        return $meal;
+    }
+
     private function validateMeal(array $post): array {
         $errors = [];
-
         if (empty(trim($post['nom'] ?? ''))) {
             $errors['nom'] = 'Le nom du plat est obligatoire.';
         } elseif (strlen(trim($post['nom'])) < 2 || strlen(trim($post['nom'])) > 150) {
             $errors['nom'] = 'Le nom doit contenir entre 2 et 150 caractères.';
         }
-
         if (empty($post['restaurant_id']) || !is_numeric($post['restaurant_id'])) {
             $errors['restaurant_id'] = 'Veuillez sélectionner un restaurant.';
         }
-
         if (!isset($post['prix']) || !is_numeric($post['prix']) || (float)$post['prix'] < 0) {
             $errors['prix'] = 'Le prix doit être un nombre positif.';
         }
-
         $categories = ['entree','plat_principal','dessert','boisson','snack'];
         if (empty($post['categorie']) || !in_array($post['categorie'], $categories)) {
             $errors['categorie'] = 'Veuillez sélectionner une catégorie valide.';
         }
-
         if (!empty($post['calories']) && (!is_numeric($post['calories']) || (int)$post['calories'] < 0)) {
             $errors['calories'] = 'Les calories doivent être un nombre positif.';
         }
-
         if (!empty($_FILES['image']['name'])) {
             $allowed = ['image/jpeg', 'image/png', 'image/webp'];
             if (!in_array($_FILES['image']['type'], $allowed)) {
@@ -159,20 +207,7 @@ class MealController {
                 $errors['image'] = 'L\'image ne doit pas dépasser 2 Mo.';
             }
         }
-
         return $errors;
-    }
-
-    private function sanitizeMeal(array $post): array {
-        return [
-            'restaurant_id' => (int)$post['restaurant_id'],
-            'nom'           => htmlspecialchars(trim($post['nom'])),
-            'description'   => htmlspecialchars(trim($post['description'] ?? '')),
-            'prix'          => (float)$post['prix'],
-            'categorie'     => $post['categorie'],
-            'calories'      => !empty($post['calories']) ? (int)$post['calories'] : null,
-            'disponible'    => isset($post['disponible']) ? 1 : 0,
-        ];
     }
 
     private function handleImageUpload(): ?string {

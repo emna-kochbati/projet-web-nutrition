@@ -1,23 +1,27 @@
 <?php
 require_once 'Model/Restaurant.php';
 require_once 'Model/Meal.php';
+require_once 'Config/database.php';
 
 class RestaurantController {
 
-    private Restaurant $restaurantModel;
-    private Meal       $mealModel;
+    private PDO $db;
 
     public function __construct() {
-        $this->restaurantModel = new Restaurant();
-        $this->mealModel       = new Meal();
+        $this->db = Database::getConnection();
     }
 
     // ── GET /Admin/restaurant ─────────────────────────────────────────────────
     public function index(): void {
-        $search      = trim($_GET['search'] ?? '');
-        $restaurants = $search
-            ? $this->restaurantModel->search($search)
-            : $this->restaurantModel->getAll();
+        $search = trim($_GET['search'] ?? '');
+
+        if ($search) {
+            $stmt = $this->db->prepare("SELECT * FROM restaurant WHERE nom LIKE ? OR adresse LIKE ? ORDER BY created_at DESC");
+            $stmt->execute(['%'.$search.'%', '%'.$search.'%']);
+        } else {
+            $stmt = $this->db->query("SELECT * FROM restaurant ORDER BY created_at DESC");
+        }
+        $restaurants = $stmt->fetchAll();
 
         $success = $_SESSION['success'] ?? null;
         $error   = $_SESSION['error']   ?? null;
@@ -26,10 +30,25 @@ class RestaurantController {
         require_once 'View/back/restaurant/list.php';
     }
 
+    // ── GET /Admin/restaurant/search?q=... (AJAX) ─────────────────────────────
+    public function search(): void {
+        $q    = trim($_GET['q'] ?? '');
+        $stmt = $this->db->prepare(
+            "SELECT * FROM restaurant WHERE nom LIKE ? OR adresse LIKE ? ORDER BY created_at DESC"
+        );
+        $stmt->execute(['%'.$q.'%', '%'.$q.'%']);
+        $results = $stmt->fetchAll();
+
+        header('Content-Type: application/json');
+        echo json_encode(array_values($results));
+        exit;
+    }
+
     // ── GET /Admin/restaurant/create ──────────────────────────────────────────
     public function create(): void {
-        $errors = [];
-        $meals  = [];
+        $errors     = [];
+        $restaurant = [];
+        $meals      = [];
         require_once 'View/back/restaurant/form.php';
     }
 
@@ -42,11 +61,27 @@ class RestaurantController {
         $errors = $this->validateRestaurant($_POST);
 
         if (empty($errors)) {
-            $data          = $this->sanitizeRestaurant($_POST);
-            $data['image'] = $this->handleImageUpload('restaurants');
-            $restaurantId  = $this->restaurantModel->create($data);
+            $r = new Restaurant(
+                null,
+                htmlspecialchars(trim($_POST['nom'])),
+                htmlspecialchars(trim($_POST['description'] ?? '')),
+                htmlspecialchars(trim($_POST['adresse'])),
+                htmlspecialchars(trim($_POST['telephone'] ?? '')),
+                trim($_POST['email'] ?? ''),
+                $_POST['type_cuisine'],
+                $this->handleImageUpload('restaurants')
+            );
 
-            // Sauvegarder les plats soumis
+            $stmt = $this->db->prepare(
+                "INSERT INTO restaurant (nom, description, adresse, telephone, email, type_cuisine, image)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)"
+            );
+            $stmt->execute([
+                $r->getNom(), $r->getDescription(), $r->getAdresse(),
+                $r->getTelephone(), $r->getEmail(), $r->getTypeCuisine(), $r->getImage()
+            ]);
+            $restaurantId = (int)$this->db->lastInsertId();
+
             $this->saveMeals($restaurantId, $_POST['meals'] ?? []);
 
             $_SESSION['success'] = 'Restaurant ajouté avec succès !';
@@ -60,13 +95,9 @@ class RestaurantController {
 
     // ── GET /Admin/restaurant/edit/{id} ───────────────────────────────────────
     public function edit(string $id): void {
-        $restaurant = $this->restaurantModel->getById((int)$id);
-        if (!$restaurant) {
-            $_SESSION['error'] = 'Restaurant introuvable.';
-            header('Location: /2A35/Admin/restaurant'); exit;
-        }
-        $errors = [];
-        $meals  = $this->mealModel->getByRestaurant((int)$id);
+        $restaurant = $this->findRestaurantOrRedirect((int)$id);
+        $errors     = [];
+        $meals      = $this->getMealsByRestaurant((int)$id);
         require_once 'View/back/restaurant/form.php';
     }
 
@@ -76,50 +107,61 @@ class RestaurantController {
             header('Location: /2A35/Admin/restaurant'); exit;
         }
 
-        $restaurant = $this->restaurantModel->getById((int)$id);
-        if (!$restaurant) {
-            $_SESSION['error'] = 'Restaurant introuvable.';
-            header('Location: /2A35/Admin/restaurant'); exit;
-        }
-
-        $errors = $this->validateRestaurant($_POST);
+        $restaurant = $this->findRestaurantOrRedirect((int)$id);
+        $errors     = $this->validateRestaurant($_POST);
 
         if (empty($errors)) {
-            $data          = $this->sanitizeRestaurant($_POST);
-            $newImage      = $this->handleImageUpload('restaurants');
-            $data['image'] = $newImage ?: $restaurant['image'];
-            $this->restaurantModel->update((int)$id, $data);
+            $newImage = $this->handleImageUpload('restaurants');
 
-            // Mettre à jour les plats
+            $r = new Restaurant(
+                (int)$id,
+                htmlspecialchars(trim($_POST['nom'])),
+                htmlspecialchars(trim($_POST['description'] ?? '')),
+                htmlspecialchars(trim($_POST['adresse'])),
+                htmlspecialchars(trim($_POST['telephone'] ?? '')),
+                trim($_POST['email'] ?? ''),
+                $_POST['type_cuisine'],
+                $newImage ?: $restaurant['image']
+            );
+
+            $stmt = $this->db->prepare(
+                "UPDATE restaurant SET nom=?, description=?, adresse=?, telephone=?, email=?, type_cuisine=?, image=?
+                 WHERE id=?"
+            );
+            $stmt->execute([
+                $r->getNom(), $r->getDescription(), $r->getAdresse(),
+                $r->getTelephone(), $r->getEmail(), $r->getTypeCuisine(),
+                $r->getImage(), $r->getId()
+            ]);
+
             $this->saveMeals((int)$id, $_POST['meals'] ?? []);
 
             $_SESSION['success'] = 'Restaurant modifié avec succès !';
             header('Location: /2A35/Admin/restaurant'); exit;
         }
 
-        $meals = $this->mealModel->getByRestaurant((int)$id);
+        $meals = $this->getMealsByRestaurant((int)$id);
         require_once 'View/back/restaurant/form.php';
     }
 
     // ── GET /Admin/restaurant/show/{id} ───────────────────────────────────────
     public function show(string $id): void {
-        $restaurant = $this->restaurantModel->getById((int)$id);
-        if (!$restaurant) {
-            $_SESSION['error'] = 'Restaurant introuvable.';
-            header('Location: /2A35/Admin/restaurant'); exit;
-        }
-        $meals = $this->mealModel->getByRestaurant((int)$id);
+        $restaurant = $this->findRestaurantOrRedirect((int)$id);
+        $meals      = $this->getMealsByRestaurant((int)$id);
         require_once 'View/back/restaurant/show.php';
     }
 
     // ── POST /Admin/restaurant/delete/{id} ────────────────────────────────────
     public function delete(string $id): void {
-        $restaurant = $this->restaurantModel->getById((int)$id);
+        $stmt = $this->db->prepare("SELECT * FROM restaurant WHERE id = ?");
+        $stmt->execute([(int)$id]);
+        $restaurant = $stmt->fetch();
+
         if ($restaurant) {
-            if ($restaurant['image'] && file_exists('assets/uploads/restaurants/' . $restaurant['image'])) {
+            if (!empty($restaurant['image']) && file_exists('assets/uploads/restaurants/' . $restaurant['image'])) {
                 unlink('assets/uploads/restaurants/' . $restaurant['image']);
             }
-            $this->restaurantModel->delete((int)$id);
+            $this->db->prepare("DELETE FROM restaurant WHERE id = ?")->execute([(int)$id]);
             $_SESSION['success'] = 'Restaurant supprimé avec succès !';
         } else {
             $_SESSION['error'] = 'Restaurant introuvable.';
@@ -131,28 +173,98 @@ class RestaurantController {
     // Méthodes privées
     // ─────────────────────────────────────────────────────────────────────────
 
+    private function findRestaurantOrRedirect(int $id): array {
+        $stmt = $this->db->prepare("SELECT * FROM restaurant WHERE id = ?");
+        $stmt->execute([$id]);
+        $restaurant = $stmt->fetch();
+        if (!$restaurant) {
+            $_SESSION['error'] = 'Restaurant introuvable.';
+            header('Location: /2A35/Admin/restaurant'); exit;
+        }
+        return $restaurant;
+    }
+
+    private function getMealsByRestaurant(int $restaurantId): array {
+        $stmt = $this->db->prepare("SELECT * FROM meal WHERE restaurant_id = ? ORDER BY categorie, nom");
+        $stmt->execute([$restaurantId]);
+        return $stmt->fetchAll();
+    }
+
+    private function saveMeals(int $restaurantId, array $mealsPost): void {
+        if (empty($mealsPost)) return;
+
+        $stmt     = $this->db->prepare("SELECT id FROM meal WHERE restaurant_id = ?");
+        $stmt->execute([$restaurantId]);
+        $existingIds  = array_column($stmt->fetchAll(), 'id');
+        $submittedIds = [];
+
+        foreach ($mealsPost as $m) {
+            if (empty(trim($m['nom'] ?? ''))) continue;
+
+            $meal = new Meal(
+                !empty($m['id']) ? (int)$m['id'] : null,
+                $restaurantId,
+                htmlspecialchars(trim($m['nom'])),
+                null,
+                is_numeric($m['prix'] ?? '') ? (float)$m['prix'] : 0,
+                $m['categorie'] ?? 'plat_principal',
+                !empty($m['calories']) ? (int)$m['calories'] : null,
+                isset($m['disponible']) ? 1 : 0
+            );
+
+            if ($meal->getId() && in_array($meal->getId(), $existingIds)) {
+                // Récupérer l'image existante
+                $s = $this->db->prepare("SELECT image FROM meal WHERE id = ?");
+                $s->execute([$meal->getId()]);
+                $meal->setImage($s->fetchColumn() ?: null);
+
+                $this->db->prepare(
+                    "UPDATE meal SET nom=?, description=?, prix=?, categorie=?, calories=?, disponible=?, image=?
+                     WHERE id=?"
+                )->execute([
+                    $meal->getNom(), $meal->getDescription(), $meal->getPrix(),
+                    $meal->getCategorie(), $meal->getCalories(), $meal->getDisponible(),
+                    $meal->getImage(), $meal->getId()
+                ]);
+                $submittedIds[] = $meal->getId();
+            } else {
+                $this->db->prepare(
+                    "INSERT INTO meal (restaurant_id, nom, description, prix, categorie, calories, disponible, image)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+                )->execute([
+                    $meal->getRestaurantId(), $meal->getNom(), $meal->getDescription(),
+                    $meal->getPrix(), $meal->getCategorie(), $meal->getCalories(),
+                    $meal->getDisponible(), $meal->getImage()
+                ]);
+                $submittedIds[] = (int)$this->db->lastInsertId();
+            }
+        }
+
+        // Supprimer les plats retirés
+        foreach ($existingIds as $eid) {
+            if (!in_array($eid, $submittedIds)) {
+                $this->db->prepare("DELETE FROM meal WHERE id = ?")->execute([$eid]);
+            }
+        }
+    }
+
     private function validateRestaurant(array $post): array {
         $errors = [];
-
         if (empty(trim($post['nom'] ?? ''))) {
             $errors['nom'] = 'Le nom du restaurant est obligatoire.';
         } elseif (strlen(trim($post['nom'])) < 2 || strlen(trim($post['nom'])) > 150) {
             $errors['nom'] = 'Le nom doit contenir entre 2 et 150 caractères.';
         }
-
         if (empty(trim($post['adresse'] ?? ''))) {
             $errors['adresse'] = 'L\'adresse est obligatoire.';
         }
-
         $types = ['tunisienne','italienne','japonaise','americaine','indienne','mexicaine','française','autre'];
         if (empty($post['type_cuisine']) || !in_array($post['type_cuisine'], $types)) {
             $errors['type_cuisine'] = 'Veuillez sélectionner un type de cuisine valide.';
         }
-
         if (!empty($post['email']) && !filter_var($post['email'], FILTER_VALIDATE_EMAIL)) {
             $errors['email'] = 'L\'adresse email n\'est pas valide.';
         }
-
         if (!empty($_FILES['image']['name'])) {
             $allowed = ['image/jpeg', 'image/png', 'image/webp'];
             if (!in_array($_FILES['image']['type'], $allowed)) {
@@ -161,19 +273,7 @@ class RestaurantController {
                 $errors['image'] = 'L\'image ne doit pas dépasser 2 Mo.';
             }
         }
-
         return $errors;
-    }
-
-    private function sanitizeRestaurant(array $post): array {
-        return [
-            'nom'          => htmlspecialchars(trim($post['nom'])),
-            'description'  => htmlspecialchars(trim($post['description'] ?? '')),
-            'adresse'      => htmlspecialchars(trim($post['adresse'])),
-            'telephone'    => htmlspecialchars(trim($post['telephone'] ?? '')),
-            'email'        => trim($post['email'] ?? ''),
-            'type_cuisine' => $post['type_cuisine'],
-        ];
     }
 
     private function handleImageUpload(string $folder): ?string {
@@ -184,48 +284,5 @@ class RestaurantController {
         $filename = uniqid($folder . '_') . '.' . strtolower($ext);
         move_uploaded_file($_FILES['image']['tmp_name'], $uploadDir . $filename);
         return $filename;
-    }
-
-    private function saveMeals(int $restaurantId, array $mealsPost): void {
-        if (empty($mealsPost)) return;
-
-        // Récupérer les IDs existants pour ce restaurant
-        $existing = $this->mealModel->getByRestaurant($restaurantId);
-        $existingIds = array_column($existing, 'id');
-        $submittedIds = [];
-
-        foreach ($mealsPost as $m) {
-            if (empty(trim($m['nom'] ?? ''))) continue;
-
-            $data = [
-                'restaurant_id' => $restaurantId,
-                'nom'           => htmlspecialchars(trim($m['nom'])),
-                'description'   => '',
-                'prix'          => is_numeric($m['prix'] ?? '') ? (float)$m['prix'] : 0,
-                'categorie'     => $m['categorie'] ?? 'plat_principal',
-                'calories'      => !empty($m['calories']) ? (int)$m['calories'] : null,
-                'disponible'    => isset($m['disponible']) ? 1 : 0,
-                'image'         => null,
-            ];
-
-            if (!empty($m['id']) && in_array((int)$m['id'], $existingIds)) {
-                // Mise à jour
-                $existingMeal = $this->mealModel->getById((int)$m['id']);
-                $data['image'] = $existingMeal['image'] ?? null;
-                $this->mealModel->update((int)$m['id'], $data);
-                $submittedIds[] = (int)$m['id'];
-            } else {
-                // Création
-                $newId = $this->mealModel->create($data);
-                $submittedIds[] = $newId;
-            }
-        }
-
-        // Supprimer les plats retirés du formulaire
-        foreach ($existingIds as $eid) {
-            if (!in_array($eid, $submittedIds)) {
-                $this->mealModel->delete($eid);
-            }
-        }
     }
 }

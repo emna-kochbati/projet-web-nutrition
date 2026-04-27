@@ -1,93 +1,67 @@
 <?php
-require_once 'Config/database.php';
-
 class Meal {
-    private PDO $db;
+    private ?int    $id;
+    private int     $restaurant_id;
+    private string  $nom;
+    private ?string $description;
+    private float   $prix;
+    private string  $categorie;
+    private ?int    $calories;
+    private int     $disponible;
+    private ?string $image;
+    private ?string $created_at;
 
-    public function __construct() {
-        $this->db = Database::getConnection();
+    public function __construct(
+        ?int    $id            = null,
+        int     $restaurant_id = 0,
+        string  $nom           = '',
+        ?string $description   = null,
+        float   $prix          = 0.0,
+        string  $categorie     = 'plat_principal',
+        ?int    $calories      = null,
+        int     $disponible    = 1,
+        ?string $image         = null,
+        ?string $created_at    = null
+    ) {
+        $this->id            = $id;
+        $this->restaurant_id = $restaurant_id;
+        $this->nom           = $nom;
+        $this->description   = $description;
+        $this->prix          = $prix;
+        $this->categorie     = $categorie;
+        $this->calories      = $calories;
+        $this->disponible    = $disponible;
+        $this->image         = $image;
+        $this->created_at    = $created_at;
     }
 
-    public function getAll(): array {
-        $sql = "SELECT m.*, r.nom AS restaurant_nom
-                FROM meal m
-                JOIN restaurant r ON r.id = m.restaurant_id
-                ORDER BY m.created_at DESC";
-        return $this->db->query($sql)->fetchAll();
-    }
+    public function getId(): ?int { return $this->id; }
+    public function setId(?int $id): self { $this->id = $id; return $this; }
 
-    public function getByRestaurant(int $restaurantId): array {
-        $stmt = $this->db->prepare(
-            "SELECT * FROM meal WHERE restaurant_id = ? ORDER BY categorie, nom"
-        );
-        $stmt->execute([$restaurantId]);
-        return $stmt->fetchAll();
-    }
+    public function getRestaurantId(): int { return $this->restaurant_id; }
+    public function setRestaurantId(int $restaurant_id): self { $this->restaurant_id = $restaurant_id; return $this; }
 
-    public function getById(int $id): array|false {
-        $stmt = $this->db->prepare(
-            "SELECT m.*, r.nom AS restaurant_nom
-             FROM meal m JOIN restaurant r ON r.id = m.restaurant_id
-             WHERE m.id = ?"
-        );
-        $stmt->execute([$id]);
-        return $stmt->fetch();
-    }
+    public function getNom(): string { return $this->nom; }
+    public function setNom(string $nom): self { $this->nom = $nom; return $this; }
 
-    public function create(array $data): int {
-        $sql = "INSERT INTO meal (restaurant_id, nom, description, prix, categorie, calories, disponible, image)
-                VALUES (:restaurant_id, :nom, :description, :prix, :categorie, :calories, :disponible, :image)";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
-            ':restaurant_id' => (int)$data['restaurant_id'],
-            ':nom'           => $data['nom'],
-            ':description'   => $data['description'] ?? null,
-            ':prix'          => (float)$data['prix'],
-            ':categorie'     => $data['categorie'],
-            ':calories'      => isset($data['calories']) ? (int)$data['calories'] : null,
-            ':disponible'    => isset($data['disponible']) ? 1 : 0,
-            ':image'         => $data['image'] ?? null,
-        ]);
-        return (int)$this->db->lastInsertId();
-    }
+    public function getDescription(): ?string { return $this->description; }
+    public function setDescription(?string $description): self { $this->description = $description; return $this; }
 
-    public function update(int $id, array $data): bool {
-        $sql = "UPDATE meal
-                SET restaurant_id=:restaurant_id, nom=:nom, description=:description,
-                    prix=:prix, categorie=:categorie, calories=:calories,
-                    disponible=:disponible, image=:image
-                WHERE id=:id";
-        $stmt = $this->db->prepare($sql);
-        return $stmt->execute([
-            ':restaurant_id' => (int)$data['restaurant_id'],
-            ':nom'           => $data['nom'],
-            ':description'   => $data['description'] ?? null,
-            ':prix'          => (float)$data['prix'],
-            ':categorie'     => $data['categorie'],
-            ':calories'      => isset($data['calories']) ? (int)$data['calories'] : null,
-            ':disponible'    => isset($data['disponible']) ? 1 : 0,
-            ':image'         => $data['image'] ?? null,
-            ':id'            => $id,
-        ]);
-    }
+    public function getPrix(): float { return $this->prix; }
+    public function setPrix(float $prix): self { $this->prix = $prix; return $this; }
 
-    public function delete(int $id): bool {
-        $stmt = $this->db->prepare("DELETE FROM meal WHERE id = ?");
-        return $stmt->execute([$id]);
-    }
+    public function getCategorie(): string { return $this->categorie; }
+    public function setCategorie(string $categorie): self { $this->categorie = $categorie; return $this; }
 
-    public function deleteByRestaurant(int $restaurantId): bool {
-        $stmt = $this->db->prepare("DELETE FROM meal WHERE restaurant_id = ?");
-        return $stmt->execute([$restaurantId]);
-    }
+    public function getCalories(): ?int { return $this->calories; }
+    public function setCalories(?int $calories): self { $this->calories = $calories; return $this; }
 
-    public function search(string $q): array {
-        $stmt = $this->db->prepare(
-            "SELECT m.*, r.nom AS restaurant_nom
-             FROM meal m JOIN restaurant r ON r.id = m.restaurant_id
-             WHERE m.nom LIKE ? ORDER BY m.created_at DESC"
-        );
-        $stmt->execute(['%'.$q.'%']);
-        return $stmt->fetchAll();
-    }
+    public function getDisponible(): int { return $this->disponible; }
+    public function setDisponible(int $disponible): self { $this->disponible = $disponible; return $this; }
+
+    public function getImage(): ?string { return $this->image; }
+    public function setImage(?string $image): self { $this->image = $image; return $this; }
+
+    public function getCreatedAt(): ?string { return $this->created_at; }
+    public function setCreatedAt(?string $created_at): self { $this->created_at = $created_at; return $this; }
 }
