@@ -1,11 +1,3 @@
-<?php
-require_once __DIR__ . '/../../../Config/database.php';
-
-$db = Database::getConnection();
-$stmt = $db->query("SELECT * FROM user ORDER BY id DESC");
-$users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-?>
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -14,396 +6,1054 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-<?php include "sidebar-style-only.css"; ?>
+/* ===== BASE ===== */
+*, *::before, *::after { box-sizing: border-box; }
 
-.content-area{ margin-left:220px; }
-
-/* ===== BASE DESIGN (GARDÉ) ===== */
-body{
-    background: radial-gradient(circle at top,#0b1220,#020617);
-    color:white;
-    font-family:Segoe UI;
+body {
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+  background: radial-gradient(circle at top, #0b1220, #020617);
+  color: white;
+  display: flex;
+  min-height: 100vh;
 }
 
-/* TITLE WOW */
-.page-title{
-    font-size:30px;
-    font-weight:900;
-    margin-bottom:25px;
-    color:#00e676;
-    text-shadow:0 0 18px rgba(0,255,120,0.25);
-    letter-spacing:1px;
+.content-area {
+  margin-left: 220px;
+  flex: 1;
+  padding: 28px 32px;
 }
 
-/* FORM WOW */
-.form-box{
-    background:linear-gradient(135deg, rgba(0,255,120,0.12), rgba(255,255,255,0.03));
-    padding:25px;
-    border-radius:20px;
-    margin-bottom:25px;
-    border:1px solid rgba(0,255,120,0.25);
-    backdrop-filter:blur(14px);
+/* ===== PAGE HEADER ===== */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
 }
 
-/* INPUT WOW */
-.form-control{
-    background:rgba(255,255,255,0.06);
-    color:white;
-    border:1px solid rgba(255,255,255,0.1);
-    border-radius:12px;
-    padding:10px;
+.page-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #00e676;
+  text-shadow: 0 0 18px rgba(0,230,118,0.25);
+  letter-spacing: 0.5px;
 }
 
-.form-control::placeholder{
-    color:rgba(255,255,255,0.5);
+/* ===== STAT CARDS ===== */
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
 }
 
-.form-control:focus{
-    border-color:#00e676;
-    box-shadow:0 0 12px rgba(0,255,120,0.35);
+.stat-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: transform .2s, box-shadow .2s;
+  position: relative;
+  overflow: hidden;
 }
 
-/* BUTTON WOW */
-.btn-wow{
-    background:linear-gradient(90deg,#00e676,#00c853);
-    border:none;
-    font-weight:800;
-    color:black;
-    padding:12px;
-    border-radius:14px;
-    transition:0.3s;
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  border-radius: 16px 16px 0 0;
 }
 
-.btn-wow:hover{
-    transform:translateY(-2px);
-    box-shadow:0 0 25px rgba(0,255,120,0.4);
+.stat-card.green::after  { background: linear-gradient(90deg, #00e676, #00c853); }
+.stat-card.blue::after   { background: linear-gradient(90deg, #2196f3, #1565c0); }
+.stat-card.orange::after { background: linear-gradient(90deg, #ff9800, #e65100); }
+.stat-card.red::after    { background: linear-gradient(90deg, #ef5350, #b71c1c); }
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.4);
 }
 
-/* TABLE WOW */
-.table{
-    background:rgba(255,255,255,0.03);
-    backdrop-filter:blur(12px);
-    border-radius:18px;
-    overflow:hidden;
-    border:1px solid rgba(255,255,255,0.08);
+.stat-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
 }
 
-.table thead{
-    background:rgba(0,255,120,0.12);
+.stat-card.green  .stat-icon { background: rgba(0,230,118,0.15); }
+.stat-card.blue   .stat-icon { background: rgba(33,150,243,0.15); }
+.stat-card.orange .stat-icon { background: rgba(255,152,0,0.15); }
+.stat-card.red    .stat-icon { background: rgba(239,83,80,0.15); }
+
+.stat-val  { font-size: 26px; font-weight: 700; line-height: 1; }
+.stat-lbl  { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 3px; }
+
+/* ===== TOOLBAR ===== */
+.toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
 }
 
-.table th{
-    color:#00e676;
-    font-weight:700;
+.search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
 }
 
-.table tbody tr{
-    transition:0.25s;
+.search-wrap i {
+  position: absolute;
+  left: 14px; top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255,255,255,0.3);
+  font-size: 14px;
+  pointer-events: none;
 }
 
-.table tbody tr:hover{
-    background:rgba(0,255,120,0.08);
-    transform:scale(1.01);
+.search-input {
+  width: 100%;
+  padding: 10px 14px 10px 38px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  color: white;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
 }
+
+.search-input:focus {
+  border-color: #00e676;
+  box-shadow: 0 0 0 3px rgba(0,230,118,0.12);
+}
+
+.filter-select {
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  color: rgba(255,255,255,0.8);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color .2s;
+  appearance: none;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.3)'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.filter-select:focus { border-color: #00e676; }
+.filter-select option { background: #0b1220; }
+
+.btn-add {
+  padding: 10px 20px;
+  background: linear-gradient(90deg, #00e676, #00c853);
+  border: none;
+  border-radius: 12px;
+  color: #000;
+  font-weight: 700;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform .2s, box-shadow .2s;
+  white-space: nowrap;
+}
+
+.btn-add:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,230,118,0.35);
+}
+
+/* ===== RESULT INFO ===== */
+.result-info {
+  font-size: 13px;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 12px;
+}
+
+.result-info strong { color: #00e676; }
+
+/* ===== TABLE ===== */
+.table-wrap {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+#usersTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#usersTable thead tr {
+  background: rgba(0,230,118,0.08);
+  border-bottom: 1px solid rgba(0,230,118,0.15);
+}
+
+#usersTable th {
+  padding: 13px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(0,230,118,0.8);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  white-space: nowrap;
+}
+
+#usersTable td {
+  padding: 12px 16px;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  vertical-align: middle;
+}
+
+#usersTable tbody tr {
+  transition: background .15s;
+}
+
+#usersTable tbody tr:hover {
+  background: rgba(0,230,118,0.04);
+}
+
+#usersTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* USER BADGE */
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00e676, #00bcd4);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px;
+  color: #000;
+  flex-shrink: 0;
+}
+
+.user-name  { font-weight: 500; font-size: 14px; }
+.user-email { font-size: 12px; color: rgba(255,255,255,0.4); }
+
+/* STATUS BADGE */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity .2s;
+  user-select: none;
+}
+
+.status-badge:hover { opacity: .8; }
+
+.status-badge .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+}
+
+.status-badge.active   { background: rgba(0,230,118,0.15); color: #00e676; }
+.status-badge.active .dot { background: #00e676; box-shadow: 0 0 6px #00e676; }
+
+.status-badge.inactive { background: rgba(255,152,0,0.15); color: #ffa726; }
+.status-badge.inactive .dot { background: #ffa726; }
+
+.status-badge.banned   { background: rgba(239,83,80,0.15); color: #ef5350; }
+.status-badge.banned .dot { background: #ef5350; }
 
 /* ACTION BUTTONS */
-.btn-icon{
-    border:none;
-    padding:7px 10px;
-    border-radius:8px;
-    margin:2px;
-    transition:0.3s;
+.btn-action {
+  border: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: transform .15s, box-shadow .15s;
+  margin: 0 2px;
 }
 
-.btn-icon:hover{
-    transform:scale(1.15);
+.btn-action:hover { transform: scale(1.1); }
+
+.btn-view   { background: rgba(33,150,243,0.2);  color: #64b5f6; }
+.btn-edit   { background: rgba(255,193,7,0.2);   color: #ffd54f; }
+.btn-delete { background: rgba(239,83,80,0.2);   color: #ef9a9a; }
+
+/* ===== LOADING SPINNER ===== */
+.spinner {
+  display: none;
+  text-align: center;
+  padding: 40px;
+  color: rgba(255,255,255,0.3);
+  font-size: 13px;
 }
 
-.view{background:#2196f3;color:white;}
-.edit{background:#ffb300;color:white;}
-.delete{background:#ef5350;color:white;}
+.spinner i { display: block; font-size: 28px; margin-bottom: 10px; color: #00e676; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-/* ===== MINI USER CARD (WOW ADDITION) ===== */
-.user-badge{
-    display:flex;
-    align-items:center;
-    gap:10px;
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  display: none;
+  text-align: center;
+  padding: 50px 20px;
+  color: rgba(255,255,255,0.3);
 }
 
-.avatar{
-    width:38px;
-    height:38px;
-    border-radius:50%;
-    background:linear-gradient(135deg,#00e676,#ffb300);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-weight:bold;
-    color:black;
+.empty-state i { font-size: 36px; display: block; margin-bottom: 10px; color: rgba(255,255,255,0.15); }
+
+/* ===== PAGINATION ===== */
+.pagination-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  margin-top: 0;
 }
 
-/* MODAL (GARDÉ + CLEAN) */
-.modal{
-    display:none;
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,0.85);
-    backdrop-filter:blur(8px);
-    justify-content:center;
-    align-items:center;
+.pagination {
+  display: flex;
+  gap: 6px;
 }
 
-.modal.show{
-    display:flex;
+.page-btn {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.6);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s;
+  font-family: 'DM Sans', sans-serif;
 }
 
-.modal-content{
-    background:linear-gradient(135deg,#0b1220,#020617);
-    padding:25px;
-    border-radius:20px;
-    width:460px;
-    border:1px solid rgba(0,255,120,0.2);
-    box-shadow:0 0 40px rgba(0,255,120,0.25);
+.page-btn:hover:not(:disabled) {
+  border-color: #00e676;
+  color: #00e676;
 }
 
-/* MODAL HEADER */
-.modal-header{
-    text-align:center;
-    margin-bottom:15px;
+.page-btn.active {
+  background: #00e676;
+  color: #000;
+  border-color: #00e676;
+  font-weight: 700;
 }
 
-.modal-header i{
-    font-size:30px;
-    color:#00e676;
+.page-btn:disabled {
+  opacity: .3;
+  cursor: not-allowed;
 }
 
-.modal-title{
-    color:#00e676;
-    font-weight:800;
+.page-info {
+  font-size: 13px;
+  color: rgba(255,255,255,0.35);
 }
 
-/* MODAL BUTTONS */
-.btn-save{
-    background:linear-gradient(90deg,#00e676,#00c853);
-    border:none;
-    border-radius:12px;
-    font-weight:800;
-    color:black;
-    padding:10px;
+/* ===== MODAL ADD ===== */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
 }
 
-.btn-close-modal{
-    background:rgba(255,80,80,0.15);
-    border:1px solid rgba(255,80,80,0.4);
-    color:#ff6b6b;
-    border-radius:12px;
-    padding:10px;
+.modal-overlay.open { display: flex; }
+
+.modal-box {
+  background: linear-gradient(135deg, #0b1220, #0d1f12);
+  border: 1px solid rgba(0,230,118,0.2);
+  border-radius: 20px;
+  padding: 32px 36px;
+  width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 0 50px rgba(0,230,118,0.15);
+  animation: modalIn .25s ease;
 }
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.modal-box h3 {
+  color: #00e676;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.modal-box .modal-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,0.35);
+  margin-bottom: 22px;
+}
+
+.modal-field {
+  margin-bottom: 14px;
+}
+
+.modal-field label {
+  display: block;
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 6px;
+}
+
+.modal-field input,
+.modal-field select {
+  width: 100%;
+  padding: 11px 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  color: white;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.modal-field input:focus,
+.modal-field select:focus {
+  border-color: #00e676;
+  box-shadow: 0 0 0 3px rgba(0,230,118,0.12);
+}
+
+/* Validation JS inline */
+.modal-field input.v-ok,
+.modal-field select.v-ok {
+  border-color: #00e676 !important;
+  box-shadow: 0 0 0 3px rgba(0,230,118,0.12) !important;
+}
+
+.modal-field input.v-err,
+.modal-field select.v-err {
+  border-color: #ef5350 !important;
+  box-shadow: 0 0 0 3px rgba(239,83,80,0.12) !important;
+}
+
+.v-msg {
+  font-size: 11px;
+  color: #ef9a9a;
+  margin-top: 4px;
+  display: none;
+}
+
+.modal-field input::placeholder { color: rgba(255,255,255,0.25); }
+.modal-field select option       { background: #0b1220; }
+
+.modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.btn-save {
+  width: 100%;
+  padding: 13px;
+  background: linear-gradient(90deg, #00e676, #00c853);
+  border: none;
+  border-radius: 12px;
+  color: #000;
+  font-weight: 700;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: transform .2s;
+}
+
+.btn-save:hover { transform: translateY(-2px); }
+
+.btn-cancel {
+  width: 100%;
+  padding: 11px;
+  background: transparent;
+  border: 1px solid rgba(239,83,80,0.3);
+  border-radius: 12px;
+  color: #ef9a9a;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background .2s;
+}
+
+.btn-cancel:hover { background: rgba(239,83,80,0.08); }
+
+/* ===== ALERT FLASH ===== */
+.flash {
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-size: 14px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: fadeIn .3s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; } }
+
+.flash.success { background: rgba(0,230,118,0.12); border: 1px solid rgba(0,230,118,0.25); color: #a5d6a7; }
+.flash.error   { background: rgba(239,83,80,0.12); border: 1px solid rgba(239,83,80,0.25); color: #ef9a9a; }
 </style>
 </head>
-
 <body>
 
 <?php include __DIR__ . '/../partials/sidebar.php'; ?>
 
-<div class="content-area p-4">
+<div class="content-area">
 
-<div class="page-title">👥 Gestion des utilisateurs</div>
+  <!-- FLASH MESSAGES -->
+  <?php if (!empty($_SESSION['admin_success'])): ?>
+    <div class="flash success">✓ <?= htmlspecialchars($_SESSION['admin_success']) ?></div>
+    <?php unset($_SESSION['admin_success']); ?>
+  <?php endif; ?>
+  <?php if (!empty($_SESSION['admin_error'])): ?>
+    <div class="flash error">⚠ <?= htmlspecialchars($_SESSION['admin_error']) ?></div>
+    <?php unset($_SESSION['admin_error']); ?>
+  <?php endif; ?>
 
-<!-- FORM -->
-<div class="form-box">
-<form method="POST" action="/ProjetWeb-User/index.php?url=Admin/addUser">
+  <!-- HEADER -->
+  <div class="page-header">
+    <div class="page-title">👥 Gestion des utilisateurs</div>
+    <button class="btn-add" onclick="openModal('add')">
+      <i class="fa fa-plus" style="margin-right:6px;filter:none;color:inherit;"></i>Ajouter
+    </button>
+  </div>
 
-<div class="row g-2">
+  <!-- STAT CARDS -->
+  <div class="stat-cards">
+    <div class="stat-card green">
+      <div class="stat-icon">👥</div>
+      <div>
+        <div class="stat-val"><?= $stats['total'] ?></div>
+        <div class="stat-lbl">Total utilisateurs</div>
+      </div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-icon">✅</div>
+      <div>
+        <div class="stat-val"><?= $stats['active'] ?></div>
+        <div class="stat-lbl">Comptes actifs</div>
+      </div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-icon">⏳</div>
+      <div>
+        <div class="stat-val"><?= $stats['inactive'] ?></div>
+        <div class="stat-lbl">Inactifs</div>
+      </div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-icon">🚫</div>
+      <div>
+        <div class="stat-val"><?= $stats['banned'] ?></div>
+        <div class="stat-lbl">Bannis</div>
+      </div>
+    </div>
+  </div>
 
-<input name="nom" class="form-control col" placeholder="Nom">
-<input name="email" class="form-control col" placeholder="Email">
-<input type="password" name="password" class="form-control col" placeholder="Password">
+  <!-- TOOLBAR : SEARCH + FILTERS -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <i class="fa fa-search"></i>
+      <input type="text" class="search-input" id="searchInput"
+             placeholder="Rechercher par nom ou email..."
+             value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
+    </div>
 
-<select name="objectif" class="form-control col">
-<option>Sportif</option>
-<option>Perte de poids</option>
-<option>Prise de masse</option>
-<option>Maladie</option>
-</select>
+    <select class="filter-select" id="filterStatus">
+      <option value="">Tous les statuts</option>
+      <option value="active"   <?= ($_GET['status']   ?? '') === 'active'   ? 'selected' : '' ?>>✅ Actif</option>
+      <option value="inactive" <?= ($_GET['status']   ?? '') === 'inactive' ? 'selected' : '' ?>>⏳ Inactif</option>
+      <option value="banned"   <?= ($_GET['status']   ?? '') === 'banned'   ? 'selected' : '' ?>>🚫 Banni</option>
+    </select>
 
-<select name="status" class="form-control col">
-<option value="active">Active</option>
-<option value="inactive">Inactive</option>
-<option value="banned">Banned</option>
-</select>
+    <select class="filter-select" id="filterObjectif">
+      <option value="">Tous les objectifs</option>
+      <option value="Perte de poids"      <?= ($_GET['objectif'] ?? '') === 'Perte de poids'      ? 'selected' : '' ?>>Perte de poids</option>
+      <option value="Prise de masse"      <?= ($_GET['objectif'] ?? '') === 'Prise de masse'      ? 'selected' : '' ?>>Prise de masse</option>
+      <option value="Équilibre alimentaire" <?= ($_GET['objectif'] ?? '') === 'Équilibre alimentaire' ? 'selected' : '' ?>>Équilibre</option>
+      <option value="Végétarien"          <?= ($_GET['objectif'] ?? '') === 'Végétarien'          ? 'selected' : '' ?>>Végétarien</option>
+    </select>
+  </div>
 
-<input name="poids" class="form-control col" placeholder="Poids">
-<input name="taille" class="form-control col" placeholder="Taille">
+  <!-- RESULT INFO -->
+  <div class="result-info" id="resultInfo">
+    <strong id="resultCount"><?= $total ?></strong> utilisateur(s) trouvé(s)
+  </div>
 
-<button class="btn-wow mt-2 w-100">🚀 Ajouter utilisateur</button>
+  <!-- TABLE -->
+  <div class="table-wrap">
+    <div class="spinner" id="spinner">
+      <i class="fa fa-circle-notch"></i>Chargement...
+    </div>
 
+    <table id="usersTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Utilisateur</th>
+          <th>Objectif</th>
+          <th>Poids</th>
+          <th>Taille</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="usersBody">
+        <?php foreach ($users as $u):
+          $initials  = strtoupper(substr($u['nom'] ?? '?', 0, 1));
+          $statusMap = [
+            'active'   => ['label' => 'Actif',   'cls' => 'active'],
+            'inactive' => ['label' => 'Inactif', 'cls' => 'inactive'],
+            'banned'   => ['label' => 'Banni',   'cls' => 'banned'],
+          ];
+          $s = $statusMap[$u['status']] ?? ['label' => $u['status'], 'cls' => 'inactive'];
+        ?>
+          <tr>
+            <td style="color:rgba(255,255,255,0.3);font-size:12px;"><?= $u['id'] ?></td>
+            <td>
+              <div class="user-badge">
+                <div class="avatar"><?= $initials ?></div>
+                <div>
+                  <div class="user-name"><?= htmlspecialchars($u['nom']) ?></div>
+                  <div class="user-email"><?= htmlspecialchars($u['email']) ?></div>
+                </div>
+              </div>
+            </td>
+            <td style="font-size:13px;color:rgba(255,255,255,0.6);"><?= htmlspecialchars($u['objectif'] ?? '—') ?></td>
+            <td style="font-size:13px;"><?= $u['poids']  ? $u['poids']  . ' kg' : '—' ?></td>
+            <td style="font-size:13px;"><?= $u['taille'] ? $u['taille'] . ' cm' : '—' ?></td>
+            <td>
+              <span class="status-badge <?= $s['cls'] ?>"
+                    onclick="cycleStatus(<?= $u['id'] ?>, '<?= $u['status'] ?>', this)">
+                <span class="dot"></span><?= $s['label'] ?>
+              </span>
+            </td>
+            <td>
+              <button class="btn-action btn-view"
+                      onclick='openModal("view", <?= json_encode($u) ?>)'>
+                <i class="fa fa-eye"></i>
+              </button>
+              <button class="btn-action btn-edit"
+                      onclick='openModal("edit", <?= json_encode($u) ?>)'>
+                <i class="fa fa-pen"></i>
+              </button>
+              <button class="btn-action btn-delete"
+                      onclick="confirmDelete(<?= $u['id'] ?>)">
+                <i class="fa fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+
+    <div class="empty-state" id="emptyState">
+      <i class="fa fa-users-slash"></i>
+      Aucun utilisateur trouvé pour ces critères.
+    </div>
+
+    <!-- PAGINATION -->
+    <div class="pagination-wrap" id="paginationWrap">
+      <div class="page-info" id="pageInfo">
+        Page <strong><?= $page ?></strong> / <?= $totalPages ?>
+      </div>
+      <div class="pagination" id="paginationBtns">
+        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+          <button class="page-btn <?= $i === $page ? 'active' : '' ?>"
+                  onclick="goPage(<?= $i ?>)"><?= $i ?></button>
+        <?php endfor; ?>
+      </div>
+    </div>
+
+  </div><!-- end table-wrap -->
+</div><!-- end content-area -->
+
+
+<!-- ===== MODAL ADD / EDIT / VIEW ===== -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+
+    <h3 id="modalTitle">Ajouter un utilisateur</h3>
+    <p class="modal-sub" id="modalSub">Remplissez les informations ci-dessous</p>
+
+    <form id="modalForm" method="POST" novalidate>
+      <input type="hidden" name="id" id="mId">
+
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>Nom complet</label>
+          <input type="text" name="nom" id="mNom" placeholder="ex: Ahmed Ben Ali" data-v="required">
+          <span class="v-msg" id="mNom-msg"></span>
+        </div>
+        <div class="modal-field">
+          <label>Email</label>
+          <input type="email" name="email" id="mEmail" placeholder="nom@email.com" data-v="email">
+          <span class="v-msg" id="mEmail-msg"></span>
+        </div>
+      </div>
+
+      <div class="modal-field" id="pwdField">
+        <label>Mot de passe <span id="pwdOptional" style="color:rgba(255,255,255,0.25);font-size:10px;">(laisser vide = inchangé)</span></label>
+        <input type="password" name="password" id="mPwd" placeholder="••••••••" data-v="optpwd">
+        <span class="v-msg" id="mPwd-msg"></span>
+      </div>
+
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>Poids (kg)</label>
+          <input type="number" name="poids" id="mPoids" placeholder="70" data-v="posnum">
+          <span class="v-msg" id="mPoids-msg"></span>
+        </div>
+        <div class="modal-field">
+          <label>Taille (cm)</label>
+          <input type="number" name="taille" id="mTaille" placeholder="175" data-v="posnum">
+          <span class="v-msg" id="mTaille-msg"></span>
+        </div>
+      </div>
+
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>Objectif</label>
+          <select name="objectif" id="mObjectif" data-v="select">
+            <option value="">-- Choisir --</option>
+            <option value="Perte de poids">Perte de poids</option>
+            <option value="Prise de masse">Prise de masse</option>
+            <option value="Équilibre alimentaire">Équilibre alimentaire</option>
+            <option value="Végétarien">Végétarien</option>
+          </select>
+          <span class="v-msg" id="mObjectif-msg"></span>
+        </div>
+        <div class="modal-field">
+          <label>Statut</label>
+          <select name="status" id="mStatus" data-v="select">
+            <option value="active">✅ Actif</option>
+            <option value="inactive">⏳ Inactif</option>
+            <option value="banned">🚫 Banni</option>
+          </select>
+          <span class="v-msg" id="mStatus-msg"></span>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-save" id="saveBtn">💾 Enregistrer</button>
+      <button type="button" class="btn-cancel" onclick="closeModal()">Annuler</button>
+    </form>
+
+  </div>
 </div>
 
-</form>
-</div>
-
-<!-- TABLE -->
-<table class="table table-bordered text-center align-middle">
-<thead>
-<tr>
-<th>ID</th>
-<th>Utilisateur</th>
-<th>Email</th>
-<th>Objectif</th>
-<th>Poids</th>
-<th>Taille</th>
-<th>Actions</th>
-</tr>
-</thead>
-
-<tbody>
-<?php foreach($users as $u){ ?>
-<tr>
-
-<td><?= $u['id'] ?></td>
-
-<td>
-<div class="user-badge">
-<div class="avatar">
-<?= strtoupper(substr($u['nom'],0,1)) ?>
-</div>
-<strong><?= $u['nom'] ?></strong>
-</div>
-</td>
-
-<td><?= $u['email'] ?></td>
-<td><?= $u['objectif'] ?></td>
-<td><?= $u['poids'] ?> kg</td>
-<td><?= $u['taille'] ?> cm</td>
-
-<td>
-<button class="btn-icon view"
-onclick='openUser(<?= json_encode($u) ?>,"view")'>
-<i class="fa fa-eye"></i>
-</button>
-
-<button class="btn-icon edit"
-onclick='openUser(<?= json_encode($u) ?>,"edit")'>
-<i class="fa fa-pen"></i>
-</button>
-
-<a href="/ProjetWeb-User/index.php?url=Admin/deleteUser/<?= $u['id'] ?>"
-class="btn-icon delete"
-onclick="return confirm('Supprimer ?')">
-<i class="fa fa-trash"></i>
-</a>
-</td>
-
-</tr>
-<?php } ?>
-</tbody>
-</table>
-
-</div>
-
-<!-- MODAL -->
-<div id="userModal" class="modal">
-<div class="modal-content">
-
-<div class="modal-header">
-<i class="fa fa-user"></i>
-<h4 id="modalTitle" class="modal-title"></h4>
-</div>
-
-<form id="userForm" method="POST">
-
-<input type="hidden" name="id" id="uid">
-
-<label class="form-label">Nom complet</label>
-<input class="form-control" name="nom" id="nom">
-
-<label class="form-label">Email</label>
-<input class="form-control" name="email" id="email">
-
-<div class="row">
-<div class="col">
-<label class="form-label">Poids</label>
-<input class="form-control" name="poids" id="poids">
-</div>
-<div class="col">
-<label class="form-label">Taille</label>
-<input class="form-control" name="taille" id="taille">
-</div>
-</div>
-
-<label class="form-label">Objectif</label>
-<select class="form-control" name="objectif" id="objectif">
-<option>Sportif</option>
-<option>Perte de poids</option>
-<option>Prise de masse</option>
-<option>Maladie</option>
-</select>
-
-<label class="form-label">Status</label>
-<select class="form-control" name="status" id="status">
-<option value="active">Active</option>
-<option value="inactive">Inactive</option>
-<option value="banned">Banned</option>
-</select>
-
-<button id="saveBtn" class="btn-save w-100 mt-3">💾 Save</button>
-<button type="button" onclick="closeModal()" class="btn-close-modal w-100 mt-2">Close</button>
-
-</form>
-
-</div>
-</div>
 
 <script>
-function openUser(user, mode){
+/* ================================================================
+   AJAX SEARCH + FILTER + PAGINATION
+================================================================ */
 
-let modal = document.getElementById("userModal");
-modal.classList.add("show");
+let searchTimer = null;
+let currentPage = <?= $page ?>;
 
-document.getElementById("uid").value = user.id;
-document.getElementById("nom").value = user.nom;
-document.getElementById("email").value = user.email;
-document.getElementById("poids").value = user.poids;
-document.getElementById("taille").value = user.taille;
-document.getElementById("objectif").value = user.objectif;
-document.getElementById("status").value = user.status;
+const searchInput    = document.getElementById('searchInput');
+const filterStatus   = document.getElementById('filterStatus');
+const filterObjectif = document.getElementById('filterObjectif');
 
-let form = document.getElementById("userForm");
-let saveBtn = document.getElementById("saveBtn");
-
-if(mode === "view"){
-    document.getElementById("modalTitle").innerText="👁 Voir utilisateur";
-
-    document.querySelectorAll("#userForm input, #userForm select").forEach(el=>{
-        el.disabled = true;
-    });
-
-    saveBtn.style.display = "none";
-}
-else{
-    document.getElementById("modalTitle").innerText="✏ Modifier utilisateur";
-
-    document.querySelectorAll("#userForm input, #userForm select").forEach(el=>{
-        el.disabled = false;
-    });
-
-    saveBtn.style.display = "block";
-
-    form.action="/ProjetWeb-User/index.php?url=Admin/updateUser/"+user.id;
-}
-}
-
-function closeModal(){
-document.getElementById("userModal").classList.remove("show");
-
-document.querySelectorAll("#userForm input, #userForm select").forEach(el=>{
-    el.disabled = false;
+/* Déclencheurs */
+searchInput.addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { currentPage = 1; fetchUsers(); }, 320);
 });
-document.getElementById("saveBtn").style.display = "block";
+
+filterStatus.addEventListener('change',   () => { currentPage = 1; fetchUsers(); });
+filterObjectif.addEventListener('change', () => { currentPage = 1; fetchUsers(); });
+
+function goPage(p) { currentPage = p; fetchUsers(); }
+
+/* Appel AJAX */
+function fetchUsers() {
+  const search   = searchInput.value.trim();
+  const status   = filterStatus.value;
+  const objectif = filterObjectif.value;
+
+  const params = new URLSearchParams({ search, status, objectif, page: currentPage });
+
+  document.getElementById('spinner').style.display    = 'block';
+  document.getElementById('usersTable').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'none';
+
+  fetch('/ProjetWeb-User/index.php?url=Admin/searchUsers&' + params)
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('spinner').style.display = 'none';
+      renderTable(data.users);
+      renderPagination(data.page, data.totalPages, data.total);
+    })
+    .catch(() => {
+      document.getElementById('spinner').style.display = 'none';
+    });
 }
+
+/* Rendu du tableau */
+function renderTable(users) {
+  const tbody = document.getElementById('usersBody');
+  const table = document.getElementById('usersTable');
+  const empty = document.getElementById('emptyState');
+
+  if (!users.length) {
+    table.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+
+  table.style.display = '';
+  empty.style.display = 'none';
+
+  tbody.innerHTML = users.map(u => {
+    const initials = u.nom ? u.nom.charAt(0).toUpperCase() : '?';
+    const statusMap = {
+      active:   { label: 'Actif',   cls: 'active' },
+      inactive: { label: 'Inactif', cls: 'inactive' },
+      banned:   { label: 'Banni',   cls: 'banned' }
+    };
+    const s = statusMap[u.status] || { label: u.status, cls: 'inactive' };
+
+    return `
+      <tr>
+        <td style="color:rgba(255,255,255,0.3);font-size:12px;">${u.id}</td>
+        <td>
+          <div class="user-badge">
+            <div class="avatar">${initials}</div>
+            <div>
+              <div class="user-name">${esc(u.nom)}</div>
+              <div class="user-email">${esc(u.email)}</div>
+            </div>
+          </div>
+        </td>
+        <td style="font-size:13px;color:rgba(255,255,255,0.6);">${esc(u.objectif || '—')}</td>
+        <td style="font-size:13px;">${u.poids ? u.poids + ' kg' : '—'}</td>
+        <td style="font-size:13px;">${u.taille ? u.taille + ' cm' : '—'}</td>
+        <td>
+          <span class="status-badge ${s.cls}" onclick="cycleStatus(${u.id}, '${u.status}', this)">
+            <span class="dot"></span>${s.label}
+          </span>
+        </td>
+        <td>
+          <button class="btn-action btn-view"  onclick='openModal("view", ${JSON.stringify(u)})'><i class="fa fa-eye"></i></button>
+          <button class="btn-action btn-edit"  onclick='openModal("edit", ${JSON.stringify(u)})'><i class="fa fa-pen"></i></button>
+          <button class="btn-action btn-delete" onclick="confirmDelete(${u.id})"><i class="fa fa-trash"></i></button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+/* Rendu pagination */
+function renderPagination(page, totalPages, total) {
+  document.getElementById('resultCount').textContent = total;
+  document.getElementById('pageInfo').innerHTML = `Page <strong>${page}</strong> / ${totalPages}`;
+
+  const wrap = document.getElementById('paginationBtns');
+  wrap.innerHTML = '';
+
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'page-btn' + (i === page ? ' active' : '');
+    btn.textContent = i;
+    btn.onclick = () => goPage(i);
+    wrap.appendChild(btn);
+  }
+}
+
+/* Escape HTML */
+function esc(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+
+/* ================================================================
+   TOGGLE STATUS (clic sur badge)
+================================================================ */
+const statusCycle = { active: 'inactive', inactive: 'banned', banned: 'active' };
+const statusLabels = { active: 'Actif', inactive: 'Inactif', banned: 'Banni' };
+
+function cycleStatus(id, current, el) {
+  const next = statusCycle[current] || 'inactive';
+
+  fetch('/ProjetWeb-User/index.php?url=Admin/toggleStatus', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `id=${id}&status=${next}`
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      el.className = `status-badge ${next}`;
+      el.innerHTML = `<span class="dot"></span>${statusLabels[next]}`;
+      el.setAttribute('onclick', `cycleStatus(${id}, '${next}', this)`);
+    }
+  });
+}
+
+
+/* ================================================================
+   DELETE CONFIRMATION
+================================================================ */
+function confirmDelete(id) {
+  if (!confirm('Supprimer cet utilisateur ?')) return;
+  window.location = `/ProjetWeb-User/index.php?url=Admin/deleteUser/${id}`;
+}
+
+
+/* ================================================================
+   MODAL ADD / EDIT / VIEW
+================================================================ */
+let modalMode = 'add';
+
+function openModal(mode, user = null) {
+  modalMode = mode;
+  const overlay = document.getElementById('modalOverlay');
+  overlay.classList.add('open');
+
+  const form    = document.getElementById('modalForm');
+  const saveBtn = document.getElementById('saveBtn');
+  const pwdOpt  = document.getElementById('pwdOptional');
+
+  // Reset validation
+  form.querySelectorAll('[data-v]').forEach(el => {
+    el.classList.remove('v-ok', 'v-err');
+  });
+  form.querySelectorAll('.v-msg').forEach(el => {
+    el.style.display = 'none'; el.textContent = '';
+  });
+
+  if (mode === 'add') {
+    document.getElementById('modalTitle').textContent = '➕ Ajouter un utilisateur';
+    document.getElementById('modalSub').textContent   = 'Remplissez les informations ci-dessous';
+    form.action = '/ProjetWeb-User/index.php?url=Admin/addUser';
+    form.reset();
+    pwdOpt.style.display = 'none';
+    saveBtn.style.display = 'block';
+    form.querySelectorAll('input, select').forEach(el => el.disabled = false);
+
+  } else if (mode === 'edit') {
+    document.getElementById('modalTitle').textContent = '✏ Modifier utilisateur';
+    document.getElementById('modalSub').textContent   = `Modification de ${user.nom}`;
+    form.action = `/ProjetWeb-User/index.php?url=Admin/updateUser/${user.id}`;
+    fillModal(user);
+    pwdOpt.style.display = 'inline';
+    saveBtn.style.display = 'block';
+    form.querySelectorAll('input, select').forEach(el => el.disabled = false);
+
+  } else { // view
+    document.getElementById('modalTitle').textContent = '👁 Détails utilisateur';
+    document.getElementById('modalSub').textContent   = user.nom;
+    fillModal(user);
+    saveBtn.style.display = 'none';
+    form.querySelectorAll('input, select').forEach(el => el.disabled = true);
+  }
+}
+
+function fillModal(u) {
+  document.getElementById('mId').value      = u.id;
+  document.getElementById('mNom').value     = u.nom     || '';
+  document.getElementById('mEmail').value   = u.email   || '';
+  document.getElementById('mPoids').value   = u.poids   || '';
+  document.getElementById('mTaille').value  = u.taille  || '';
+  document.getElementById('mPwd').value     = '';
+
+  const selObj = document.getElementById('mObjectif');
+  selObj.value = u.objectif || '';
+
+  const selSta = document.getElementById('mStatus');
+  selSta.value = u.status   || 'inactive';
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+
+/* ================================================================
+   VALIDATION MODALE (JS)
+================================================================ */
+document.getElementById('modalForm').addEventListener('submit', function(e) {
+  if (modalMode === 'view') return;
+
+  let valid = true;
+
+  this.querySelectorAll('[data-v]').forEach(el => {
+    const rule = el.dataset.v;
+    const val  = el.value.trim();
+    const msg  = document.getElementById(el.id + '-msg');
+    let error  = null;
+
+    if (rule === 'required' && val === '')  error = 'Ce champ est obligatoire.';
+    if (rule === 'email') {
+      if (val === '') error = 'Email obligatoire.';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) error = 'Email invalide.';
+    }
+    if (rule === 'posnum' && val !== '') {
+      if (isNaN(val) || parseFloat(val) <= 0) error = 'Valeur invalide.';
+    }
+    if (rule === 'select' && val === '') error = 'Veuillez choisir une option.';
+    if (rule === 'optpwd' && val !== '' && val.length < 8) error = 'Minimum 8 caractères.';
+
+    if (error) {
+      el.classList.add('v-err'); el.classList.remove('v-ok');
+      if (msg) { msg.textContent = error; msg.style.display = 'block'; }
+      valid = false;
+    } else {
+      el.classList.remove('v-err');
+      if (val !== '') el.classList.add('v-ok');
+      if (msg) { msg.style.display = 'none'; }
+    }
+  });
+
+  if (!valid) e.preventDefault();
+});
+
+/* Validation temps réel */
+document.getElementById('modalForm').querySelectorAll('[data-v]').forEach(el => {
+  el.addEventListener('input', () => {
+    el.classList.remove('v-err', 'v-ok');
+    const msg = document.getElementById(el.id + '-msg');
+    if (msg) msg.style.display = 'none';
+    if (el.value.trim()) el.classList.add('v-ok');
+  });
+});
 </script>
 
 </body>
