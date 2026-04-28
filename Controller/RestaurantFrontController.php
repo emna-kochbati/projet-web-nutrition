@@ -13,20 +13,27 @@ class RestaurantFrontController {
 
     // GET /Restaurant
     public function index(): void {
-        $search = trim($_GET['search'] ?? '');
-        $type   = trim($_GET['type']   ?? '');
+        $search  = trim($_GET['search'] ?? '');
+        $type    = trim($_GET['type']   ?? '');
+        $perPage = 6;
+        $page    = max(1, (int)($_GET['page'] ?? 1));
 
-        if ($search) {
-            $stmt = $this->db->prepare("SELECT * FROM restaurant WHERE nom LIKE ? OR adresse LIKE ? ORDER BY created_at DESC");
-            $stmt->execute(['%'.$search.'%', '%'.$search.'%']);
-            $restaurants = $stmt->fetchAll();
-        } else {
-            $restaurants = $this->db->query("SELECT * FROM restaurant ORDER BY created_at DESC")->fetchAll();
-        }
+        $where  = [];
+        $params = [];
+        if ($search) { $where[] = "(nom LIKE ? OR adresse LIKE ?)"; $params[] = "%$search%"; $params[] = "%$search%"; }
+        if ($type)   { $where[] = "type_cuisine = ?"; $params[] = $type; }
+        $whereSQL = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
-        if ($type) {
-            $restaurants = array_values(array_filter($restaurants, fn($r) => $r['type_cuisine'] === $type));
-        }
+        $stmtCount = $this->db->prepare("SELECT COUNT(*) FROM restaurant $whereSQL");
+        $stmtCount->execute($params);
+        $total      = (int)$stmtCount->fetchColumn();
+        $totalPages = max(1, (int)ceil($total / $perPage));
+        $page       = min($page, $totalPages);
+        $offset     = ($page - 1) * $perPage;
+
+        $stmt = $this->db->prepare("SELECT * FROM restaurant $whereSQL ORDER BY created_at DESC LIMIT $perPage OFFSET $offset");
+        $stmt->execute($params);
+        $restaurants = $stmt->fetchAll();
 
         require_once 'View/front/restaurant.php';
     }

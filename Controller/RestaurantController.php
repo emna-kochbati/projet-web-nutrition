@@ -13,14 +13,26 @@ class RestaurantController {
 
     // ── GET /Admin/restaurant ─────────────────────────────────────────────────
     public function index(): void {
-        $search = trim($_GET['search'] ?? '');
+        $search  = trim($_GET['search'] ?? '');
+        $type    = trim($_GET['type']   ?? '');
+        $perPage = 5;
+        $page    = max(1, (int)($_GET['page'] ?? 1));
 
-        if ($search) {
-            $stmt = $this->db->prepare("SELECT * FROM restaurant WHERE nom LIKE ? OR adresse LIKE ? ORDER BY created_at DESC");
-            $stmt->execute(['%'.$search.'%', '%'.$search.'%']);
-        } else {
-            $stmt = $this->db->query("SELECT * FROM restaurant ORDER BY created_at DESC");
-        }
+        $where  = [];
+        $params = [];
+        if ($search) { $where[] = "(nom LIKE ? OR adresse LIKE ?)"; $params[] = "%$search%"; $params[] = "%$search%"; }
+        if ($type)   { $where[] = "type_cuisine = ?"; $params[] = $type; }
+        $whereSQL = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+
+        $stmtCount = $this->db->prepare("SELECT COUNT(*) FROM restaurant $whereSQL");
+        $stmtCount->execute($params);
+        $total      = (int)$stmtCount->fetchColumn();
+        $totalPages = max(1, (int)ceil($total / $perPage));
+        $page       = min($page, $totalPages);
+        $offset     = ($page - 1) * $perPage;
+
+        $stmt = $this->db->prepare("SELECT * FROM restaurant $whereSQL ORDER BY created_at DESC LIMIT $perPage OFFSET $offset");
+        $stmt->execute($params);
         $restaurants = $stmt->fetchAll();
 
         $success = $_SESSION['success'] ?? null;
@@ -30,14 +42,24 @@ class RestaurantController {
         require_once 'View/back/restaurant/list.php';
     }
 
-    // ── GET /Admin/restaurant/search?q=... (AJAX) ─────────────────────────────
+    // ── GET /Admin/restaurant/search?q=...&type=... (AJAX) ───────────────────
     public function search(): void {
-        $q    = trim($_GET['q'] ?? '');
-        $stmt = $this->db->prepare(
-            "SELECT * FROM restaurant WHERE nom LIKE ? OR adresse LIKE ? ORDER BY created_at DESC"
-        );
-        $stmt->execute(['%'.$q.'%', '%'.$q.'%']);
+        $q    = trim($_GET['q']    ?? '');
+        $type = trim($_GET['type'] ?? '');
+
+        if ($q) {
+            $stmt = $this->db->prepare(
+                "SELECT * FROM restaurant WHERE (nom LIKE ? OR adresse LIKE ?) ORDER BY created_at DESC"
+            );
+            $stmt->execute(['%'.$q.'%', '%'.$q.'%']);
+        } else {
+            $stmt = $this->db->query("SELECT * FROM restaurant ORDER BY created_at DESC");
+        }
         $results = $stmt->fetchAll();
+
+        if ($type) {
+            $results = array_values(array_filter($results, fn($r) => $r['type_cuisine'] === $type));
+        }
 
         header('Content-Type: application/json');
         echo json_encode(array_values($results));

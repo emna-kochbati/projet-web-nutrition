@@ -45,6 +45,18 @@ tbody tr:hover { background:#f1f8e9; }
 <div class="search-bar">
     <input type="text" id="search-input" placeholder="Rechercher par nom ou adresse…"
            value="<?= htmlspecialchars($_GET['search'] ?? '') ?>" autocomplete="off">
+    <select id="type-input" style="padding:9px 14px;border:1px solid #ccc;border-radius:6px;font-size:.9rem;min-width:180px;">
+        <option value="">Tous les types</option>
+        <?php foreach (['tunisienne','italienne','japonaise','americaine','indienne','mexicaine','française','autre'] as $t): ?>
+            <option value="<?= $t ?>"><?= ucfirst($t) ?></option>
+        <?php endforeach; ?>
+    </select>
+    <button type="button" onclick="fetchResults()" style="background:#2e7d32;color:#fff;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;font-weight:600;">
+        🔍 Filtrer
+    </button>
+    <button type="button" onclick="resetSearch()" style="background:#eee;color:#333;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;font-weight:600;">
+        ✕ Effacer
+    </button>
     <span id="search-spinner">⏳ Recherche…</span>
 </div>
 <div id="result-count"></div>
@@ -54,31 +66,68 @@ tbody tr:hover { background:#f1f8e9; }
     <?php include __DIR__ . '/../../back/restaurant/_table_rows.php'; ?>
 </div>
 
+<!-- ── Pagination circulaire ──────────────────────────────────────────── -->
+<?php if ($totalPages > 1): ?>
+<div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:24px;">
+    <button onclick="goToPage(<?= $page - 1 ?>)" <?= $page <= 1 ? 'disabled' : '' ?>
+            style="width:40px;height:40px;border-radius:50%;border:2px solid <?= $page<=1?'#ddd':'#a5d6a7' ?>;
+                   background:<?= $page<=1?'#f5f5f5':'#fff' ?>;color:<?= $page<=1?'#bbb':'#2e7d32' ?>;
+                   font-size:1rem;cursor:<?= $page<=1?'default':'pointer' ?>;font-weight:700;
+                   display:flex;align-items:center;justify-content:center;">«</button>
+    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+    <button onclick="goToPage(<?= $i ?>)"
+            style="width:40px;height:40px;border-radius:50%;
+                   border:2px solid <?= $i===$page?'#2e7d32':'#a5d6a7' ?>;
+                   background:<?= $i===$page?'#2e7d32':'#fff' ?>;
+                   color:<?= $i===$page?'#fff':'#2e7d32' ?>;
+                   font-size:.9rem;font-weight:700;cursor:pointer;
+                   display:flex;align-items:center;justify-content:center;"><?= $i ?></button>
+    <?php endfor; ?>
+    <button onclick="goToPage(<?= $page + 1 ?>)" <?= $page >= $totalPages ? 'disabled' : '' ?>
+            style="width:40px;height:40px;border-radius:50%;border:2px solid <?= $page>=$totalPages?'#ddd':'#a5d6a7' ?>;
+                   background:<?= $page>=$totalPages?'#f5f5f5':'#fff' ?>;color:<?= $page>=$totalPages?'#bbb':'#2e7d32' ?>;
+                   font-size:1rem;cursor:<?= $page>=$totalPages?'default':'pointer' ?>;font-weight:700;
+                   display:flex;align-items:center;justify-content:center;">»</button>
+</div>
+<?php endif; ?>
+
 <script>
 let searchTimer = null;
 
 document.getElementById('search-input').addEventListener('input', function () {
-    const query = this.value.trim();
-
     clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => {
-        document.getElementById('search-spinner').style.display = 'inline';
-
-        fetch('/2A35/Admin/restaurant/search?q=' + encodeURIComponent(query), {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(res => res.json())
-        .then(data => {
-            document.getElementById('search-spinner').style.display = 'none';
-            document.getElementById('result-count').textContent =
-                data.length + ' restaurant' + (data.length > 1 ? 's' : '') + ' trouvé' + (data.length > 1 ? 's' : '');
-            renderTable(data);
-        })
-        .catch(() => {
-            document.getElementById('search-spinner').style.display = 'none';
-        });
-    }, 300); // délai 300ms après la dernière frappe
+    searchTimer = setTimeout(fetchResults, 300);
 });
+
+document.getElementById('search-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); fetchResults(); }
+});
+
+function fetchResults() {
+    const query = document.getElementById('search-input').value.trim();
+    const type  = document.getElementById('type-input').value;
+    document.getElementById('search-spinner').style.display = 'inline';
+
+    fetch('/2A35/Admin/restaurant/search?q=' + encodeURIComponent(query) + '&type=' + encodeURIComponent(type), {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('search-spinner').style.display = 'none';
+        document.getElementById('result-count').textContent =
+            data.length + ' restaurant' + (data.length > 1 ? 's' : '') + ' trouvé' + (data.length > 1 ? 's' : '');
+        renderTable(data);
+    })
+    .catch(() => {
+        document.getElementById('search-spinner').style.display = 'none';
+    });
+}
+
+function resetSearch() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('type-input').value   = '';
+    fetchResults();
+}
 
 function renderTable(rows) {
     if (rows.length === 0) {
@@ -129,9 +178,20 @@ function escHtml(str) {
     return d.innerHTML;
 }
 
+function goToPage(p) {
+    const total = <?= $totalPages ?>;
+    if (p < 1 || p > total) return;
+    const q    = document.getElementById('search-input').value.trim();
+    const type = document.getElementById('type-input').value;
+    let url = '/2A35/Admin/restaurant?page=' + p;
+    if (q)    url += '&search=' + encodeURIComponent(q);
+    if (type) url += '&type='   + encodeURIComponent(type);
+    window.location.href = url;
+}
+
 // Afficher le compte initial
 document.getElementById('result-count').textContent =
-    '<?= count($restaurants) ?> restaurant<?= count($restaurants) > 1 ? "s" : "" ?> trouvé<?= count($restaurants) > 1 ? "s" : "" ?>';
+    '<?= $total ?> restaurant<?= $total > 1 ? "s" : "" ?> trouvé<?= $total > 1 ? "s" : "" ?>';
 </script>
 
 <?php

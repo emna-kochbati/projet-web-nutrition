@@ -41,12 +41,14 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <button onclick="resetFilters()" class="btn btn-outline-secondary w-100 py-2">✕ Effacer</button>
+                <label class="form-label" style="visibility:hidden;">.</label>
+                <button onclick="fetchResults()" class="btn btn-primary w-100 py-2">
+                    <i class="fa fa-filter me-1"></i> Filtrer
+                </button>
             </div>
-            <div class="col-md-2 d-flex align-items-center">
-                <span id="search-spinner" class="text-primary" style="display:none;">
-                    <span class="spinner-border spinner-border-sm me-1"></span> Recherche…
-                </span>
+            <div class="col-md-2">
+                <label class="form-label" style="visibility:hidden;">.</label>
+                <button onclick="resetFilters()" class="btn btn-outline-secondary w-100 py-2">✕ Effacer</button>
             </div>
         </div>
     </div>
@@ -57,9 +59,9 @@
 <div class="container-fluid py-5">
     <div class="container">
         <p id="result-count" class="text-muted mb-4">
-            <strong><?= count($restaurants) ?></strong>
-            restaurant<?= count($restaurants) > 1 ? 's' : '' ?>
-            trouvé<?= count($restaurants) > 1 ? 's' : '' ?>
+            <strong><?= $total ?? count($restaurants) ?></strong>
+            restaurant<?= ($total ?? count($restaurants)) > 1 ? 's' : '' ?>
+            trouvé<?= ($total ?? count($restaurants)) > 1 ? 's' : '' ?>
         </p>
 
         <div id="restaurants-grid" class="row g-4">
@@ -67,6 +69,31 @@
             <?= renderRestaurantCard($r) ?>
             <?php endforeach; ?>
         </div>
+
+        <!-- ── Pagination circulaire ──────────────────────────────────── -->
+        <?php if (isset($totalPages) && $totalPages > 1): ?>
+        <div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:40px;">
+            <button onclick="goToPage(<?= $page - 1 ?>)" <?= $page <= 1 ? 'disabled' : '' ?>
+                    style="width:44px;height:44px;border-radius:50%;border:2px solid <?= $page<=1?'#ddd':'#a5d6a7' ?>;
+                           background:<?= $page<=1?'#f5f5f5':'#fff' ?>;color:<?= $page<=1?'#bbb':'#2e7d32' ?>;
+                           font-size:1.1rem;cursor:<?= $page<=1?'default':'pointer' ?>;font-weight:700;
+                           display:flex;align-items:center;justify-content:center;">«</button>
+            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+            <button onclick="goToPage(<?= $i ?>)"
+                    style="width:44px;height:44px;border-radius:50%;
+                           border:2px solid <?= $i===$page?'#2e7d32':'#a5d6a7' ?>;
+                           background:<?= $i===$page?'#2e7d32':'#fff' ?>;
+                           color:<?= $i===$page?'#fff':'#2e7d32' ?>;
+                           font-size:.95rem;font-weight:700;cursor:pointer;
+                           display:flex;align-items:center;justify-content:center;"><?= $i ?></button>
+            <?php endfor; ?>
+            <button onclick="goToPage(<?= $page + 1 ?>)" <?= $page >= $totalPages ? 'disabled' : '' ?>
+                    style="width:44px;height:44px;border-radius:50%;border:2px solid <?= $page>=$totalPages?'#ddd':'#a5d6a7' ?>;
+                           background:<?= $page>=$totalPages?'#f5f5f5':'#fff' ?>;color:<?= $page>=$totalPages?'#bbb':'#2e7d32' ?>;
+                           font-size:1.1rem;cursor:<?= $page>=$totalPages?'default':'pointer' ?>;font-weight:700;
+                           display:flex;align-items:center;justify-content:center;">»</button>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -136,21 +163,23 @@ function fetchResults() {
     const q    = document.getElementById('search-input').value.trim();
     const type = document.getElementById('type-input').value;
 
-    document.getElementById('search-spinner').style.display = 'inline-flex';
+    const spinner = document.createElement('span');
+    spinner.className = 'spinner-border spinner-border-sm text-primary';
+    spinner.id = 'loading-spinner';
+    document.querySelector('.container-fluid.py-5 .container').prepend(spinner);
 
     fetch('/2A35/Restaurant/search?q=' + encodeURIComponent(q) + '&type=' + encodeURIComponent(type), {
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
     .then(res => res.json())
     .then(data => {
-        document.getElementById('search-spinner').style.display = 'none';
+        const s = document.getElementById('loading-spinner');
+        if (s) s.remove();
 
-        // Compteur
         const n = data.length;
         document.getElementById('result-count').innerHTML =
             '<strong>' + n + '</strong> restaurant' + (n > 1 ? 's' : '') + ' trouvé' + (n > 1 ? 's' : '');
 
-        // Grille
         const grid = document.getElementById('restaurants-grid');
         if (n === 0) {
             grid.innerHTML = `
@@ -164,7 +193,8 @@ function fetchResults() {
         grid.innerHTML = data.map(r => buildCard(r)).join('');
     })
     .catch(() => {
-        document.getElementById('search-spinner').style.display = 'none';
+        const s = document.getElementById('loading-spinner');
+        if (s) s.remove();
     });
 }
 
@@ -211,6 +241,17 @@ function esc(str) {
     const d = document.createElement('div');
     d.appendChild(document.createTextNode(str || ''));
     return d.innerHTML;
+}
+
+function goToPage(p) {
+    const total = <?= isset($totalPages) ? $totalPages : 1 ?>;
+    if (p < 1 || p > total) return;
+    const q    = document.getElementById('search-input').value.trim();
+    const type = document.getElementById('type-input').value;
+    let url = '/2A35/Restaurant?page=' + p;
+    if (q)    url += '&search=' + encodeURIComponent(q);
+    if (type) url += '&type='   + encodeURIComponent(type);
+    window.location.href = url;
 }
 </script>
 

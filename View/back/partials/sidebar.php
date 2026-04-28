@@ -178,6 +178,10 @@
                     ['label' => '📋 Liste restaurants',  'url' => '/2A35/Admin/restaurant'],
                     ['label' => '➕ Nouveau restaurant', 'url' => '/2A35/Admin/restaurant/create'],
                 ]],
+                'recette' => ['🥘 Recette', [
+                    ['label' => '📋 Liste recettes',   'url' => '/2A35/Admin/recette'],
+                    ['label' => '➕ Nouvelle recette',  'url' => '/2A35/Admin/recette/create'],
+                ]],
                 'programme' => ['🏋️ Programme', [
                     ['label' => '📋 Liste',    'url' => '/2A35/Admin/programme'],
                     ['label' => '➕ Nouveau',  'url' => '/2A35/Admin/programme/create'],
