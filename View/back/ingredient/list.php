@@ -167,6 +167,36 @@ tbody td { padding:11px 16px; vertical-align:middle; }
 <?php endif; ?>
 </div>
 
+<!-- Pagination -->
+<?php if (isset($totalPages) && $totalPages > 1): ?>
+<style>
+.pag-wrap { display:flex; justify-content:center; align-items:center; gap:10px; margin-top:28px; flex-wrap:wrap; }
+.pag-btn {
+    width:44px; height:44px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:0.95rem; text-decoration:none;
+    border:2px solid #a5d6a7; color:#2e7d32; background:#fff;
+    transition:all .2s;
+}
+.pag-btn:hover  { background:#e8f5e9; border-color:#2e7d32; transform:scale(1.08); }
+.pag-btn.active { background:#2e7d32; border-color:#2e7d32; color:#fff; box-shadow:0 4px 12px rgba(46,125,50,.35); }
+.pag-btn.disabled { border-color:#e0e0e0; color:#bbb; pointer-events:none; cursor:default; }
+</style>
+<div class="pag-wrap">
+    <?php
+    $baseUrl = '/2A35/Admin/ingredient?page=';
+    $qs = '';
+    if ($search) $qs .= '&search='.urlencode($search);
+    if ($type)   $qs .= '&type='.urlencode($type);
+    ?>
+    <a href="<?= $baseUrl.($page-1).$qs ?>" class="pag-btn <?= $page<=1?'disabled':'' ?>">«</a>
+    <?php for ($i=1; $i<=$totalPages; $i++): ?>
+        <a href="<?= $baseUrl.$i.$qs ?>" class="pag-btn <?= $i===$page?'active':'' ?>"><?= $i ?></a>
+    <?php endfor; ?>
+    <a href="<?= $baseUrl.($page+1).$qs ?>" class="pag-btn <?= $page>=$totalPages?'disabled':'' ?>">»</a>
+</div>
+<?php endif; ?>
+
 <!-- Modal suppression -->
 <div class="modal-bg" id="modalDel">
     <div class="modal">

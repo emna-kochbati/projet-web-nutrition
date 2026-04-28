@@ -14,7 +14,12 @@ class IngredientController {
     public function index(): void {
         $search      = trim($_GET['search'] ?? '');
         $type        = trim($_GET['type']   ?? '');
-        $ingredients = $this->ingredientModel->filter($search, $type);
+        $page        = max(1, (int)($_GET['page'] ?? 1));
+        $perPage     = 6;
+        $total       = $this->ingredientModel->countFilter($search, $type);
+        $totalPages  = (int)ceil($total / $perPage);
+        $offset      = ($page - 1) * $perPage;
+        $ingredients = $this->ingredientModel->filterPaginated($search, $type, $perPage, $offset);
         $stats       = $this->ingredientModel->countByType();
         $success     = $_SESSION['success'] ?? null;
         $error       = $_SESSION['error']   ?? null;

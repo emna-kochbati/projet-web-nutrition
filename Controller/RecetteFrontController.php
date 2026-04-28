@@ -17,23 +17,14 @@ class RecetteFrontController {
         $search     = trim($_GET['search']     ?? '');
         $categorie  = trim($_GET['categorie']  ?? '');
         $difficulte = trim($_GET['difficulte'] ?? '');
+        $page       = max(1, (int)($_GET['page'] ?? 1));
+        $perPage    = 6;
 
-        $recettes = $this->recetteModel->getAll();
+        $total      = $this->recetteModel->countFilter($search, $categorie, $difficulte);
+        $totalPages = (int)ceil($total / $perPage);
+        $offset     = ($page - 1) * $perPage;
 
-        // Filtrage
-        if ($search !== '') {
-            $recettes = array_filter($recettes, fn($r) =>
-                stripos($r['nom'], $search) !== false
-            );
-        }
-        if ($categorie !== '') {
-            $recettes = array_filter($recettes, fn($r) => $r['categorie'] === $categorie);
-        }
-        if ($difficulte !== '') {
-            $recettes = array_filter($recettes, fn($r) => $r['difficulte'] === $difficulte);
-        }
-
-        $recettes = array_values($recettes);
+        $recettes = $this->recetteModel->filterPaginated($search, $categorie, $difficulte, $perPage, $offset);
         require_once 'View/front/recette.php';
     }
 
@@ -41,9 +32,20 @@ class RecetteFrontController {
     public function detail(string $id): void {
         $recette = $this->recetteModel->getById((int)$id);
         if (!$recette) {
-            header('Location: /2A35/Recette'); exit;
+            header('Location: /2A35/RecetteFront'); exit;
         }
         $ingredients = $this->ingredientModel->getByRecette((int)$id);
         require_once 'View/front/recette_detail.php';
+    }
+
+    // Endpoint AJAX recherche dynamique frontoffice
+    public function ajax(): void {
+        header('Content-Type: application/json');
+        $search     = trim($_GET['search']     ?? '');
+        $categorie  = trim($_GET['categorie']  ?? '');
+        $difficulte = trim($_GET['difficulte'] ?? '');
+        $recettes   = $this->recetteModel->filter($search, $categorie, $difficulte);
+        echo json_encode(array_values($recettes));
+        exit;
     }
 }

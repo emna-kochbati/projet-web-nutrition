@@ -18,9 +18,16 @@ class RecetteController {
         $search     = trim($_GET['search']     ?? '');
         $categorie  = trim($_GET['categorie']  ?? '');
         $difficulte = trim($_GET['difficulte'] ?? '');
-        $recettes   = $this->recetteModel->filter($search, $categorie, $difficulte);
-        $success    = $_SESSION['success'] ?? null;
-        $error      = $_SESSION['error']   ?? null;
+        $page       = max(1, (int)($_GET['page'] ?? 1));
+        $perPage    = 5;
+
+        $total    = $this->recetteModel->countFilter($search, $categorie, $difficulte);
+        $totalPages = (int)ceil($total / $perPage);
+        $offset   = ($page - 1) * $perPage;
+
+        $recettes = $this->recetteModel->filterPaginated($search, $categorie, $difficulte, $perPage, $offset);
+        $success  = $_SESSION['success'] ?? null;
+        $error    = $_SESSION['error']   ?? null;
         unset($_SESSION['success'], $_SESSION['error']);
         require_once 'View/back/recette/list.php';
     }

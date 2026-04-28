@@ -187,8 +187,43 @@ class Recette {
         }
     }
 
-    public function filter(string $search, string $categorie, string $difficulte): array {
+    public function countFilter(string $search, string $categorie, string $difficulte): int {
         try {
+            $pdo        = Database::getConnection();
+            $conditions = [];
+            $params     = [];
+            if ($search !== '')     { $conditions[] = 'nom LIKE :search';         $params[':search']     = '%'.$search.'%'; }
+            if ($categorie !== '')  { $conditions[] = 'categorie = :categorie';   $params[':categorie']  = $categorie; }
+            if ($difficulte !== '') { $conditions[] = 'difficulte = :difficulte'; $params[':difficulte'] = $difficulte; }
+            $sql = "SELECT COUNT(*) FROM recette";
+            if (!empty($conditions)) $sql .= " WHERE ".implode(' AND ', $conditions);
+            $query = $pdo->prepare($sql);
+            $query->execute($params);
+            return (int)$query->fetchColumn();
+        } catch (PDOException $e) { echo $e->getMessage(); return 0; }
+    }
+
+    public function filterPaginated(string $search, string $categorie, string $difficulte, int $limit, int $offset): array {
+        try {
+            $pdo        = Database::getConnection();
+            $conditions = [];
+            $params     = [];
+            if ($search !== '')     { $conditions[] = 'nom LIKE :search';         $params[':search']     = '%'.$search.'%'; }
+            if ($categorie !== '')  { $conditions[] = 'categorie = :categorie';   $params[':categorie']  = $categorie; }
+            if ($difficulte !== '') { $conditions[] = 'difficulte = :difficulte'; $params[':difficulte'] = $difficulte; }
+            $sql = "SELECT * FROM recette";
+            if (!empty($conditions)) $sql .= " WHERE ".implode(' AND ', $conditions);
+            $sql .= " ORDER BY created_at DESC LIMIT :limit OFFSET :offset";
+            $query = $pdo->prepare($sql);
+            foreach ($params as $k => $v) $query->bindValue($k, $v);
+            $query->bindValue(':limit',  $limit,  \PDO::PARAM_INT);
+            $query->bindValue(':offset', $offset, \PDO::PARAM_INT);
+            $query->execute();
+            return array_map(fn($r) => self::fromArray($r)->toArray(), $query->fetchAll());
+        } catch (PDOException $e) { echo $e->getMessage(); return []; }
+    }
+
+    public function filter(string $search, string $categorie, string $difficulte): array {        try {
             $pdo        = Database::getConnection();
             $conditions = [];
             $params     = [];

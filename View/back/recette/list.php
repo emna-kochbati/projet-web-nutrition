@@ -129,6 +129,41 @@ tbody td { padding:11px 16px; vertical-align:middle; }
 <?php endif; ?>
 </div>
 
+<!-- Pagination -->
+<?php if ($totalPages > 1): ?>
+<style>
+.pagination-wrap { display:flex; justify-content:center; align-items:center; gap:10px; margin-top:28px; flex-wrap:wrap; }
+.page-btn {
+    width:44px; height:44px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:0.95rem; cursor:pointer;
+    text-decoration:none; transition:all .2s;
+    border:2px solid #a5d6a7; color:#2e7d32; background:#fff;
+}
+.page-btn:hover { background:#e8f5e9; border-color:#2e7d32; color:#2e7d32; transform:scale(1.08); }
+.page-btn.active { background:#2e7d32; border-color:#2e7d32; color:#fff; box-shadow:0 4px 12px rgba(46,125,50,.35); }
+.page-btn.disabled { border-color:#e0e0e0; color:#bbb; cursor:default; pointer-events:none; }
+</style>
+<div class="pagination-wrap">
+    <?php
+    $baseUrl = '/2A35/Admin/recette?page=';
+    $qs = '';
+    if ($search)     $qs .= '&search='.urlencode($search);
+    if ($categorie)  $qs .= '&categorie='.urlencode($categorie);
+    if ($difficulte) $qs .= '&difficulte='.urlencode($difficulte);
+    ?>
+    <!-- Précédent -->
+    <a href="<?= $baseUrl.($page-1).$qs ?>" class="page-btn <?= $page<=1 ? 'disabled':'' ?>">«</a>
+
+    <?php for ($i=1; $i<=$totalPages; $i++): ?>
+        <a href="<?= $baseUrl.$i.$qs ?>" class="page-btn <?= $i===$page ? 'active':'' ?>"><?= $i ?></a>
+    <?php endfor; ?>
+
+    <!-- Suivant -->
+    <a href="<?= $baseUrl.($page+1).$qs ?>" class="page-btn <?= $page>=$totalPages ? 'disabled':'' ?>">»</a>
+</div>
+<?php endif; ?>
+
 <div class="modal-bg" id="modalDel">
     <div class="modal">
         <h3>⚠️ Confirmer la suppression</h3>
