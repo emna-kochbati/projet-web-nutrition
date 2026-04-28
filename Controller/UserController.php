@@ -1,6 +1,5 @@
 <?php
 
-
 require_once __DIR__ . '/../Config/database.php';
 
 class UserController
@@ -365,7 +364,7 @@ class UserController
     }
 
     /* =========================
-       HOME
+       HOME → redirige dashboard
     ========================== */
     public function home()
     {
@@ -373,7 +372,21 @@ class UserController
             header("Location: index.php?url=User/auth");
             exit;
         }
-        require_once __DIR__ . '/../View/front/pages/home.php';
+        header("Location: index.php?url=User/dashboard");
+        exit;
+    }
+
+    /* =========================
+       DASHBOARD USER
+    ========================== */
+    public function dashboard()
+    {
+        if (!isset($_SESSION['user'])) {
+            header("Location: index.php?url=User/auth");
+            exit;
+        }
+        $user = $_SESSION['user'];
+        require_once __DIR__ . '/../View/front/pages/dashboard.php';
     }
 
     /* =========================
