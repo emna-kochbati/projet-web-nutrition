@@ -45,12 +45,19 @@
         <div class="row mb-5">
             <div class="col-12">
                 <div class="d-flex overflow-auto pb-2 filter-scroll" style="gap: 10px; white-space: nowrap;">
-                    <button type="button" class="btn btn-outline-primary active type-filter" data-type="0" style="border-radius: 25px; padding: 8px 25px; font-weight: 600;">
-                        All Events
+                    <button type="button" class="btn btn-outline-primary active type-filter" data-type="0" style="border-radius: 25px; padding: 8px 25px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+                        <i class="fa fa-th-large"></i> All Events
                     </button>
                     <?php if (!empty($allTypes)): ?>
                         <?php foreach ($allTypes as $type): ?>
-                        <button type="button" class="btn btn-outline-primary type-filter" data-type="<?= $type['id'] ?>" style="border-radius: 25px; padding: 8px 25px; font-weight: 600;">
+                        <button type="button" class="btn btn-outline-primary type-filter" data-type="<?= $type['id'] ?>" style="border-radius: 25px; padding: 8px 25px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+                            <?php if (!empty($type['image'])): 
+                                $path = (strpos($type['image'], 'assets/') === 0) ? $type['image'] : "assets/img/" . $type['image'];
+                            ?>
+                                <img src="/2A35/<?= $path ?>" alt="<?= htmlspecialchars($type['label']) ?>" loading="lazy" style="width: 25px; height: 25px; object-fit: cover; border-radius: 50%;">
+                            <?php else: ?>
+                                <i class="fa fa-tag"></i>
+                            <?php endif; ?>
                             <?= htmlspecialchars($type['label']) ?>
                         </button>
                         <?php endforeach; ?>
@@ -94,7 +101,7 @@
                     <!-- Bar Chart: Participants -->
                     <div class="col-lg-4">
                         <div class="card h-100 border-0 shadow-sm p-3" style="border-radius: 15px;">
-                            <h6 class="text-center mb-4">Most Popular Events (Participants)</h6>
+                            <h6 class="text-center mb-4">Events with Most Available Places</h6>
                             <canvas id="participantBarChart"></canvas>
                         </div>
                     </div>
@@ -106,17 +113,25 @@
 <!-- Statistics Modal End -->
 
 <!-- Chart.js & AJAX Script -->
-<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 $(document).ready(function() {
     let searchTimeout = null;
+    let currentSearchRequest = null;
     let selectedType = 0;
 
     function performSearch(page = 1) {
         const query = $('#event-search').val();
         
-        $.ajax({
+        // Cancel previous request if still pending
+        if (currentSearchRequest) {
+            currentSearchRequest.abort();
+        }
+
+        // Add loading state
+        $('#event-container').css('opacity', '0.5');
+        
+        currentSearchRequest = $.ajax({
             url: '/2A35/Event/search',
             type: 'GET',
             data: { 
@@ -125,7 +140,7 @@ $(document).ready(function() {
                 page: page
             },
             success: function(response) {
-                $('#event-container').html(response);
+                $('#event-container').html(response).css('opacity', '1');
                 // Smooth scroll to results if on mobile or if page changed
                 if (page > 1) {
                     $('html, body').animate({
@@ -133,8 +148,14 @@ $(document).ready(function() {
                     }, 500);
                 }
             },
-            error: function() {
-                console.error('Error fetching search results');
+            error: function(xhr, status, error) {
+                if (status !== 'abort') {
+                    console.error('Error fetching search results:', error);
+                    $('#event-container').css('opacity', '1');
+                }
+            },
+            complete: function() {
+                currentSearchRequest = null;
             }
         });
     }
@@ -270,6 +291,10 @@ $(document).ready(function() {
 
 <!-- Add some quick inline custom styling to ensure hover effects work nicely -->
 <style>
+    .col-lg-4 .h-100 {
+        will-change: transform, box-shadow;
+    }
+
     .col-lg-4 .h-100:hover {
         transform: translateY(-10px);
         box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;

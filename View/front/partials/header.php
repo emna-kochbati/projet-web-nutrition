@@ -29,6 +29,9 @@
 
     <!-- Template Stylesheet -->
     <link href="/2A35/assets/css/style.css" rel="stylesheet">
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
 </head>
 
 <body>

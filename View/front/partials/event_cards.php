@@ -7,7 +7,13 @@ $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_
         <div class="h-100 rounded overflow-hidden" style="background: #fff; box-shadow: 0 5px 20px rgba(0,0,0,0.05); transition: transform 0.3s ease; border: 1px solid #f0f0f0;">
             <!-- Top decorative banner -->
             <?php 
-                $bannerImage = !empty($event['type_image']) ? "url('/2A35/assets/img/" . $event['type_image'] . "')" : "linear-gradient(135deg, #3cb043, #72c875)";
+                if (!empty($event['type_image'])) {
+                    // Check if the image path already includes 'assets/'
+                    $path = (strpos($event['type_image'], 'assets/') === 0) ? $event['type_image'] : "assets/img/" . $event['type_image'];
+                    $bannerImage = "url('/2A35/" . $path . "')";
+                } else {
+                    $bannerImage = "linear-gradient(135deg, #3cb043, #72c875)";
+                }
             ?>
             <div style="height: 120px; background: <?= $bannerImage ?> center/cover no-repeat; position: relative;">
                 <span class="badge bg-white text-success position-absolute" style="top: 15px; left: 15px; padding: 8px 15px; font-size: 14px; border-radius: 20px;">
@@ -16,7 +22,11 @@ $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_
             </div>
             
             <div class="p-4" style="position: relative; margin-top: -30px; background: white; border-radius: 15px 15px 0 0;">
-                <h4 class="mb-3" style="color: #2c3e50; font-weight: 700;"><?= htmlspecialchars($event['name']) ?></h4>
+                <h4 class="mb-3">
+                    <a href="/2A35/Event/show/<?= $event['id'] ?>" style="color: #2c3e50; font-weight: 700; text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='#3cb043'" onmouseout="this.style.color='#2c3e50'">
+                        <?= htmlspecialchars($event['name']) ?>
+                    </a>
+                </h4>
                 <div class="d-flex flex-column mb-4" style="color: #7f8c8d; font-size: 15px;">
                     <div class="mb-2">
                         <i class="fa fa-calendar-alt text-primary me-2" style="width: 20px; text-align: center;"></i>
@@ -32,7 +42,10 @@ $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_
                     </div>
                 </div>
                 
-                <a class="btn btn-outline-primary py-2 px-4 w-100" href="/2A35/Event/register/<?= $event['id'] ?>" style="border-radius: 5px; font-weight: bold;">Register Now</a>
+                <div class="d-flex gap-2">
+                    <a class="btn btn-outline-primary py-2 px-3 flex-grow-1" href="/2A35/Event/show/<?= $event['id'] ?>" style="border-radius: 5px; font-weight: bold;">Details</a>
+                    <a class="btn btn-primary py-2 px-3 flex-grow-1" href="/2A35/Event/register/<?= $event['id'] ?>" style="border-radius: 5px; font-weight: bold;">Register</a>
+                </div>
             </div>
         </div>
     </div>

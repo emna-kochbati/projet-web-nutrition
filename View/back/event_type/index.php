@@ -10,6 +10,7 @@ ob_start();
     <thead style="background: #2c3e50; color: white;">
         <tr>
             <th style="padding: 12px; text-align: left;">ID</th>
+            <th style="padding: 12px; text-align: left;">Image</th>
             <th style="padding: 12px; text-align: left;">Label</th>
             <th style="padding: 12px; text-align: left;">Actions</th>
         </tr>
@@ -18,6 +19,15 @@ ob_start();
         <?php foreach ($types as $type): ?>
         <tr style="border-bottom: 1px solid #eee;">
             <td style="padding: 12px;"><?= htmlspecialchars($type['id']) ?></td>
+            <td style="padding: 12px;">
+                <?php if (!empty($type['image'])): 
+                    $path = (strpos($type['image'], 'assets/') === 0) ? $type['image'] : "assets/img/" . $type['image'];
+                ?>
+                    <img src="/2A35/<?= $path ?>" alt="<?= htmlspecialchars($type['label']) ?>" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                <?php else: ?>
+                    <span style="color: #ccc;">No Image</span>
+                <?php endif; ?>
+            </td>
             <td style="padding: 12px;"><?= htmlspecialchars($type['label']) ?></td>
             <td style="padding: 12px;">
                 <a href="/2A35/back/EventType/edit/<?= $type['id'] ?>" style="color: #f39c12; text-decoration: none; margin-right: 10px;">Edit</a>

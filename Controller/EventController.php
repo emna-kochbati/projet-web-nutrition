@@ -16,11 +16,31 @@ class EventController {
         return $stmt->fetchAll();
     }
 
-    public function incrementParticipants($id) {
+    public function decrementAvailablePlaces($id) {
         $stmt = $this->db->prepare(
-            'UPDATE event SET number_of_participants = number_of_participants + 1 WHERE id = :id'
+            'UPDATE event SET number_of_participants = number_of_participants - 1 WHERE id = :id'
         );
         return $stmt->execute(['id' => (int) $id]);
+    }
+
+    public function getById($id) {
+        $stmt = $this->db->prepare(
+            'SELECT e.*, t.label AS type_label, t.image AS type_image 
+             FROM event e 
+             JOIN event_type t ON e.id_type = t.id 
+             WHERE e.id = :id'
+        );
+        $stmt->execute(['id' => (int) $id]);
+        return $stmt->fetch();
+    }
+
+    public function show($id) {
+        $event = $this->getById($id);
+        if (!$event) {
+            header('Location: /2A35/Event');
+            exit;
+        }
+        require_once 'View/front/event_details.php';
     }
 
     public function index() {
@@ -145,8 +165,93 @@ class EventController {
     }
 
     public function register($id) {
-        $this->incrementParticipants($id);
+        $this->decrementAvailablePlaces($id);
         header('Location: /2A35/Event');
+        exit;
+    }
+
+    private function callGemini($prompt) {
+        $apiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
+        if (empty($apiKey) || $apiKey === 'YOUR_API_KEY_HERE') {
+            return "Please provide a valid Gemini API Key in config.php";
+        }
+
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=" . $apiKey;
+        
+        $data = [
+            "contents" => [
+                [
+                    "parts" => [
+                        ["text" => $prompt]
+                    ]
+                ]
+            ]
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        
+        $response = curl_exec($ch);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlError) {
+            return "CURL Error: " . $curlError;
+        }
+
+        $result = json_decode($response, true);
+        
+        if (isset($result['error'])) {
+            return "Gemini API Error: " . ($result['error']['message'] ?? 'Unknown error') . " (Raw: " . substr($response, 0, 100) . ")";
+        }
+
+        if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
+            return $result['candidates'][0]['content']['parts'][0]['text'];
+        }
+
+        return "AI Error: Response format unexpected. Raw Response: " . substr($response, 0, 200);
+    }
+
+    public function generateDescription($id = null) {
+        $id = $id ?? ($_GET['id'] ?? 0);
+        $event = $this->getById($id);
+        
+        if (!$event) {
+            echo "Event not found.";
+            exit;
+        }
+
+        $prompt = "Rédige une description accrocheuse et professionnelle de 3 phrases pour un événement nommé '" . $event['name'] . "' de type '" . $event['type_label'] . "' se déroulant à " . $event['location'] . ". Le ton doit être enthousiaste et inciter les gens à participer.";
+        
+        echo $this->callGemini($prompt);
+        exit;
+    }
+
+    public function generateFaq($id = null) {
+        $id = $id ?? ($_GET['id'] ?? 0);
+        $event = $this->getById($id);
+        
+        if (!$event) {
+            echo "Event not found.";
+            exit;
+        }
+
+        $prompt = "Génère 3 questions fréquemment posées avec leurs réponses pour un événement nommé '" . $event['name'] . "' à " . $event['location'] . ". 
+                   Retourne le résultat strictement sous forme d'un tableau JSON d'objets avec les clés 'q' and 'a'. 
+                   Exemple: [{\"q\": \"Question ?\", \"a\": \"Réponse.\"}]
+                   Les questions et réponses doivent être en français.";
+        
+        $rawResponse = $this->callGemini($prompt);
+        
+        // Clean the response in case AI adds markdown code blocks
+        $json = preg_replace('/^```json\s*|\s*```$/i', '', trim($rawResponse));
+        
+        header('Content-Type: application/json');
+        echo $json;
         exit;
     }
 }
