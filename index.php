@@ -1,41 +1,31 @@
 <?php
-session_start();
-
 // 1. Grab the URL parts
 $url = isset($_GET['url']) ? explode('/', rtrim($_GET['url'], '/')) : ['Home'];
 
-// 2. Handle /Admin prefix — strip it and shift the array
-$offset = 0;
-if (strtolower($url[0]) === 'admin') {
-    $offset = 1;
-}
-
-// 3. Format the Controller name
-// Front routes use a "Front" suffix to separate from back controllers
-$segment = $url[$offset] ?? 'Home';
-$isAdmin = $offset === 1;
-
-if (!$isAdmin && in_array(strtolower($segment), ['restaurant'])) {
-    $controllerName = ucfirst($segment) . 'FrontController';
+if (strtolower($url[0]) === 'back') {
+    $controllerName = isset($url[1]) ? ucfirst($url[1]) . 'Controller' : 'DashboardController';
+    $controllerFile = "Controller/back/" . $controllerName . ".php";
+    $method = isset($url[2]) ? $url[2] : 'index';
+    $params = array_slice($url, 3);
 } else {
-    $controllerName = ucfirst($segment) . 'Controller';
+    $controllerName = ucfirst($url[0]) . 'Controller';
+    $controllerFile = "Controller/" . $controllerName . ".php";
+    $method = isset($url[1]) ? $url[1] : 'index';
+    $params = array_slice($url, 2);
 }
-$controllerFile = "Controller/" . $controllerName . ".php";
 
-// 4. Check if the file exists before loading
+// 3. Check if the file exists before loading
 if (file_exists($controllerFile)) {
     require_once $controllerFile;
     $controller = new $controllerName();
 
-    // 5. Method (e.g., index, create, store, edit, update, delete, show)
-    $method = $url[$offset + 1] ?? 'index';
-
+    // 4. Check if the method exists (e.g., 'show', 'add', 'edit')
     if (method_exists($controller, $method)) {
-        $params = array_slice($url, $offset + 2);
+        // Pass the rest of the URL parts as parameters (like an ID)
         call_user_func_array([$controller, $method], $params);
     } else {
         echo "404 - Method '$method' not found in $controllerName";
     }
 } else {
-    echo "404 - Controller $controllerName not found";
+    echo "404 - Controller $controllerName not found in $controllerFile";
 }

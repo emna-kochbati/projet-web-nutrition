@@ -1,9 +1,6 @@
 <?php
-require_once 'Model/Restaurant.php';
-
 class HomeController {
-    public function index(): void {
-        $restaurants = (new Restaurant())->getAll();
+    public function index() {
         require_once 'View/front/home.php';
     }
 }

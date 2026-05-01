@@ -153,7 +153,7 @@
 <aside class="sidebar">
     <!-- Header -->
     <div class="sidebar-header">
-        <div class="site-name">🥗 EcoNutri</div>
+        <div class="site-name">🥗 NutriSmart</div>
     </div>
 
     <!-- Navigation -->
@@ -174,21 +174,25 @@
                     ['label' => '📋 Liste',    'url' => '/2A35/Admin/utilisateur'],
                     ['label' => '➕ Nouveau',  'url' => '/2A35/Admin/utilisateur/create'],
                 ]],
-                'restaurant' => ['🤝 Partenaire', [
-                    ['label' => '📋 Liste restaurants',  'url' => '/2A35/Admin/restaurant'],
-                    ['label' => '➕ Nouveau restaurant', 'url' => '/2A35/Admin/restaurant/create'],
+                'partenaire' => ['🤝 Partenaire', [
+                    ['label' => '📋 Liste',    'url' => '/2A35/Admin/partenaire'],
+                    ['label' => '➕ Nouveau',  'url' => '/2A35/Admin/partenaire/create'],
                 ]],
-                'recette' => ['🥘 Recette', [
-                    ['label' => '📋 Liste recettes',   'url' => '/2A35/Admin/recette'],
-                    ['label' => '➕ Nouvelle recette',  'url' => '/2A35/Admin/recette/create'],
+                'recette' => ['🍽️ Recette', [
+                    ['label' => '📋 Liste des recettes',  'url' => '/2A35/Admin/recette'],
+                    ['label' => '➕ Nouvelle recette',    'url' => '/2A35/Admin/recette/create'],
+                    ['label' => '🥦 Liste ingrédients',  'url' => '/2A35/Admin/ingredient'],
+                    ['label' => '➕ Nouvel ingrédient',  'url' => '/2A35/Admin/ingredient/create'],
                 ]],
                 'programme' => ['🏋️ Programme', [
                     ['label' => '📋 Liste',    'url' => '/2A35/Admin/programme'],
                     ['label' => '➕ Nouveau',  'url' => '/2A35/Admin/programme/create'],
                 ]],
                 'evenement' => ['📅 Événement', [
-                    ['label' => '📋 Liste',    'url' => '/2A35/Admin/evenement'],
-                    ['label' => '➕ Nouveau',  'url' => '/2A35/Admin/evenement/create'],
+                    ['label' => '📋 Liste des événements',    'url' => '/2A35/back/event'],
+                    ['label' => '➕ Nouvel événement',  'url' => '/2A35/back/event/create'],
+                    ['label' => '🏷️ Liste types',    'url' => '/2A35/back/eventType'],
+                    ['label' => '➕ Nouveau type',  'url' => '/2A35/back/eventType/create'],
                 ]],
             ];
 
@@ -212,7 +216,7 @@
 
             <!-- Login -->
             <li class="nav-item">
-                <a href="/2A35/Login" class="nav-link">
+                <a href="/2A35/Home" class="nav-link">
                     <span class="nav-left">🔐 Connexion</span>
                 </a>
             </li>
@@ -220,7 +224,7 @@
     </nav>
 
     <div class="sidebar-footer">
-        EcoNutri Admin © 2026
+        NutriSmart Admin © 2026
     </div>
 </aside>
 

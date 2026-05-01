@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>EcoNutri - Organic Food Website</title>
+    <title>Foody - Organic Food Website Template</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <meta content="" name="keywords">
     <meta content="" name="description">
@@ -29,6 +29,9 @@
 
     <!-- Template Stylesheet -->
     <link href="/2A35/assets/css/style.css" rel="stylesheet">
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
 </head>
 
 <body>
@@ -64,21 +67,19 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarCollapse">
                 <div class="navbar-nav ms-auto p-4 p-lg-0">
-                    <?php $currentUrl = strtolower(explode('/', trim($_GET['url'] ?? 'home', '/'))[0]); ?>
-                    <a href="/2A35/Home" class="nav-item nav-link <?= $currentUrl === 'home' ? 'active' : '' ?>">Home</a>
-                    <a href="/2A35/About" class="nav-item nav-link <?= $currentUrl === 'about' ? 'active' : '' ?>">About Us</a>
-                    <a href="/2A35/Restaurant" class="nav-item nav-link <?= $currentUrl === 'restaurant' ? 'active' : '' ?>">Restaurants</a>
-                    <a href="/2A35/Product" class="nav-item nav-link <?= $currentUrl === 'product' ? 'active' : '' ?>">Products</a>
+                    <a href="/2A35/Home" class="nav-item nav-link active">Home</a>
+                    <a href="/2A35/About" class="nav-item nav-link">About Us</a>
+                    <a href="/2A35/Product" class="nav-item nav-link">Products</a>
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Pages</a>
                         <div class="dropdown-menu m-0">
-                            <a href="/2A35/Blog" class="dropdown-item <?= $currentUrl === 'blog' ? 'active' : '' ?>">Blog</a>
-                            <a href="/2A35/Feature" class="dropdown-item <?= $currentUrl === 'feature' ? 'active' : '' ?>">Our Features</a>
-                            <a href="/2A35/Testimonial" class="dropdown-item <?= $currentUrl === 'testimonial' ? 'active' : '' ?>">Testimonial</a>
+                            <a href="/2A35/Blog" class="dropdown-item">Blog Grid</a>
+                            <a href="/2A35/Event" class="dropdown-item">Events</a>
+                            <a href="/2A35/Testimonial" class="dropdown-item">Testimonial</a>
                             <a href="/2A35/Error" class="dropdown-item">404 Page</a>
                         </div>
                     </div>
-                    <a href="/2A35/Contact" class="nav-item nav-link <?= $currentUrl === 'contact' ? 'active' : '' ?>">Contact Us</a>
+                    <a href="/2A35/Contact" class="nav-item nav-link">Contact Us</a>
                 </div>
                 <div class="d-none d-lg-flex ms-2">
                     <a class="btn-sm-square bg-white rounded-circle ms-3" href="">

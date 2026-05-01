@@ -1,0 +1,7 @@
+.env
+config.php
+scratch/
+assets/img/*
+!assets/img/.gitkeep
+node_modules/
+.DS_Store
