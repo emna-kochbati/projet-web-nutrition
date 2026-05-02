@@ -290,7 +290,9 @@ class RecetteController {
 
         if (!empty($_FILES['image']['name'])) {
             $allowed = ['image/jpeg','image/png','image/webp'];
-            if (!in_array($_FILES['image']['type'], $allowed))
+            $finfo   = new finfo(FILEINFO_MIME_TYPE);
+            $mime    = $finfo->file($_FILES['image']['tmp_name']);
+            if (!in_array($mime, $allowed))
                 $errors['image'] = 'Format non accepté (JPG, PNG, WEBP).';
             elseif ($_FILES['image']['size'] > 2 * 1024 * 1024)
                 $errors['image'] = "L'image ne doit pas dépasser 2 Mo.";

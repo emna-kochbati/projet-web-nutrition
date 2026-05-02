@@ -1,6 +1,6 @@
 <?php
 $page_title  = 'Gestion des Ingrédients';
-$active_menu = 'recette';
+$active_menu = 'ingredient';
 ob_start();
 
 $types = [
@@ -120,7 +120,6 @@ tbody td { padding:11px 16px; vertical-align:middle; }
 
 <!-- Résultats AJAX -->
 <div id="ajaxIngResults"></div>
-</form>
 
 <!-- Tableau -->
 <div class="table-wrap">

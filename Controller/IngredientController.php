@@ -157,7 +157,8 @@ class IngredientController {
     }
 
     // ── Endpoint AJAX recherche dynamique ─────────────────────────────────────
-    public function ajax(): void {        header('Content-Type: application/json');
+    public function ajax(): void {
+        header('Content-Type: application/json');
         $search = trim($_GET['search'] ?? '');
         $type   = trim($_GET['type']   ?? '');
         $ingredients = $this->ingredientModel->filter($search, $type);
@@ -239,7 +240,7 @@ class IngredientController {
         $errors = [];
         $nom = trim($post['nom'] ?? '');
         if ($nom === '')            $errors['nom'] = 'Le nom est obligatoire.';
-        elseif (strlen($nom) < 2)   $errors['nom'] = 'Le nom doit contenir au moins 2 caractères.';
+        elseif (strlen($nom) < 3)   $errors['nom'] = 'Le nom doit contenir au moins 3 caractères.';
         elseif (strlen($nom) > 150) $errors['nom'] = 'Maximum 150 caractères.';
         elseif (preg_match('/\d/', $nom)) $errors['nom'] = 'Le nom ne doit pas contenir de chiffres.';
 
@@ -247,9 +248,16 @@ class IngredientController {
         if (empty($post['type']) || !in_array($post['type'], $types, true))
             $errors['type'] = 'Veuillez sélectionner un type valide.';
 
+        foreach (['proteines','calcium','glucides','lipides'] as $f) {
+            $v = (float)str_replace(',', '.', $post[$f] ?? '0');
+            if ($v < 0) $errors[$f] = ucfirst($f) . ' doit être ≥ 0.';
+        }
+
         if (!empty($_FILES['image']['name'])) {
             $allowed = ['image/jpeg','image/png','image/webp'];
-            if (!in_array($_FILES['image']['type'], $allowed))
+            $finfo   = new finfo(FILEINFO_MIME_TYPE);
+            $mime    = $finfo->file($_FILES['image']['tmp_name']);
+            if (!in_array($mime, $allowed))
                 $errors['image'] = 'Format non accepté (JPG, PNG, WEBP).';
             elseif ($_FILES['image']['size'] > 2 * 1024 * 1024)
                 $errors['image'] = "L'image ne doit pas dépasser 2 Mo.";

@@ -223,7 +223,8 @@ class Recette {
         } catch (PDOException $e) { echo $e->getMessage(); return []; }
     }
 
-    public function filter(string $search, string $categorie, string $difficulte): array {        try {
+    public function filter(string $search, string $categorie, string $difficulte): array {
+        try {
             $pdo        = Database::getConnection();
             $conditions = [];
             $params     = [];

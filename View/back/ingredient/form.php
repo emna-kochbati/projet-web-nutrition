@@ -132,7 +132,7 @@ function validerNomIng(el) {
     const v = el.value.trim();
     const s = el.nextElementSibling?.classList.contains('err') ? el.nextElementSibling : null;
     if (!v)             { setMsg(el, 'Le nom est obligatoire.', false); return false; }
-    if (v.length < 2)   { setMsg(el, 'Minimum 2 caractères.', false); return false; }
+    if (v.length < 3)   { setMsg(el, 'Minimum 3 caractères.', false); return false; }
     if (/\d/.test(v))   { setMsg(el, 'Pas de chiffres dans le nom.', false); return false; }
     if (v.length > 150) { setMsg(el, 'Maximum 150 caractères.', false); return false; }
     setMsg(el, '✔ Correct', true); return true;
@@ -158,9 +158,12 @@ typeEl.addEventListener('change', function(){ validerTypeIng(this); });
 // ── Validation valeurs nutritionnelles ────────────────────────────────────────
 function validerNutri(el, label) {
     const v = el.value;
-    if (v === '') return true; // optionnel
+    if (v === '') {
+        setMsg(el, label + ' est obligatoire (≥ 0).', false);
+        return false;
+    }
     if (isNaN(v) || parseFloat(v) < 0) {
-        setMsg(el, label + ' ne peut pas être négatif.', false);
+        setMsg(el, label + ' doit être ≥ 0.', false);
         return false;
     }
     if (parseFloat(v) > 9999) {
