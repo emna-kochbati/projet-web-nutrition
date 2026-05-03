@@ -48,11 +48,27 @@ ob_start();
         <!-- Nom -->
         <div class="form-group">
             <label for="nom">Nom de l'ingrédient <span class="req">*</span></label>
-            <input type="text" id="nom" name="nom" maxlength="150"
-                   value="<?= htmlspecialchars($ingredient['nom'] ?? '') ?>"
-                   class="<?= isset($errors['nom']) ? 'is-invalid' : '' ?>"
-                   placeholder="Ex : Tomate, Quinoa, Lait...">
-            <?php if (isset($errors['nom'])): ?><span class="err">⚠ <?= $errors['nom'] ?></span><?php endif; ?>
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+                <div style="flex:1;">
+                    <input type="text" id="nom" name="nom" maxlength="150"
+                           value="<?= htmlspecialchars($ingredient['nom'] ?? '') ?>"
+                           class="<?= isset($errors['nom']) ? 'is-invalid' : '' ?>"
+                           placeholder="Ex : Tomate, Quinoa, Lait...">
+                    <?php if (isset($errors['nom'])): ?><span class="err">⚠ <?= $errors['nom'] ?></span><?php endif; ?>
+                </div>
+                <button type="button" id="btnAiNutri" onclick="remplirAvecIA()"
+                    style="background:linear-gradient(135deg,#6c3fc5,#8b5cf6);color:#fff;border:none;
+                           border-radius:7px;padding:11px 16px;cursor:pointer;font-weight:700;
+                           font-size:0.85rem;white-space:nowrap;display:flex;align-items:center;
+                           gap:6px;transition:opacity .2s;flex-shrink:0;">
+                    🤖 Remplir avec l'IA
+                </button>
+            </div>
+            <!-- Bandeau résultat IA -->
+            <div id="aiNutriResult" style="display:none;margin-top:10px;padding:10px 14px;
+                 background:#f5f0ff;border:1.5px solid #d4c5f9;border-radius:8px;
+                 font-size:0.85rem;color:#6c3fc5;font-weight:600;">
+            </div>
         </div>
 
         <!-- Type -->
@@ -189,6 +205,77 @@ document.getElementById('formIngredient').addEventListener('submit', function(e)
     });
     if (!ok) e.preventDefault();
 });
+
+// ════════════════════════════════════════════════════════
+// GEMINI IA — Remplissage automatique des valeurs nutritionnelles
+// ════════════════════════════════════════════════════════
+async function remplirAvecIA() {
+    const nom = document.getElementById('nom').value.trim();
+    if (!nom || nom.length < 2) {
+        afficherResultatIA('⚠️ Saisissez d\'abord le nom de l\'ingrédient.', 'warn');
+        return;
+    }
+
+    const btn = document.getElementById('btnAiNutri');
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Analyse en cours...';
+    afficherResultatIA('🤖 Gemini analyse "' + nom + '"...', 'loading');
+
+    try {
+        const resp = await fetch('/2A35/Admin/Ai/nutrition', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nom: nom })
+        });
+
+        const data = await resp.json();
+
+        if (data.error) {
+            afficherResultatIA('❌ ' + data.error, 'error');
+        } else {
+            // Remplir les champs automatiquement
+            const champs = ['proteines', 'calcium', 'glucides', 'lipides'];
+            champs.forEach(champ => {
+                const el = document.getElementById(champ);
+                if (el && data[champ] !== undefined) {
+                    el.value = data[champ];
+                    el.classList.remove('is-invalid');
+                    el.classList.add('is-valid');
+                    // Mettre à jour le message de validation
+                    let s = el.parentNode.querySelector('.msg-dyn');
+                    if (!s) { s = document.createElement('span'); s.className = 'msg-dyn'; el.parentNode.appendChild(s); }
+                    s.className = 'msg-dyn msg-ok';
+                    s.textContent = '✔ Rempli par IA';
+                }
+            });
+
+            const source = data.source === 'gemini' ? '🤖 Gemini IA' : '⚙️ Valeurs pour 100g';
+            afficherResultatIA(
+                source + ' — Valeurs nutritionnelles pour 100g de <strong>' + nom + '</strong> insérées automatiquement ! ' +
+                'Vous pouvez les modifier si nécessaire.',
+                'success'
+            );
+        }
+    } catch (e) {
+        afficherResultatIA('❌ Erreur serveur. Réessayez.', 'error');
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '🤖 Remplir avec l\'IA';
+}
+
+function afficherResultatIA(msg, type) {
+    const div = document.getElementById('aiNutriResult');
+    div.style.display = 'block';
+    const styles = {
+        success: 'background:#f0fdf4;border-color:#86efac;color:#166534;',
+        error:   'background:#ffebee;border-color:#ef9a9a;color:#c62828;',
+        warn:    'background:#fff8e1;border-color:#ffe082;color:#f57c00;',
+        loading: 'background:#f5f0ff;border-color:#d4c5f9;color:#6c3fc5;',
+    };
+    div.style.cssText = 'display:block;margin-top:10px;padding:10px 14px;border-radius:8px;font-size:0.85rem;font-weight:600;border:1.5px solid;' + (styles[type] || styles.loading);
+    div.innerHTML = msg;
+}
 </script>
 
 <?php $content = ob_get_clean(); require_once 'View/back/layout.php'; ?>

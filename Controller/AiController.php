@@ -16,7 +16,7 @@ class AiController {
 
     // ── Clé API Gemini ────────────────────────────────────────────────────────
     // Remplacez par votre clé : https://aistudio.google.com/app/apikey
-    private const GEMINI_API_KEY = 'VOTRE_CLE_GEMINI_ICI';
+    private const GEMINI_API_KEY = 'AIzaSyDncfOdr-NWZil17YBnLt_9SsAyg967weE';
     private const GEMINI_URL     = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
     // =========================================================================
@@ -75,6 +75,130 @@ class AiController {
             'source'      => (self::GEMINI_API_KEY !== 'VOTRE_CLE_GEMINI_ICI') ? 'gemini' : 'local',
         ]);
         exit;
+    }
+
+    // =========================================================================
+    // GEMINI — Valeurs nutritionnelles d'un ingrédient (pour 100g)
+    // =========================================================================
+    public function nutrition(): void {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['error' => 'Méthode non autorisée.']); exit;
+        }
+
+        $body = json_decode(file_get_contents('php://input'), true);
+        $nom  = trim($body['nom'] ?? '');
+
+        if ($nom === '') {
+            echo json_encode(['error' => 'Nom de l\'ingrédient manquant.']); exit;
+        }
+
+        if (self::GEMINI_API_KEY !== 'VOTRE_CLE_GEMINI_ICI' && self::GEMINI_API_KEY !== '') {
+            $result = $this->getNutritionGemini($nom);
+            if ($result !== null) {
+                $result['source'] = 'gemini';
+                echo json_encode($result); exit;
+            }
+        }
+
+        // Fallback : valeurs estimées par type d'aliment
+        $result = $this->getNutritionLocale($nom);
+        $result['source'] = 'local';
+        echo json_encode($result);
+        exit;
+    }
+
+    private function getNutritionGemini(string $nom): ?array {
+        $prompt = "Tu es un expert en nutrition. Donne-moi les valeurs nutritionnelles moyennes pour 100g de \"$nom\".\n";
+        $prompt .= "Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ni après, sans markdown :\n";
+        $prompt .= '{"proteines": X.X, "calcium": X.X, "glucides": X.X, "lipides": X.X}' . "\n";
+        $prompt .= "Où X.X est un nombre décimal. proteines en g, calcium en mg, glucides en g, lipides en g.";
+
+        $payload = json_encode([
+            'contents' => [
+                ['role' => 'user', 'parts' => [['text' => $prompt]]]
+            ],
+            'generationConfig' => [
+                'temperature'     => 0.1,  // Très bas pour des valeurs précises
+                'maxOutputTokens' => 100,
+            ]
+        ]);
+
+        $ch = curl_init(self::GEMINI_URL . '?key=' . self::GEMINI_API_KEY);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => $payload,
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_SSL_VERIFYPEER => false,
+        ]);
+
+        $result   = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200) return null;
+
+        $data = json_decode($result, true);
+        $text = trim($data['candidates'][0]['content']['parts'][0]['text'] ?? '');
+
+        // Nettoyer le texte (enlever markdown si présent)
+        $text = preg_replace('/```json|```/i', '', $text);
+        $text = trim($text);
+
+        $json = json_decode($text, true);
+        if (!$json) {
+            // Tentative d'extraction par regex si le JSON est mal formaté
+            preg_match('/"proteines"\s*:\s*([\d.]+)/', $text, $mp);
+            preg_match('/"calcium"\s*:\s*([\d.]+)/',   $text, $mc);
+            preg_match('/"glucides"\s*:\s*([\d.]+)/',  $text, $mg);
+            preg_match('/"lipides"\s*:\s*([\d.]+)/',   $text, $ml);
+            if ($mp && $mc && $mg && $ml) {
+                return [
+                    'proteines' => round((float)$mp[1], 2),
+                    'calcium'   => round((float)$mc[1], 2),
+                    'glucides'  => round((float)$mg[1], 2),
+                    'lipides'   => round((float)$ml[1], 2),
+                ];
+            }
+            return null;
+        }
+
+        return [
+            'proteines' => round((float)($json['proteines'] ?? 0), 2),
+            'calcium'   => round((float)($json['calcium']   ?? 0), 2),
+            'glucides'  => round((float)($json['glucides']  ?? 0), 2),
+            'lipides'   => round((float)($json['lipides']   ?? 0), 2),
+        ];
+    }
+
+    private function getNutritionLocale(string $nom): array {
+        // Valeurs moyennes par catégorie d'aliment (fallback)
+        $nomLower = strtolower($nom);
+
+        $bases = [
+            ['mots' => ['poulet','dinde','veau','boeuf','agneau','porc','viande'], 'val' => ['proteines'=>25,'calcium'=>15,'glucides'=>0,'lipides'=>5]],
+            ['mots' => ['saumon','thon','sardine','poisson','cabillaud'],          'val' => ['proteines'=>22,'calcium'=>20,'glucides'=>0,'lipides'=>8]],
+            ['mots' => ['lait','yaourt','fromage','beurre','crème'],               'val' => ['proteines'=>8,'calcium'=>120,'glucides'=>5,'lipides'=>10]],
+            ['mots' => ['riz','pâtes','semoule','farine','pain','céréale'],        'val' => ['proteines'=>8,'calcium'=>20,'glucides'=>75,'lipides'=>1]],
+            ['mots' => ['tomate','carotte','courgette','épinard','légume'],        'val' => ['proteines'=>2,'calcium'=>30,'glucides'=>5,'lipides'=>0.3]],
+            ['mots' => ['pomme','banane','orange','fraise','fruit'],               'val' => ['proteines'=>1,'calcium'=>10,'glucides'=>15,'lipides'=>0.2]],
+            ['mots' => ['huile','olive'],                                          'val' => ['proteines'=>0,'calcium'=>1,'glucides'=>0,'lipides'=>99]],
+            ['mots' => ['oeuf','œuf'],                                             'val' => ['proteines'=>13,'calcium'=>55,'glucides'=>1,'lipides'=>11]],
+        ];
+
+        foreach ($bases as $base) {
+            foreach ($base['mots'] as $mot) {
+                if (str_contains($nomLower, $mot)) {
+                    return $base['val'];
+                }
+            }
+        }
+
+        // Valeur par défaut
+        return ['proteines' => 5, 'calcium' => 20, 'glucides' => 10, 'lipides' => 2];
     }
 
     // =========================================================================
