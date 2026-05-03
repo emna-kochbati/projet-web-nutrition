@@ -16,7 +16,7 @@ class AiController {
 
     // ── Clé API Gemini ────────────────────────────────────────────────────────
     // Remplacez par votre clé : https://aistudio.google.com/app/apikey
-    private const GEMINI_API_KEY = 'AIzaSyDncfOdr-NWZil17YBnLt_9SsAyg967weE';
+    private const GEMINI_API_KEY = 'VOTRE_CLE_GEMINI_ICI';
     private const GEMINI_URL     = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
     // =========================================================================

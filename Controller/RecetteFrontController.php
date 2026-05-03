@@ -49,4 +49,19 @@ class RecetteFrontController {
         echo json_encode(array_values($recettes));
         exit;
     }
+
+    // Endpoint AJAX recherche par ingrédients (Speech to Text)
+    public function ajaxIngredients(): void {
+        header('Content-Type: application/json');
+        $body        = json_decode(file_get_contents('php://input'), true);
+        $ingredients = $body['ingredients'] ?? [];
+
+        if (empty($ingredients)) {
+            echo json_encode([]); exit;
+        }
+
+        $recettes = $this->recetteModel->rechercherParIngredients($ingredients);
+        echo json_encode(array_values($recettes));
+        exit;
+    }
 }

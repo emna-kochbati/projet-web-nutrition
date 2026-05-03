@@ -382,4 +382,44 @@ class Recette {
             return [];
         }
     }
+
+    // ── Recherche de recettes par ingrédients disponibles ────────────────────
+    public function rechercherParIngredients(array $nomsIngredients): array {
+        if (empty($nomsIngredients)) return [];
+        try {
+            $pdo = Database::getConnection();
+
+            // Construire les conditions LIKE pour chaque ingrédient
+            $conditions = [];
+            $params     = [];
+            foreach ($nomsIngredients as $idx => $nom) {
+                $key = ':ing' . $idx;
+                $conditions[] = "i.nom LIKE $key";
+                $params[$key] = '%' . trim($nom) . '%';
+            }
+
+            $whereClause = implode(' OR ', $conditions);
+
+            // Compter combien d'ingrédients de la liste sont dans chaque recette
+            $sql = "
+                SELECT r.*,
+                       COUNT(DISTINCT i.id) AS nb_ingredients_trouves,
+                       (SELECT COUNT(*) FROM recette_ingredient ri2 WHERE ri2.recette_id = r.id) AS nb_ingredients_total,
+                       GROUP_CONCAT(DISTINCT i.nom ORDER BY i.nom SEPARATOR ', ') AS ingredients_trouves
+                FROM recette r
+                JOIN recette_ingredient ri ON ri.recette_id = r.id
+                JOIN ingredient i ON i.id = ri.ingredient_id
+                WHERE ($whereClause)
+                GROUP BY r.id
+                ORDER BY nb_ingredients_trouves DESC, r.nom ASC
+            ";
+
+            $query = $pdo->prepare($sql);
+            $query->execute($params);
+            return $query->fetchAll();
+        } catch (PDOException $e) {
+            echo $e->getMessage();
+            return [];
+        }
+    }
 }
