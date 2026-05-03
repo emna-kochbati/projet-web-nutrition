@@ -16,7 +16,7 @@ class AiController {
 
     // ── Clé API Gemini ────────────────────────────────────────────────────────
     // Remplacez par votre clé : https://aistudio.google.com/app/apikey
-    private const GEMINI_API_KEY = 'AIzaSyDncfOdr-NWZil17YBnLt_9SsAyg967weE';
+    private const GEMINI_API_KEY = 'VOTRE_CLE_GEMINI_ICI';
     private const GEMINI_URL     = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
     // =========================================================================
@@ -75,6 +75,157 @@ class AiController {
             'source'      => (self::GEMINI_API_KEY !== 'VOTRE_CLE_GEMINI_ICI') ? 'gemini' : 'local',
         ]);
         exit;
+    }
+
+    // =========================================================================
+    // ANALYSE IA — Frontoffice : analyse nutritionnelle d'une recette
+    // =========================================================================
+    public function analyser(): void {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['error' => 'Méthode non autorisée.']); exit;
+        }
+
+        $body    = json_decode(file_get_contents('php://input'), true);
+        $recette = $body['recette'] ?? [];
+
+        $nom         = trim($recette['nom']         ?? '');
+        $calories    = (float)($recette['calories'] ?? 0);
+        $ingredients = $recette['ingredients']      ?? [];
+
+        if ($nom === '') {
+            echo json_encode(['error' => 'Données de la recette manquantes.']); exit;
+        }
+
+        // ── 1. Récupérer les valeurs nutritionnelles depuis la BDD ────────────
+        require_once 'Model/Ingredient.php';
+        require_once 'Model/Recette.php';
+        $recetteModel = new Recette();
+        $nutri        = $recetteModel->calculerNutriScore((int)($recette['id'] ?? 0));
+        $details      = $nutri['details'] ?? [
+            'proteines' => 0, 'calcium' => 0,
+            'glucides'  => 0, 'lipides' => 0, 'calories' => $calories
+        ];
+
+        // ── 2. Logique métier : calcul des profils de santé ───────────────────
+        $profils = $this->calculerProfils($details);
+
+        // ── 3. Analyse textuelle via Gemini ───────────────────────────────────
+        $analyse = null;
+        $source  = 'local';
+
+        if (self::GEMINI_API_KEY !== 'VOTRE_CLE_GEMINI_ICI' && self::GEMINI_API_KEY !== '') {
+            $result = $this->analyserGemini($nom, $details, $ingredients, $profils);
+            if ($result !== null) {
+                $analyse = $result;
+                $source  = 'gemini';
+            }
+        }
+
+        // Fallback si Gemini échoue
+        if ($analyse === null) {
+            $analyse = $this->analyseLocale($nom, $details, $profils);
+        }
+
+        echo json_encode([
+            'profils' => $profils,
+            'analyse' => $analyse,
+            'source'  => $source,
+        ]);
+        exit;
+    }
+
+    // ── Calcul des profils de santé (logique métier pure) ─────────────────────
+    private function calculerProfils(array $d): array {
+        $prot = (float)($d['proteines'] ?? 0);
+        $gluc = (float)($d['glucides']  ?? 0);
+        $lip  = (float)($d['lipides']   ?? 0);
+        $kcal = (float)($d['calories']  ?? 0);
+
+        // Règles métier
+        $diabetique = $gluc <= 15  ? 'adapte' : ($gluc <= 25 ? 'modere' : 'non');
+        $sportif    = $prot >= 15  ? 'adapte' : ($prot >= 8  ? 'modere' : 'non');
+        $regime     = ($kcal <= 250 && $lip <= 5) ? 'adapte' : ($kcal <= 400 ? 'modere' : 'non');
+        $energie    = ($kcal >= 250 && $gluc >= 20) ? 'adapte' : ($kcal >= 150 ? 'modere' : 'non');
+
+        return [
+            'diabetique' => ['statut' => $diabetique],
+            'sportif'    => ['statut' => $sportif],
+            'regime'     => ['statut' => $regime],
+            'energie'    => ['statut' => $energie],
+        ];
+    }
+
+    // ── Analyse textuelle via Gemini ──────────────────────────────────────────
+    private function analyserGemini(string $nom, array $d, array $ingredients, array $profils): ?string {
+        $ingList = implode(', ', array_slice($ingredients, 0, 8));
+
+        $profilsTexte = '';
+        $labels = ['diabetique' => 'Diabétiques', 'sportif' => 'Sportifs', 'regime' => 'Régime', 'energie' => 'Énergie'];
+        $statutLabels = ['adapte' => 'Adapté', 'modere' => 'Modéré', 'non' => 'Déconseillé'];
+        foreach ($profils as $key => $val) {
+            $profilsTexte .= '- ' . ($labels[$key] ?? $key) . ' : ' . ($statutLabels[$val['statut']] ?? '') . "\n";
+        }
+
+        $prompt  = "Tu es un nutritionniste expert. Analyse cette recette de manière professionnelle.\n\n";
+        $prompt .= "Recette : $nom\n";
+        $prompt .= "Valeurs pour 100g :\n";
+        $prompt .= "- Protéines : {$d['proteines']}g\n";
+        $prompt .= "- Glucides : {$d['glucides']}g\n";
+        $prompt .= "- Lipides : {$d['lipides']}g\n";
+        $prompt .= "- Calories : {$d['calories']} kcal\n";
+        if ($ingList) $prompt .= "- Ingrédients : $ingList\n";
+        $prompt .= "\nProfils calculés :\n$profilsTexte\n";
+        $prompt .= "Donne une analyse courte (3-4 phrases) en français sur :\n";
+        $prompt .= "1. Les bienfaits principaux de cette recette\n";
+        $prompt .= "2. Pour qui elle est particulièrement recommandée\n";
+        $prompt .= "3. Une suggestion concrète pour l'améliorer\n";
+        $prompt .= "Sois direct et professionnel. Pas de titre, juste le texte.";
+
+        $payload = json_encode([
+            'contents' => [['role' => 'user', 'parts' => [['text' => $prompt]]]],
+            'generationConfig' => ['temperature' => 0.6, 'maxOutputTokens' => 250]
+        ]);
+
+        $ch = curl_init(self::GEMINI_URL . '?key=' . self::GEMINI_API_KEY);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => $payload,
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_SSL_VERIFYPEER => false,
+        ]);
+        $result   = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200) return null;
+        $data = json_decode($result, true);
+        $text = trim($data['candidates'][0]['content']['parts'][0]['text'] ?? '');
+        return $text ?: null;
+    }
+
+    // ── Analyse locale (fallback sans Gemini) ─────────────────────────────────
+    private function analyseLocale(string $nom, array $d, array $profils): string {
+        $prot = (float)($d['proteines'] ?? 0);
+        $gluc = (float)($d['glucides']  ?? 0);
+        $kcal = (float)($d['calories']  ?? 0);
+
+        $points = [];
+        if ($prot >= 15) $points[] = "riche en protéines ({$prot}g/100g)";
+        if ($gluc <= 15) $points[] = "faible en glucides ({$gluc}g/100g)";
+        if ($kcal <= 250) $points[] = "légère en calories ({$kcal} kcal/100g)";
+
+        $adaptes = array_keys(array_filter($profils, fn($p) => $p['statut'] === 'adapte'));
+        $labels  = ['diabetique' => 'diabétiques', 'sportif' => 'sportifs', 'regime' => 'régime', 'energie' => 'énergie'];
+        $adaptesTxt = implode(', ', array_map(fn($k) => $labels[$k] ?? $k, $adaptes));
+
+        $analyse = ucfirst($nom) . ' est une recette ' . (empty($points) ? 'équilibrée' : implode(', ', $points)) . '.';
+        if ($adaptesTxt) $analyse .= " Elle est particulièrement adaptée aux profils : $adaptesTxt.";
+        $analyse .= " Vous pouvez modifier les quantités d'ingrédients pour ajuster les valeurs nutritionnelles selon vos besoins.";
+        return $analyse;
     }
 
     // =========================================================================

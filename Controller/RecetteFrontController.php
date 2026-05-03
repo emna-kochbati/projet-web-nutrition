@@ -34,7 +34,8 @@ class RecetteFrontController {
         if (!$recette) {
             header('Location: /2A35/RecetteFront'); exit;
         }
-        $ingredients = $this->ingredientModel->getByRecette((int)$id);
+        $ingredients  = $this->ingredientModel->getByRecette((int)$id);
+        $valeursNutri = $this->ingredientModel->getValeursNutritionnelles((int)$id);
         require_once 'View/front/recette_detail.php';
     }
 
