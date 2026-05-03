@@ -255,6 +255,114 @@ class Recette {
         }
     }
 
+    // ── Calcul du Nutri-Score de la recette ──────────────────────────────────
+    public function calculerNutriScore(int $recetteId): array {
+        try {
+            $pdo   = Database::getConnection();
+            // Récupérer les totaux nutritionnels de tous les ingrédients de la recette
+            $query = $pdo->prepare("
+                SELECT
+                    SUM(i.proteines * ri.quantite / 100) AS total_proteines,
+                    SUM(i.calcium   * ri.quantite / 100) AS total_calcium,
+                    SUM(i.glucides  * ri.quantite / 100) AS total_glucides,
+                    SUM(i.lipides   * ri.quantite / 100) AS total_lipides,
+                    SUM(ri.quantite)                     AS poids_total
+                FROM recette_ingredient ri
+                JOIN ingredient i ON i.id = ri.ingredient_id
+                WHERE ri.recette_id = :id
+            ");
+            $query->execute([':id' => $recetteId]);
+            $row = $query->fetch();
+
+            $poids = (float)($row['poids_total'] ?? 0);
+            if ($poids <= 0) {
+                return ['lettre' => '?', 'score' => 0, 'couleur' => '#9e9e9e', 'bg' => '#f5f5f5', 'label' => 'Non calculable'];
+            }
+
+            // Ramener à 100g de recette
+            $prot = round((float)($row['total_proteines'] ?? 0) / $poids * 100, 2);
+            $cal  = round((float)($row['total_calcium']   ?? 0) / $poids * 100, 2);
+            $gluc = round((float)($row['total_glucides']  ?? 0) / $poids * 100, 2);
+            $lip  = round((float)($row['total_lipides']   ?? 0) / $poids * 100, 2);
+            $kcal = round(($prot * 4) + ($gluc * 4) + ($lip * 9), 1);
+
+            // ── Points négatifs ───────────────────────────────────────────────
+            $ptsNeg = 0;
+
+            // Calories
+            if      ($kcal <= 80)  $ptsNeg += 0;
+            elseif  ($kcal <= 160) $ptsNeg += 1;
+            elseif  ($kcal <= 240) $ptsNeg += 2;
+            elseif  ($kcal <= 320) $ptsNeg += 3;
+            elseif  ($kcal <= 400) $ptsNeg += 4;
+            else                   $ptsNeg += 5;
+
+            // Lipides
+            if      ($lip <= 1)  $ptsNeg += 0;
+            elseif  ($lip <= 3)  $ptsNeg += 1;
+            elseif  ($lip <= 6)  $ptsNeg += 2;
+            elseif  ($lip <= 10) $ptsNeg += 3;
+            else                 $ptsNeg += 4;
+
+            // Glucides
+            if      ($gluc <= 5)  $ptsNeg += 0;
+            elseif  ($gluc <= 10) $ptsNeg += 1;
+            elseif  ($gluc <= 20) $ptsNeg += 2;
+            elseif  ($gluc <= 40) $ptsNeg += 3;
+            else                  $ptsNeg += 4;
+
+            // ── Points positifs ───────────────────────────────────────────────
+            $ptsPos = 0;
+
+            // Protéines
+            if      ($prot <= 2)  $ptsPos += 0;
+            elseif  ($prot <= 5)  $ptsPos += 1;
+            elseif  ($prot <= 10) $ptsPos += 2;
+            else                  $ptsPos += 3;
+
+            // Calcium
+            if      ($cal <= 50)  $ptsPos += 0;
+            elseif  ($cal <= 150) $ptsPos += 1;
+            else                  $ptsPos += 2;
+
+            // ── Score final ───────────────────────────────────────────────────
+            $score = $ptsNeg - $ptsPos;
+
+            if      ($score <= -1) $lettre = 'A';
+            elseif  ($score <= 2)  $lettre = 'B';
+            elseif  ($score <= 7)  $lettre = 'C';
+            elseif  ($score <= 11) $lettre = 'D';
+            else                   $lettre = 'E';
+
+            $config = [
+                'A' => ['couleur' => '#fff', 'bg' => '#1a7a1a', 'label' => 'Excellent pour la santé'],
+                'B' => ['couleur' => '#fff', 'bg' => '#5aab1f', 'label' => 'Bon pour la santé'],
+                'C' => ['couleur' => '#333', 'bg' => '#f5c800', 'label' => 'Qualité nutritionnelle moyenne'],
+                'D' => ['couleur' => '#fff', 'bg' => '#e07800', 'label' => 'Qualité nutritionnelle médiocre'],
+                'E' => ['couleur' => '#fff', 'bg' => '#d32f2f', 'label' => 'Mauvais pour la santé'],
+            ];
+
+            return [
+                'lettre'     => $lettre,
+                'score'      => $score,
+                'couleur'    => $config[$lettre]['couleur'],
+                'bg'         => $config[$lettre]['bg'],
+                'label'      => $config[$lettre]['label'],
+                'details'    => [
+                    'proteines' => $prot,
+                    'calcium'   => $cal,
+                    'glucides'  => $gluc,
+                    'lipides'   => $lip,
+                    'calories'  => $kcal,
+                    'ptsNeg'    => $ptsNeg,
+                    'ptsPos'    => $ptsPos,
+                ],
+            ];
+        } catch (PDOException $e) {
+            return ['lettre' => '?', 'score' => 0, 'couleur' => '#9e9e9e', 'bg' => '#f5f5f5', 'label' => 'Erreur de calcul'];
+        }
+    }
+
     // ── Jointure : recettes avec leurs ingrédients ────────────────────────────
     public function getRecettesAvecIngredients(): array {
         try {

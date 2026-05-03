@@ -116,6 +116,7 @@ class RecetteController {
         }
         $ingredients        = $this->ingredientModel->getByRecette((int)$id);
         $valeursNutri       = $this->ingredientModel->getValeursNutritionnelles((int)$id);
+        $nutriScore         = $this->recetteModel->calculerNutriScore((int)$id);
         require_once 'View/back/recette/show.php';
     }
 

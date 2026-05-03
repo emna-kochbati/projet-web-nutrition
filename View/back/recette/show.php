@@ -110,6 +110,65 @@ ob_start();
         </div>
         <?php endif; ?>
 
+        <!-- Nutri-Score -->
+        <?php if (isset($nutriScore) && $nutriScore['lettre'] !== '?'): ?>
+        <div class="section-title">🏅 Nutri-Score</div>
+        <div style="background:#fff;border-radius:12px;border:2px solid #e0e0e0;padding:20px;margin-bottom:20px;">
+
+            <!-- Barre des 5 lettres -->
+            <div style="display:flex;gap:6px;align-items:center;margin-bottom:16px;">
+                <?php foreach (['A','B','C','D','E'] as $l):
+                    $configs = [
+                        'A' => ['bg'=>'#1a7a1a','size'=>'2rem'],
+                        'B' => ['bg'=>'#5aab1f','size'=>'1.8rem'],
+                        'C' => ['bg'=>'#f5c800','size'=>'1.6rem'],
+                        'D' => ['bg'=>'#e07800','size'=>'1.6rem'],
+                        'E' => ['bg'=>'#d32f2f','size'=>'1.6rem'],
+                    ];
+                    $isActive = ($l === $nutriScore['lettre']);
+                    $cfg = $configs[$l];
+                ?>
+                <div style="
+                    background:<?= $cfg['bg'] ?>;
+                    color:#fff;
+                    width:<?= $isActive ? '52px' : '38px' ?>;
+                    height:<?= $isActive ? '52px' : '38px' ?>;
+                    border-radius:8px;
+                    display:flex;align-items:center;justify-content:center;
+                    font-size:<?= $isActive ? '1.5rem' : '1rem' ?>;
+                    font-weight:900;
+                    opacity:<?= $isActive ? '1' : '0.35' ?>;
+                    transition:all .2s;
+                    <?= $isActive ? 'box-shadow:0 4px 12px rgba(0,0,0,.25);transform:scale(1.1);' : '' ?>
+                "><?= $l ?></div>
+                <?php endforeach; ?>
+
+                <!-- Label -->
+                <div style="margin-left:14px;">
+                    <div style="font-size:1.1rem;font-weight:800;color:<?= $nutriScore['bg'] ?>;">
+                        <?= $nutriScore['lettre'] ?> — <?= $nutriScore['label'] ?>
+                    </div>
+                    <div style="font-size:0.78rem;color:#888;margin-top:2px;">
+                        Score calculé : <?= $nutriScore['score'] ?> pts
+                        (<?= $nutriScore['details']['ptsNeg'] ?> négatifs − <?= $nutriScore['details']['ptsPos'] ?> positifs)
+                    </div>
+                </div>
+            </div>
+
+            <!-- Détail du calcul -->
+            <div style="background:#f9f9f9;border-radius:8px;padding:12px;font-size:0.82rem;color:#555;">
+                <strong style="color:#333;">Calcul basé sur 100g de recette :</strong>
+                <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;">
+                    <span>💪 Protéines : <strong><?= $nutriScore['details']['proteines'] ?>g</strong></span>
+                    <span>🦴 Calcium : <strong><?= $nutriScore['details']['calcium'] ?>mg</strong></span>
+                    <span>⚡ Glucides : <strong><?= $nutriScore['details']['glucides'] ?>g</strong></span>
+                    <span>🫧 Lipides : <strong><?= $nutriScore['details']['lipides'] ?>g</strong></span>
+                    <span>🔥 Calories : <strong><?= $nutriScore['details']['calories'] ?> kcal</strong></span>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- Actions -->
         <div class="show-actions">
             <a href="/2A35/Admin/recette/edit/<?= $recette['id'] ?>" class="btn-edit-s">✏️ Modifier</a>
