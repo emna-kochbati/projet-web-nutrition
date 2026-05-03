@@ -1,8 +1,6 @@
 <?php
-// $user injecté par UserController::dashboard()
 $user = $_SESSION['user'];
 
-// ── Calculs ──
 $poids  = (float)($user['poids']  ?? 0);
 $taille = (float)($user['taille'] ?? 0);
 $age    = (int)  ($user['age']    ?? 25);
@@ -11,665 +9,546 @@ $obj    = strtolower($user['objectif'] ?? '');
 $imc = ($poids > 0 && $taille > 0)
     ? round($poids / pow($taille / 100, 2), 1) : 0;
 
-$imcCat = '—'; $imcColor = '#2e7d32';
+$imcCat = '—'; $imcColor = '#00b96b'; $imcBg = '#e6faf2';
 if ($imc > 0) {
-    if      ($imc < 18.5) { $imcCat = 'Insuffisance pondérale'; $imcColor = '#1565c0'; }
-    elseif  ($imc < 25)   { $imcCat = 'Poids normal';           $imcColor = '#2e7d32'; }
-    elseif  ($imc < 30)   { $imcCat = 'Surpoids';               $imcColor = '#e65100'; }
-    else                  { $imcCat = 'Obésité';                 $imcColor = '#c62828'; }
+    if      ($imc < 18.5) { $imcCat = 'Insuffisance pondérale'; $imcColor = '#2979ff'; $imcBg = '#e8f0ff'; }
+    elseif  ($imc < 25)   { $imcCat = 'Poids normal';           $imcColor = '#00b96b'; $imcBg = '#e6faf2'; }
+    elseif  ($imc < 30)   { $imcCat = 'Surpoids';               $imcColor = '#ff6b2b'; $imcBg = '#fff0eb'; }
+    else                  { $imcCat = 'Obésité';                 $imcColor = '#e53935'; $imcBg = '#ffebee'; }
 }
 
-// Mifflin-St Jeor
-$bmr  = 10 * $poids + 6.25 * $taille - 5 * $age + 5;
-$tdee = round($bmr * 1.55);
+$bmr      = 10 * $poids + 6.25 * $taille - 5 * $age + 5;
+$tdee     = round($bmr * 1.55);
 $calories = match(true) {
-    str_contains($obj, 'perte') => $tdee - 500,
-    str_contains($obj, 'masse') => $tdee + 500,
-    default                     => $tdee,
+    str_contains($obj,'perte') => $tdee - 500,
+    str_contains($obj,'masse') => $tdee + 500,
+    default                    => $tdee,
 };
-
 $proteines = round($calories * 0.25 / 4);
 $glucides  = round($calories * 0.50 / 4);
 $lipides   = round($calories * 0.25 / 9);
 $eau       = $poids > 0 ? round($poids * 0.033, 1) : 2.0;
 
-// Score profil
 $score = 0;
 if ($imc >= 18.5 && $imc < 25) $score += 30; elseif ($imc > 0) $score += 15;
-if ($poids > 0)  $score += 20;
-if ($taille > 0) $score += 10;
-if ($age > 0)    $score += 10;
-if (!empty($user['objectif'])) $score += 20;
+if ($poids > 0)  $score += 20; if ($taille > 0) $score += 10;
+if ($age > 0)    $score += 10; if (!empty($user['objectif'])) $score += 20;
 if (!empty($user['activite'])) $score += 10;
 
-// Heure
-$h    = (int)date('H');
+$h     = (int)date('H');
 $salut = $h < 12 ? 'Bonjour' : ($h < 18 ? 'Bon après-midi' : 'Bonsoir');
 
-// Poids idéal
-$poidsMinIdeal = $taille > 0 ? round(18.5 * pow($taille/100, 2), 1) : 0;
-$poidsMaxIdeal = $taille > 0 ? round(24.9 * pow($taille/100, 2), 1) : 0;
+$poidsMinIdeal = $taille > 0 ? round(18.5 * pow($taille/100,2),1) : 0;
+$poidsMaxIdeal = $taille > 0 ? round(24.9 * pow($taille/100,2),1) : 0;
 
-// Plan alimentaire selon objectif
 $plan = [
-    ['Petit-déjeuner', '7h00',  'Flocons d\'avoine, fruit frais, yaourt nature',     round($calories*0.20), round($proteines*0.15)],
-    ['Déjeuner',       '12h30', 'Poulet grillé, légumes vapeur, riz complet',         round($calories*0.35), round($proteines*0.40)],
-    ['Collation',      '16h00', 'Amandes (20g), pomme',                               round($calories*0.10), round($proteines*0.10)],
-    ['Dîner',          '19h30', 'Saumon, quinoa, salade verte',                       round($calories*0.30), round($proteines*0.30)],
-    ['Snack',          '21h00', 'Fromage blanc 0%, miel',                             round($calories*0.05), round($proteines*0.05)],
+    ['Petit-déjeuner','7h00', 'Flocons d\'avoine, fruit frais, yaourt nature', round($calories*.20), round($proteines*.15)],
+    ['Déjeuner',      '12h30','Poulet grillé, légumes vapeur, riz complet',    round($calories*.35), round($proteines*.40)],
+    ['Collation',     '16h00','Amandes (20g), pomme',                          round($calories*.10), round($proteines*.10)],
+    ['Dîner',         '19h30','Saumon, quinoa, salade verte',                  round($calories*.30), round($proteines*.30)],
+    ['Snack',         '21h00','Fromage blanc 0%, miel',                        round($calories*.05), round($proteines*.05)],
 ];
 
 include __DIR__ . '/../partials/header.php';
 ?>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-/* ── RESET & BASE ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: 'Inter', sans-serif !important;
-  background: #f4f6f4 !important;
-  color: #1a2e1a !important;
+:root{
+  --g:    #00b96b;
+  --g2:   #00e676;
+  --gd:   #007a47;
+  --or:   #ff6b2b;
+  --or2:  #ff9a5c;
+  --bg:   #ffffff;
+  --bg2:  #f7faf8;
+  --bg3:  #f0f6f3;
+  --ink:  #0d1f0f;
+  --ink2: #4a6352;
+  --ink3: #8aa898;
+  --bdr:  #e2ede8;
+  --fh:   'Fraunces', serif;
+  --fb:   'Instrument Sans', sans-serif;
 }
 
-/* ── TOPBAR ── */
-.db-topbar {
-  background: #ffffff;
-  border-bottom: 1px solid #e0e8e0;
-  padding: 0 40px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+html{scroll-behavior:smooth;}
+
+body{
+  font-family:var(--fb)!important;
+  background:var(--bg)!important;
+  color:var(--ink)!important;
+  overflow-x:hidden;
 }
 
-.db-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 18px;
-  font-weight: 700;
-  color: #1a2e1a;
-  text-decoration: none;
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:var(--g);border-radius:10px;}
+
+/* ════ TOPBAR ════ */
+.tb{
+  height:64px;
+  background:#fff;
+  border-bottom:1px solid var(--bdr);
+  padding:0 40px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
 }
 
-.db-logo-dot {
-  width: 10px; height: 10px;
-  background: #2e7d32;
-  border-radius: 50%;
+.tb-logo{
+  display:flex;align-items:center;gap:10px;text-decoration:none;
 }
 
-.db-topbar-center {
-  font-size: 14px;
-  font-weight: 500;
-  color: #4a6a4a;
+.tb-logo-mark{
+  width:34px;height:34px;border-radius:10px;
+  background:linear-gradient(135deg,var(--g),var(--g2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;
+  box-shadow:0 4px 12px rgba(0,185,107,.3);
 }
 
-.db-topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+.tb-logo-name{
+  font-family:var(--fh);font-size:20px;font-weight:700;color:var(--ink);
+}
+.tb-logo-name em{color:var(--g);font-style:normal;}
+
+.tb-nav{display:flex;gap:2px;}
+
+.tb-link{
+  display:flex;align-items:center;gap:7px;
+  padding:8px 16px;border-radius:8px;
+  font-size:13px;font-weight:500;color:var(--ink2);
+  text-decoration:none;transition:all .18s;
+}
+.tb-link:hover{background:var(--bg3);color:var(--ink);}
+.tb-link.on{background:var(--bg3);color:var(--g);}
+.tb-link i{font-size:12px;color:inherit;}
+
+.tb-right{display:flex;align-items:center;gap:12px;}
+
+.tb-chip{
+  display:flex;align-items:center;gap:9px;
+  padding:5px 14px 5px 5px;
+  border:1px solid var(--bdr);border-radius:30px;
+  background:#fff;cursor:pointer;
 }
 
-.db-user-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.tb-av{
+  width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(135deg,var(--g),var(--gd));
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fh);font-size:12px;font-weight:700;color:#fff;
 }
 
-.db-avatar {
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  background: #2e7d32;
-  color: white;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 600;
+.tb-name{font-size:13px;font-weight:600;}
+
+.tb-logout{
+  display:flex;align-items:center;gap:6px;
+  padding:8px 16px;border-radius:8px;
+  border:1px solid var(--bdr);
+  font-size:13px;font-weight:500;color:var(--ink2);
+  text-decoration:none;transition:all .15s;
+}
+.tb-logout:hover{border-color:var(--or);color:var(--or);}
+
+/* ════ WRAP ════ */
+.wrap{max-width:1280px;margin:0 auto;padding:40px 40px 80px;}
+
+/* ════ PAGE HEADER ════ */
+.ph{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  margin-bottom:36px;
+  padding-bottom:28px;
+  border-bottom:2px solid var(--bg3);
+  position:relative;
 }
 
-.db-user-name { font-size: 14px; font-weight: 500; }
-.db-user-role { font-size: 11px; color: #78909c; }
-
-.db-logout {
-  display: flex; align-items: center; gap: 6px;
-  padding: 7px 14px;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  text-decoration: none;
-  font-size: 13px; color: #546e54;
-  transition: all .15s;
-}
-.db-logout:hover { background: #fafafa; border-color: #bdbdbd; color: #1a2e1a; }
-
-/* ── WRAPPER ── */
-.db-wrap {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 32px 32px 60px;
+.ph::after{
+  content:'';
+  position:absolute;bottom:-2px;left:0;
+  width:64px;height:2px;
+  background:linear-gradient(90deg,var(--g),var(--or));
 }
 
-/* ── PAGE HEADER ── */
-.db-page-header {
-  margin-bottom: 28px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #e0e8e0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+.ph-salut{
+  font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.14em;color:var(--g);margin-bottom:6px;
+  display:flex;align-items:center;gap:8px;
+}
+.ph-salut::before{content:'';width:18px;height:1.5px;background:var(--g);}
+
+.ph-title{
+  font-family:var(--fh);
+  font-size:clamp(28px,3vw,42px);
+  font-weight:900;letter-spacing:-1.5px;color:var(--ink);
+  line-height:1.1;
 }
 
-.db-greeting {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  color: #2e7d32;
-  margin-bottom: 6px;
+.ph-date{
+  font-size:13px;color:var(--ink3);
+  background:var(--bg3);
+  padding:8px 16px;border-radius:20px;
+  border:1px solid var(--bdr);
 }
 
-.db-page-title {
-  font-size: 26px;
-  font-weight: 700;
-  color: #1a2e1a;
-  letter-spacing: -.4px;
+/* ════ SECTION LABEL ════ */
+.sec-lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.14em;color:var(--ink3);
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:18px;
+}
+.sec-lbl::after{content:'';flex:1;height:1px;background:var(--bdr);}
+
+/* ════ GRIDS ════ */
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px;}
+.g21{display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:28px;}
+.g12{display:grid;grid-template-columns:1fr 2fr;gap:20px;margin-bottom:28px;}
+
+/* ════ CARD BASE ════ */
+.card{
+  background:#fff;
+  border:1px solid var(--bdr);
+  border-radius:20px;
+  padding:24px;
+  position:relative;overflow:hidden;
 }
 
-.db-page-date {
-  font-size: 13px;
-  color: #78909c;
+.card-hd{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:20px;padding-bottom:16px;
+  border-bottom:1px solid var(--bg3);
 }
 
-/* ── SECTION TITLE ── */
-.sec-title {
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: #546e54;
-  margin-bottom: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.card-ttl{
+  font-size:13px;font-weight:700;color:var(--ink);
+  display:flex;align-items:center;gap:8px;
+}
+.card-ttl i{font-size:13px;color:var(--g);}
+
+.c-tag{
+  font-size:11px;font-weight:600;
+  padding:4px 12px;border-radius:20px;
+}
+.c-tag-g{background:var(--bg3);color:var(--g);border:1px solid #c3e8d6;}
+.c-tag-o{background:#fff0eb;color:var(--or);border:1px solid #ffd5bf;}
+
+/* ════ KPI CARDS ════ */
+.kpi{
+  border-radius:20px;padding:22px;
+  position:relative;overflow:hidden;
+  transition:transform .22s,box-shadow .22s;
+  cursor:default;
+}
+.kpi:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.08);}
+
+.kpi::before{
+  content:'';
+  position:absolute;top:0;right:0;
+  width:90px;height:90px;border-radius:50%;
+  transform:translate(30px,-30px);
+  opacity:.12;
 }
 
-.sec-title::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: #e0e8e0;
+.kpi-g{background:linear-gradient(135deg,#e6faf2,#f0fdf6);border:1px solid #c3e8d6;}
+.kpi-g::before{background:var(--g);}
+
+.kpi-o{background:linear-gradient(135deg,#fff0eb,#fff6f2);border:1px solid #ffd5bf;}
+.kpi-o::before{background:var(--or);}
+
+.kpi-b{background:linear-gradient(135deg,#e8f0ff,#f0f5ff);border:1px solid #c7d9ff;}
+.kpi-b::before{background:#2979ff;}
+
+.kpi-v{background:linear-gradient(135deg,#f3eaff,#f8f3ff);border:1px solid #dcc7ff;}
+.kpi-v::before{background:#7c3aed;}
+
+.kpi-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;}
+
+.kpi-icon{
+  width:42px;height:42px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:19px;
+  background:rgba(255,255,255,.7);
+  box-shadow:0 2px 8px rgba(0,0,0,.06);
 }
 
-/* ── GRID ── */
-.g4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
-.g3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 24px; }
-.g2 { display: grid; grid-template-columns: 1fr 1fr;        gap: 16px; margin-bottom: 24px; }
-.g21{ display: grid; grid-template-columns: 2fr 1fr;        gap: 16px; margin-bottom: 24px; }
-.g12{ display: grid; grid-template-columns: 1fr 2fr;        gap: 16px; margin-bottom: 24px; }
-
-/* ── CARD ── */
-.card {
-  background: #ffffff;
-  border: 1px solid #e0e8e0;
-  border-radius: 12px;
-  padding: 20px 22px;
+.kpi-trend{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+  padding:4px 10px;border-radius:20px;
+  background:rgba(255,255,255,.8);
 }
 
-/* ── KPI CARD ── */
-.kpi {
-  background: #ffffff;
-  border: 1px solid #e0e8e0;
-  border-radius: 12px;
-  padding: 20px;
-  position: relative;
-  overflow: hidden;
+.kpi-g .kpi-trend{color:var(--g);}
+.kpi-o .kpi-trend{color:var(--or);}
+.kpi-b .kpi-trend{color:#2979ff;}
+.kpi-v .kpi-trend{color:#7c3aed;}
+
+.kpi-val{
+  font-family:var(--fh);
+  font-size:36px;font-weight:900;line-height:1;letter-spacing:-2px;
+  margin-bottom:4px;
 }
 
-.kpi-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
+.kpi-g .kpi-val{color:var(--gd);}
+.kpi-o .kpi-val{color:#c84a15;}
+.kpi-b .kpi-val{color:#1a56db;}
+.kpi-v .kpi-val{color:#5b21b6;}
+
+.kpi-lbl{font-size:13px;font-weight:500;color:var(--ink2);}
+.kpi-sub{font-size:11px;color:var(--ink3);margin-top:2px;}
+
+/* ════ IMC SCALE ════ */
+.imc-big{
+  font-family:var(--fh);
+  font-size:56px;font-weight:900;
+  letter-spacing:-3px;line-height:1;margin-bottom:4px;
+}
+.imc-cat{font-size:13px;font-weight:600;margin-bottom:20px;}
+
+.imc-scale{
+  height:10px;border-radius:5px;position:relative;
+  background:linear-gradient(90deg,#2979ff 0%,var(--g) 35%,var(--or) 65%,#e53935 100%);
+  margin-bottom:8px;
+  box-shadow:0 2px 8px rgba(0,0,0,.1);
+}
+.imc-needle{
+  position:absolute;top:-5px;
+  width:5px;height:20px;border-radius:3px;
+  background:var(--ink);transform:translateX(-50%);
+  box-shadow:0 2px 6px rgba(0,0,0,.3);
+  transition:left 1.2s cubic-bezier(.34,1.56,.64,1);
+}
+.imc-labels{
+  display:flex;justify-content:space-between;
+  font-size:10px;color:var(--ink3);margin-top:4px;
 }
 
-.kpi-icon {
-  width: 38px; height: 38px;
-  border-radius: 9px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 17px;
+.imc-pills{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px;
+}
+.imc-pill{
+  text-align:center;padding:12px 8px;
+  background:var(--bg3);border:1px solid var(--bdr);
+  border-radius:12px;
+}
+.imc-pill-val{font-size:15px;font-weight:700;color:var(--ink);}
+.imc-pill-lbl{font-size:10px;color:var(--ink3);margin-top:2px;}
+
+/* ════ SCORE RING ════ */
+.score-wrap{display:flex;align-items:center;gap:24px;}
+.ring-svg{transform:rotate(-90deg);}
+.ring-bg{fill:none;stroke:var(--bg3);}
+.ring-fill{
+  fill:none;stroke:var(--g);stroke-linecap:round;
+  transition:stroke-dashoffset 1.4s cubic-bezier(.34,1.56,.64,1);
+  filter:drop-shadow(0 0 6px rgba(0,185,107,.4));
+}
+.ring-pos{position:relative;}
+.ring-center{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.ring-num{
+  font-family:var(--fh);font-size:30px;font-weight:900;
+  color:var(--ink);letter-spacing:-1px;line-height:1;
+}
+.ring-den{font-size:11px;color:var(--ink3);}
+
+.score-info h4{font-family:var(--fh);font-size:18px;font-weight:700;margin-bottom:6px;}
+.score-info p{font-size:13px;color:var(--ink2);line-height:1.7;margin-bottom:14px;}
+
+.score-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.s-chip{
+  font-size:11px;font-weight:600;
+  padding:4px 12px;border-radius:20px;
+  background:var(--bg3);color:var(--ink2);
+  border:1px solid var(--bdr);
+}
+.s-chip.g{background:#e6faf2;color:var(--g);border-color:#c3e8d6;}
+.s-chip.o{background:#fff0eb;color:var(--or);border-color:#ffd5bf;}
+
+/* ════ MACRO CHART ════ */
+.macro-donut-wrap{
+  display:flex;align-items:center;gap:24px;
+}
+.macro-legend{flex:1;}
+.macro-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 0;border-bottom:1px solid var(--bg3);
+}
+.macro-row:last-child{border-bottom:none;}
+.macro-dot{
+  width:10px;height:10px;border-radius:50%;margin-right:8px;
+  display:inline-block;flex-shrink:0;
+}
+.macro-name{font-size:13px;color:var(--ink2);display:flex;align-items:center;}
+.macro-val{font-size:13px;font-weight:700;color:var(--ink);}
+.macro-pct{font-size:11px;color:var(--ink3);margin-left:4px;}
+
+/* ════ EAU ════ */
+.eau-big{
+  font-family:var(--fh);font-size:44px;font-weight:900;
+  color:#1a56db;letter-spacing:-2px;line-height:1;
+  margin-bottom:2px;
+}
+.eau-sub{font-size:12px;color:var(--ink3);margin-bottom:16px;}
+
+.eau-track{
+  height:10px;background:var(--bg3);border-radius:5px;
+  overflow:hidden;margin-bottom:16px;
+}
+.eau-fill{
+  height:100%;border-radius:5px;
+  background:linear-gradient(90deg,#1a56db,#63a4ff);
+  transition:width 1s ease;
+  box-shadow:0 2px 8px rgba(26,86,219,.3);
 }
 
-.kpi-badge {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 20px;
+.drops{display:flex;gap:7px;flex-wrap:wrap;}
+.drop{
+  width:36px;height:36px;border-radius:50%;
+  border:1.5px solid #c7d9ff;background:#e8f0ff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;cursor:pointer;opacity:.3;
+  transition:all .2s;
 }
+.drop.on{opacity:1;background:#bbdefb;border-color:#1a56db;transform:scale(1.1);}
+.drop-hint{font-size:11px;color:var(--ink3);margin-top:10px;}
 
-.kpi-val {
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -.5px;
-  margin-bottom: 3px;
+/* ════ OBJ BARS ════ */
+.obj-item{margin-bottom:16px;}
+.obj-item:last-child{margin-bottom:0;}
+.obj-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;}
+.obj-lbl{color:var(--ink2);display:flex;align-items:center;gap:6px;}
+.obj-val{font-weight:700;color:var(--ink);}
+.obj-bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+.obj-fill{height:100%;border-radius:3px;transition:width 1.1s cubic-bezier(.34,1.56,.64,1);}
+
+/* ════ PLAN TABLE ════ */
+.pt{width:100%;border-collapse:collapse;}
+.pt th{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--ink3);text-align:left;padding:0 12px 14px 0;
+  border-bottom:2px solid var(--bg3);
 }
-
-.kpi-lbl {
-  font-size: 12px;
-  color: #78909c;
+.pt td{
+  padding:13px 12px 13px 0;font-size:13px;
+  border-bottom:1px solid var(--bg3);vertical-align:middle;
 }
+.pt tr:last-child td{border-bottom:none;}
+.pt tr:hover td{background:var(--bg3);}
 
-.kpi-sub {
-  font-size: 11px;
-  color: #9e9e9e;
-  margin-top: 2px;
+.pt-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;
 }
+.pt-badge.a{background:#fff0eb;color:var(--or);border:1px solid #ffd5bf;}
+.pt-badge.b{background:#e6faf2;color:var(--g);border:1px solid #c3e8d6;}
+.pt-badge.c{background:#f3eaff;color:#7c3aed;border:1px solid #dcc7ff;}
+.pt-badge.d{background:#e8f0ff;color:#2979ff;border:1px solid #c7d9ff;}
 
-/* couleurs KPI */
-.kpi-g  .kpi-icon { background: #e8f5e9; }
-.kpi-g  .kpi-val  { color: #2e7d32; }
-.kpi-g  .kpi-badge{ background: #e8f5e9; color: #2e7d32; }
+.pt-time{font-size:11px;color:var(--ink3);}
+.pt-food{font-size:13px;font-weight:500;}
+.pt-desc{font-size:11px;color:var(--ink3);margin-top:2px;}
+.pt-kcal{font-weight:700;color:var(--or);}
+.pt-prot{font-weight:700;color:var(--g);}
 
-.kpi-o  .kpi-icon { background: #fff3e0; }
-.kpi-o  .kpi-val  { color: #e65100; }
-.kpi-o  .kpi-badge{ background: #fff3e0; color: #e65100; }
-
-.kpi-b  .kpi-icon { background: #e3f2fd; }
-.kpi-b  .kpi-val  { color: #1565c0; }
-.kpi-b  .kpi-badge{ background: #e3f2fd; color: #1565c0; }
-
-.kpi-p  .kpi-icon { background: #fce4ec; }
-.kpi-p  .kpi-val  { color: #880e4f; }
-.kpi-p  .kpi-badge{ background: #fce4ec; color: #880e4f; }
-
-/* ── CARD HEADER ── */
-.card-hd {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 18px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid #f0f4f0;
+/* ════ ALERT ITEMS ════ */
+.ai{
+  display:flex;align-items:flex-start;gap:14px;
+  padding:14px 0;border-bottom:1px solid var(--bg3);
 }
-
-.card-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1a2e1a;
-  display: flex;
-  align-items: center;
-  gap: 7px;
+.ai:last-child{border-bottom:none;padding-bottom:0;}
+.ai-ico{
+  width:36px;height:36px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:16px;
 }
+.ai-ico.g{background:#e6faf2;}
+.ai-ico.o{background:#fff0eb;}
+.ai-ico.b{background:#e8f0ff;}
+.ai-ttl{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px;}
+.ai-sub{font-size:12px;color:var(--ink3);line-height:1.5;}
 
-.card-title i { color: #2e7d32; font-size: 14px; }
-
-.card-tag {
-  font-size: 11px;
-  font-weight: 500;
-  padding: 3px 10px;
-  border-radius: 20px;
-  background: #f1f8f1;
-  color: #2e7d32;
-  border: 1px solid #c8e6c9;
+/* ════ PROFIL MINI ════ */
+.pm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.pm-cell{
+  text-align:center;padding:14px 8px;
+  background:var(--bg3);border:1px solid var(--bdr);border-radius:14px;
+  transition:all .2s;
 }
+.pm-cell:hover{border-color:var(--g);background:#e6faf2;}
+.pm-val{font-family:var(--fh);font-size:18px;font-weight:700;color:var(--ink);}
+.pm-lbl{font-size:10px;color:var(--ink3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em;}
 
-/* ── IMC METER ── */
-.imc-num {
-  font-size: 40px;
-  font-weight: 700;
-  letter-spacing: -2px;
-  line-height: 1;
+/* ════ BTN ════ */
+.btn-g{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:12px 22px;border-radius:12px;
+  background:linear-gradient(135deg,var(--g),var(--g2));
+  color:#fff;font-size:13px;font-weight:700;
+  font-family:var(--fb);text-decoration:none;border:none;
+  cursor:pointer;transition:all .22s;
+  box-shadow:0 6px 20px rgba(0,185,107,.3);
+  width:100%;
 }
+.btn-g:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(0,185,107,.4);color:#fff;}
 
-.imc-cat {
-  font-size: 13px;
-  font-weight: 500;
-  margin-top: 4px;
-  margin-bottom: 18px;
+/* ════ RESPONSIVE ════ */
+@media(max-width:1024px){
+  .g4{grid-template-columns:repeat(2,1fr);}
+  .g3{grid-template-columns:repeat(2,1fr);}
+  .g21,.g12{grid-template-columns:1fr;}
 }
-
-.imc-scale {
-  height: 8px;
-  border-radius: 4px;
-  background: linear-gradient(90deg, #1565c0 0%, #2e7d32 35%, #e65100 65%, #c62828 100%);
-  position: relative;
-  margin-bottom: 6px;
-}
-
-.imc-needle {
-  position: absolute;
-  top: -4px;
-  width: 4px; height: 16px;
-  background: #1a2e1a;
-  border-radius: 2px;
-  transform: translateX(-50%);
-  transition: left 1s ease;
-  box-shadow: 0 1px 4px rgba(0,0,0,.25);
-}
-
-.imc-scale-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 10px;
-  color: #9e9e9e;
-  margin-top: 6px;
-}
-
-.imc-stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.imc-stat {
-  text-align: center;
-  padding: 10px 8px;
-  background: #f8fdf8;
-  border: 1px solid #e8f0e8;
-  border-radius: 8px;
-}
-
-.imc-stat-val { font-size: 16px; font-weight: 700; color: #1a2e1a; }
-.imc-stat-lbl { font-size: 10px; color: #78909c; margin-top: 2px; }
-
-/* ── PROGRESS BARS ── */
-.prog-item { margin-bottom: 14px; }
-.prog-item:last-child { margin-bottom: 0; }
-
-.prog-top {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  margin-bottom: 6px;
-}
-
-.prog-lbl { color: #546e54; font-weight: 500; }
-.prog-val { color: #1a2e1a; font-weight: 600; }
-
-.prog-bar {
-  height: 6px;
-  background: #f0f4f0;
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.prog-fill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 1.1s ease;
-}
-
-/* ── MACRO TABLE ── */
-.mac-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.mac-table th {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  color: #9e9e9e;
-  text-align: left;
-  padding: 0 0 10px;
-  border-bottom: 1px solid #f0f4f0;
-}
-
-.mac-table td {
-  padding: 10px 0;
-  font-size: 13px;
-  border-bottom: 1px solid #f8faf8;
-  vertical-align: middle;
-}
-
-.mac-table tr:last-child td { border-bottom: none; }
-
-.mac-dot {
-  display: inline-block;
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  margin-right: 6px;
-}
-
-.mac-bar-cell { width: 80px; }
-.mac-mini-bar { height: 4px; background: #f0f4f0; border-radius: 2px; overflow: hidden; }
-.mac-mini-fill { height: 100%; border-radius: 2px; }
-
-/* ── SCORE CARD ── */
-.score-wrap {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.score-ring-wrap { position: relative; flex-shrink: 0; }
-.score-svg { transform: rotate(-90deg); }
-.score-ring-bg   { fill: none; stroke: #e8f0e8; }
-.score-ring-fill { fill: none; stroke: #2e7d32; stroke-linecap: round; transition: stroke-dashoffset 1.4s ease; }
-
-.score-center {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-}
-
-.score-num {
-  font-size: 28px; font-weight: 700;
-  color: #1a2e1a; letter-spacing: -1px; line-height: 1;
-}
-
-.score-denom { font-size: 11px; color: #9e9e9e; }
-
-.score-details { flex: 1; }
-.score-details h4 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
-.score-details p  { font-size: 13px; color: #546e54; line-height: 1.6; margin-bottom: 12px; }
-
-.score-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.score-chip {
-  font-size: 11px; font-weight: 500;
-  padding: 4px 10px; border-radius: 20px;
-  background: #f1f8f1; color: #2e7d32;
-  border: 1px solid #c8e6c9;
-}
-
-.score-chip.o { background: #fff3e0; color: #e65100; border-color: #ffe0b2; }
-
-/* ── EAU TRACKER ── */
-.water-num {
-  font-size: 32px; font-weight: 700;
-  color: #1565c0; letter-spacing: -1px; line-height: 1;
-}
-
-.water-sub { font-size: 12px; color: #78909c; margin-bottom: 14px; }
-
-.water-bar {
-  height: 8px; background: #e3f2fd; border-radius: 4px; overflow: hidden; margin-bottom: 14px;
-}
-
-.water-bar-fill {
-  height: 100%; border-radius: 4px;
-  background: linear-gradient(90deg, #1565c0, #42a5f5);
-  transition: width 1s ease;
-}
-
-.water-drops { display: flex; gap: 6px; flex-wrap: wrap; }
-
-.wdrop {
-  width: 34px; height: 34px;
-  border: 1.5px solid #bbdefb;
-  border-radius: 50%;
-  background: #e3f2fd;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 15px;
-  cursor: pointer;
-  opacity: .35;
-  transition: all .18s;
-  color: #1565c0;
-}
-
-.wdrop.on { opacity: 1; background: #bbdefb; border-color: #1565c0; transform: scale(1.1); }
-.wdrop-hint { font-size: 11px; color: #9e9e9e; margin-top: 8px; }
-
-/* ── PLAN TABLE ── */
-.plan-table { width: 100%; border-collapse: collapse; }
-
-.plan-table th {
-  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
-  color: #9e9e9e; text-align: left; padding: 0 12px 10px 0;
-  border-bottom: 1px solid #f0f4f0;
-}
-
-.plan-table td {
-  padding: 11px 12px 11px 0;
-  font-size: 13px;
-  border-bottom: 1px solid #f8faf8;
-  vertical-align: middle;
-}
-
-.plan-table tr:last-child td { border-bottom: none; }
-
-.plan-tag {
-  display: inline-block;
-  padding: 2px 10px; border-radius: 20px;
-  font-size: 11px; font-weight: 500; white-space: nowrap;
-}
-
-.plan-tag.pdj { background: #fff3e0; color: #e65100; }
-.plan-tag.dej { background: #e8f5e9; color: #2e7d32; }
-.plan-tag.col { background: #fce4ec; color: #880e4f; }
-.plan-tag.din { background: #e3f2fd; color: #1565c0; }
-
-.plan-time { font-size: 12px; color: #9e9e9e; }
-.plan-desc { font-size: 12px; color: #546e54; margin-top: 2px; }
-.plan-cal  { font-weight: 600; color: #e65100; }
-.plan-prot { font-weight: 600; color: #2e7d32; }
-
-/* ── ALERTE ITEMS ── */
-.alert-item {
-  display: flex; align-items: flex-start; gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid #f0f4f0;
-}
-
-.alert-item:last-child { border-bottom: none; padding-bottom: 0; }
-
-.alert-ico {
-  width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center; font-size: 14px;
-}
-
-.alert-ico.g { background: #e8f5e9; }
-.alert-ico.o { background: #fff3e0; }
-.alert-ico.b { background: #e3f2fd; }
-
-.alert-txt  { font-size: 13px; font-weight: 500; color: #1a2e1a; }
-.alert-desc { font-size: 12px; color: #78909c; margin-top: 2px; }
-
-/* ── OBJECTIFS PROGRESS ── */
-.obj-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid #f0f4f0;
-}
-
-.obj-item:last-child { border-bottom: none; }
-
-.obj-ico {
-  font-size: 16px; width: 20px; text-align: center; flex-shrink: 0;
-}
-
-.obj-info { flex: 1; }
-
-.obj-top {
-  display: flex; justify-content: space-between;
-  font-size: 13px; margin-bottom: 5px;
-}
-
-.obj-lbl { color: #546e54; }
-.obj-val { font-weight: 600; color: #1a2e1a; }
-
-.obj-bar { height: 5px; background: #f0f4f0; border-radius: 3px; overflow: hidden; }
-.obj-fill { height: 100%; border-radius: 3px; transition: width 1.1s ease; }
-
-/* ── BOUTON PROFIL ── */
-.btn-profil {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 10px 18px;
-  background: #2e7d32; color: white;
-  border-radius: 8px; text-decoration: none;
-  font-size: 13px; font-weight: 500;
-  transition: background .15s;
-  margin-top: 16px;
-}
-.btn-profil:hover { background: #1b5e20; color: white; }
-
-/* ── RESPONSIVE ── */
-@media (max-width: 1024px) {
-  .g4 { grid-template-columns: repeat(2,1fr); }
-  .g3 { grid-template-columns: repeat(2,1fr); }
-  .g21, .g12 { grid-template-columns: 1fr; }
-}
-
-@media (max-width: 640px) {
-  .g4, .g3, .g2, .g21, .g12 { grid-template-columns: 1fr; }
-  .db-wrap { padding: 20px 16px 48px; }
-  .db-topbar { padding: 0 16px; }
-  .db-topbar-center { display: none; }
+@media(max-width:640px){
+  .g4,.g3,.g2,.g21,.g12{grid-template-columns:1fr;}
+  .wrap{padding:24px 16px 60px;}
+  .tb{padding:0 16px;}
 }
 </style>
 
-<!-- ══ TOPBAR ══ -->
-<div class="db-topbar">
-  <a href="#" class="db-logo">
-    <div class="db-logo-dot"></div>
-    EcoNutri
+<!-- ════ TOPBAR ════ -->
+<div class="tb">
+  <a href="#" class="tb-logo">
+    <div class="tb-logo-mark">🌿</div>
+    <div class="tb-logo-name">Eco<em>Nutri</em></div>
   </a>
-  <div class="db-topbar-center">
-    Tableau de bord — <?= date('l d F Y') ?>
-  </div>
-  <div class="db-topbar-right">
-    <div class="db-user-info">
-      <div class="db-avatar"><?= strtoupper(substr($user['nom'], 0, 1)) ?></div>
-      <div>
-        <div class="db-user-name"><?= htmlspecialchars($user['nom']) ?></div>
-        <div class="db-user-role"><?= htmlspecialchars($user['objectif'] ?: 'Utilisateur') ?></div>
-      </div>
+  <nav class="tb-nav">
+    <a href="index.php?url=User/dashboard" class="tb-link on"><i class="fa fa-gauge"></i> Dashboard</a>
+    <a href="index.php?url=User/profile"   class="tb-link"><i class="fa fa-user"></i> Profil</a>
+  </nav>
+  <div class="tb-right">
+    <div class="tb-chip">
+      <div class="tb-av"><?= strtoupper(substr($user['nom'],0,1)) ?></div>
+      <div class="tb-name"><?= htmlspecialchars($user['nom']) ?></div>
     </div>
-    <a href="index.php?url=User/logout" class="db-logout">
-      <i class="fa fa-right-from-bracket" style="font-size:12px;"></i>
-      Déconnexion
-    </a>
+    <a href="index.php?url=User/logout" class="tb-logout"><i class="fa fa-right-from-bracket"></i> Sortir</a>
   </div>
 </div>
 
-<!-- ══ BODY ══ -->
-<div class="db-wrap">
+<!-- ════ BODY ════ -->
+<div class="wrap">
 
-  <!-- Page header -->
-  <div class="db-page-header">
+  <!-- Page Header -->
+  <div class="ph">
     <div>
-      <div class="db-greeting"><?= $salut ?></div>
-      <div class="db-page-title"><?= htmlspecialchars($user['nom']) ?></div>
+      <div class="ph-salut"><?= $salut ?></div>
+      <div class="ph-title"><?= htmlspecialchars($user['nom']) ?> 👋</div>
     </div>
-    <div class="db-page-date"><?= date('d/m/Y H:i') ?></div>
+    <div class="ph-date"><i class="fa fa-calendar" style="color:var(--g);margin-right:6px;"></i><?= date('d/m/Y — H\hi') ?></div>
   </div>
 
-  <!-- ══ KPI ══ -->
-  <div class="sec-title">Indicateurs clés</div>
+  <!-- ════ KPI ════ -->
+  <div class="sec-lbl">Indicateurs clés du jour</div>
   <div class="g4">
 
     <div class="kpi kpi-g">
       <div class="kpi-top">
         <div class="kpi-icon">⚖️</div>
-        <span class="kpi-badge">IMC</span>
+        <span class="kpi-trend">IMC</span>
       </div>
       <div class="kpi-val" style="color:<?= $imcColor ?>"><?= $imc ?: '—' ?></div>
       <div class="kpi-lbl">Indice de masse corporelle</div>
@@ -679,110 +558,89 @@ body {
     <div class="kpi kpi-o">
       <div class="kpi-top">
         <div class="kpi-icon">🔥</div>
-        <span class="kpi-badge">kcal</span>
+        <span class="kpi-trend">kcal/j</span>
       </div>
       <div class="kpi-val"><?= number_format($calories) ?></div>
-      <div class="kpi-lbl">Calories recommandées / jour</div>
-      <div class="kpi-sub">TDEE estimé : <?= number_format($tdee) ?> kcal</div>
+      <div class="kpi-lbl">Calories recommandées</div>
+      <div class="kpi-sub">TDEE <?= number_format($tdee) ?> kcal</div>
     </div>
 
     <div class="kpi kpi-b">
       <div class="kpi-top">
         <div class="kpi-icon">💧</div>
-        <span class="kpi-badge">eau</span>
+        <span class="kpi-trend">eau</span>
       </div>
-      <div class="kpi-val"><?= $eau ?>L</div>
+      <div class="kpi-val" style="color:#1a56db"><?= $eau ?>L</div>
       <div class="kpi-lbl">Hydratation quotidienne</div>
-      <div class="kpi-sub"><?= $poids ?>kg × 33 ml/kg</div>
+      <div class="kpi-sub"><?= $poids ?>kg × 33 ml</div>
     </div>
 
-    <div class="kpi kpi-p">
+    <div class="kpi kpi-v">
       <div class="kpi-top">
         <div class="kpi-icon">🥩</div>
-        <span class="kpi-badge">g/j</span>
+        <span class="kpi-trend">g/j</span>
       </div>
-      <div class="kpi-val"><?= $proteines ?>g</div>
+      <div class="kpi-val" style="color:#5b21b6"><?= $proteines ?>g</div>
       <div class="kpi-lbl">Protéines recommandées</div>
-      <div class="kpi-sub">25 % des apports caloriques</div>
+      <div class="kpi-sub">25 % des apports</div>
     </div>
 
   </div>
 
-  <!-- ══ IMC + Score ══ -->
-  <div class="sec-title">Bilan santé</div>
+  <!-- ════ BILAN SANTÉ ════ -->
+  <div class="sec-lbl">Bilan santé</div>
   <div class="g2">
 
-    <!-- IMC détaillé -->
+    <!-- IMC -->
     <div class="card">
       <div class="card-hd">
-        <div class="card-title"><i class="fa fa-weight-scale"></i> IMC détaillé</div>
-        <span class="card-tag" style="color:<?= $imcColor ?>;border-color:<?= $imcColor ?>44;background:<?= $imcColor ?>11;"><?= $imcCat ?></span>
+        <div class="card-ttl"><i class="fa fa-weight-scale"></i> IMC détaillé</div>
+        <span class="c-tag" style="background:<?= $imcBg ?>;color:<?= $imcColor ?>;border:1px solid <?= $imcColor ?>33;"><?= $imcCat ?></span>
       </div>
-
-      <div class="imc-num" style="color:<?= $imcColor ?>"><?= $imc ?: '—' ?></div>
+      <div class="imc-big" style="color:<?= $imcColor ?>"><?= $imc ?: '—' ?></div>
       <div class="imc-cat" style="color:<?= $imcColor ?>"><?= $imcCat ?></div>
-
       <div class="imc-scale">
-        <div class="imc-needle" id="imcNeedle"
-             style="left:<?= $imc > 0 ? min(97, max(2, ($imc/40)*100)) : 2 ?>%"></div>
+        <div class="imc-needle" style="left:<?= $imc>0?min(97,max(2,($imc/40)*100)):2 ?>%"></div>
       </div>
-      <div class="imc-scale-labels">
-        <span>&lt; 18.5<br>Insuffisant</span>
-        <span style="text-align:center">18.5 – 24.9<br>Normal</span>
-        <span style="text-align:center">25 – 29.9<br>Surpoids</span>
-        <span style="text-align:right">&gt; 30<br>Obésité</span>
+      <div class="imc-labels">
+        <span>&lt;18.5<br>Insuffisant</span>
+        <span style="text-align:center">18.5–24.9<br>Normal ✓</span>
+        <span style="text-align:center">25–29.9<br>Surpoids</span>
+        <span style="text-align:right">&gt;30<br>Obésité</span>
       </div>
-
-      <div class="imc-stats">
-        <div class="imc-stat">
-          <div class="imc-stat-val"><?= $poids ?> kg</div>
-          <div class="imc-stat-lbl">Poids actuel</div>
-        </div>
-        <div class="imc-stat">
-          <div class="imc-stat-val"><?= $taille ?> cm</div>
-          <div class="imc-stat-lbl">Taille</div>
-        </div>
-        <div class="imc-stat">
-          <div class="imc-stat-val"><?= $poidsMinIdeal ?>–<?= $poidsMaxIdeal ?></div>
-          <div class="imc-stat-lbl">Poids idéal kg</div>
-        </div>
+      <div class="imc-pills">
+        <div class="imc-pill"><div class="imc-pill-val"><?= $poids ?>kg</div><div class="imc-pill-lbl">Poids actuel</div></div>
+        <div class="imc-pill"><div class="imc-pill-val"><?= $taille ?>cm</div><div class="imc-pill-lbl">Taille</div></div>
+        <div class="imc-pill"><div class="imc-pill-val" style="font-size:12px;"><?= $poidsMinIdeal ?>–<?= $poidsMaxIdeal ?>kg</div><div class="imc-pill-lbl">Poids idéal</div></div>
       </div>
     </div>
 
-    <!-- Score profil -->
+    <!-- Score -->
     <div class="card">
       <div class="card-hd">
-        <div class="card-title"><i class="fa fa-chart-pie"></i> Score profil nutritionnel</div>
-        <span class="card-tag"><?= $score ?> / 100</span>
+        <div class="card-ttl"><i class="fa fa-chart-pie"></i> Score nutritionnel</div>
+        <span class="c-tag c-tag-g"><?= $score ?> / 100</span>
       </div>
-
       <div class="score-wrap">
-        <div class="score-ring-wrap">
-          <svg class="score-svg" width="110" height="110" viewBox="0 0 110 110">
-            <circle class="score-ring-bg"   cx="55" cy="55" r="44" stroke-width="8"/>
-            <circle class="score-ring-fill" cx="55" cy="55" r="44" stroke-width="8"
-                    stroke-dasharray="276.46"
-                    stroke-dashoffset="<?= 276.46 * (1 - $score/100) ?>"/>
+        <div class="ring-pos">
+          <svg class="ring-svg" width="120" height="120" viewBox="0 0 120 120">
+            <circle class="ring-bg"   cx="60" cy="60" r="48" stroke-width="9"/>
+            <circle class="ring-fill" cx="60" cy="60" r="48" stroke-width="9"
+                    stroke-dasharray="301.59"
+                    stroke-dashoffset="<?= 301.59*(1-$score/100) ?>"/>
           </svg>
-          <div class="score-center">
-            <div class="score-num"><?= $score ?></div>
-            <div class="score-denom">/ 100</div>
+          <div class="ring-center">
+            <div class="ring-num"><?= $score ?></div>
+            <div class="ring-den">/100</div>
           </div>
         </div>
-        <div class="score-details">
-          <h4>
-            <?php
-            if ($score >= 80)      echo 'Excellent profil 🎉';
-            elseif ($score >= 60)  echo 'Bon profil ✓';
-            elseif ($score >= 40)  echo 'Profil à améliorer';
-            else                   echo 'Profil incomplet';
-            ?>
-          </h4>
-          <p>Complétez votre profil et respectez vos objectifs pour améliorer votre score et recevoir des recommandations personnalisées.</p>
+        <div class="score-info">
+          <h4><?= $score>=80?'Excellent 🎉':($score>=60?'Très bon ✓':($score>=40?'À améliorer':'Incomplet')) ?></h4>
+          <p>Complétez votre profil et respectez vos objectifs pour améliorer votre score et vos recommandations personnalisées.</p>
           <div class="score-chips">
-            <?php if ($user['objectif']): ?><span class="score-chip">🎯 <?= htmlspecialchars($user['objectif']) ?></span><?php endif; ?>
-            <?php if ($user['activite'] ?? ''): ?><span class="score-chip o">🏃 <?= htmlspecialchars($user['activite']) ?></span><?php endif; ?>
-            <?php if ($imc > 0): ?><span class="score-chip" style="background:<?= $imcColor ?>11;color:<?= $imcColor ?>;border-color:<?= $imcColor ?>44;">IMC <?= $imc ?></span><?php endif; ?>
+            <?php if($user['objectif']): ?><span class="s-chip g">🎯 <?= htmlspecialchars($user['objectif']) ?></span><?php endif; ?>
+            <?php if($user['activite']??''): ?><span class="s-chip o">🏃 <?= htmlspecialchars($user['activite']) ?></span><?php endif; ?>
+            <?php if($imc>0): ?><span class="s-chip" style="background:<?= $imcBg ?>;color:<?= $imcColor ?>;border:1px solid <?= $imcColor ?>33;">IMC <?= $imc ?></span><?php endif; ?>
           </div>
         </div>
       </div>
@@ -790,312 +648,191 @@ body {
 
   </div>
 
-  <!-- ══ Macros + Eau + Objectifs ══ -->
-  <div class="sec-title">Nutrition & Hydratation</div>
+  <!-- ════ NUTRITION & EAU ════ -->
+  <div class="sec-lbl">Nutrition & hydratation</div>
   <div class="g3">
 
-    <!-- Macronutriments -->
+    <!-- Macros -->
     <div class="card">
       <div class="card-hd">
-        <div class="card-title"><i class="fa fa-utensils"></i> Macronutriments</div>
-        <span class="card-tag"><?= $calories ?> kcal</span>
+        <div class="card-ttl"><i class="fa fa-utensils"></i> Macronutriments</div>
+        <span class="c-tag c-tag-o"><?= $calories ?> kcal</span>
       </div>
-
-      <div style="margin-bottom:18px;">
-        <canvas id="macroChart" height="120"></canvas>
+      <div class="macro-donut-wrap">
+        <canvas id="macroChart" width="120" height="120" style="flex-shrink:0;"></canvas>
+        <div class="macro-legend">
+          <div class="macro-row">
+            <div class="macro-name"><span class="macro-dot" style="background:var(--g)"></span>Protéines</div>
+            <div><span class="macro-val"><?= $proteines ?>g</span> <span class="macro-pct">25%</span></div>
+          </div>
+          <div class="macro-row">
+            <div class="macro-name"><span class="macro-dot" style="background:#2979ff"></span>Glucides</div>
+            <div><span class="macro-val"><?= $glucides ?>g</span> <span class="macro-pct">50%</span></div>
+          </div>
+          <div class="macro-row">
+            <div class="macro-name"><span class="macro-dot" style="background:var(--or)"></span>Lipides</div>
+            <div><span class="macro-val"><?= $lipides ?>g</span> <span class="macro-pct">25%</span></div>
+          </div>
+        </div>
       </div>
-
-      <table class="mac-table">
-        <thead>
-          <tr>
-            <th>Nutriment</th>
-            <th>Quantité</th>
-            <th>Répartition</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><span class="mac-dot" style="background:#2e7d32"></span>Protéines</td>
-            <td><strong><?= $proteines ?>g</strong></td>
-            <td class="mac-bar-cell">
-              <div class="mac-mini-bar"><div class="mac-mini-fill" style="width:25%;background:#2e7d32;"></div></div>
-            </td>
-          </tr>
-          <tr>
-            <td><span class="mac-dot" style="background:#1565c0"></span>Glucides</td>
-            <td><strong><?= $glucides ?>g</strong></td>
-            <td class="mac-bar-cell">
-              <div class="mac-mini-bar"><div class="mac-mini-fill" style="width:50%;background:#1565c0;"></div></div>
-            </td>
-          </tr>
-          <tr>
-            <td><span class="mac-dot" style="background:#e65100"></span>Lipides</td>
-            <td><strong><?= $lipides ?>g</strong></td>
-            <td class="mac-bar-cell">
-              <div class="mac-mini-bar"><div class="mac-mini-fill" style="width:25%;background:#e65100;"></div></div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
     </div>
 
     <!-- Eau -->
     <div class="card">
       <div class="card-hd">
-        <div class="card-title"><i class="fa fa-droplet" style="color:#1565c0;"></i> Hydratation du jour</div>
+        <div class="card-ttl"><i class="fa fa-droplet" style="color:#1a56db;"></i> Hydratation</div>
+        <span class="c-tag" style="background:#e8f0ff;color:#1a56db;border:1px solid #c7d9ff;">Objectif <?= $eau ?>L</span>
       </div>
-
-      <div class="water-num" id="waterNum">0.0 L</div>
-      <div class="water-sub">objectif : <?= $eau ?>L / jour</div>
-
-      <div class="water-bar">
-        <div class="water-bar-fill" id="waterFill" style="width:0%"></div>
-      </div>
-
-      <div class="water-drops" id="waterDrops">
-        <?php $dCount = max(6, min(10, (int)($eau * 4))); ?>
-        <?php for ($i = 0; $i < $dCount; $i++): ?>
-        <div class="wdrop" onclick="tapWater(<?= $i ?>)">💧</div>
+      <div class="eau-big" id="eauNum">0.0 L</div>
+      <div class="eau-sub">sur <?= $eau ?>L recommandés</div>
+      <div class="eau-track"><div class="eau-fill" id="eauFill" style="width:0%"></div></div>
+      <div class="drops" id="drops">
+        <?php $dc=max(6,min(10,(int)($eau*4))); for($i=0;$i<$dc;$i++): ?>
+        <div class="drop" onclick="tapEau(<?=$i?>)">💧</div>
         <?php endfor; ?>
       </div>
-      <div class="wdrop-hint">Cliquez sur chaque goutte pour noter votre consommation (<?= round($eau/$dCount,2) ?>L / unité)</div>
+      <div class="drop-hint">Cliquez pour noter chaque verre consommé</div>
     </div>
 
     <!-- Objectifs -->
     <div class="card">
       <div class="card-hd">
-        <div class="card-title"><i class="fa fa-bullseye"></i> Mes objectifs</div>
-      </div>
-
-      <div class="obj-item">
-        <div class="obj-ico">🔥</div>
-        <div class="obj-info">
-          <div class="obj-top"><span class="obj-lbl">Calories</span><span class="obj-val"><?= $calories ?> kcal</span></div>
-          <div class="obj-bar"><div class="obj-fill" style="width:68%;background:#e65100;"></div></div>
-        </div>
+        <div class="card-ttl"><i class="fa fa-bullseye"></i> Objectifs journaliers</div>
       </div>
       <div class="obj-item">
-        <div class="obj-ico">🥩</div>
-        <div class="obj-info">
-          <div class="obj-top"><span class="obj-lbl">Protéines</span><span class="obj-val"><?= $proteines ?>g</span></div>
-          <div class="obj-bar"><div class="obj-fill" style="width:55%;background:#2e7d32;"></div></div>
-        </div>
+        <div class="obj-top"><span class="obj-lbl">🔥 Calories</span><span class="obj-val"><?= $calories ?> kcal</span></div>
+        <div class="obj-bar"><div class="obj-fill" style="width:68%;background:linear-gradient(90deg,var(--or),var(--or2));"></div></div>
       </div>
       <div class="obj-item">
-        <div class="obj-ico">🏃</div>
-        <div class="obj-info">
-          <div class="obj-top"><span class="obj-lbl">Activité</span><span class="obj-val">3× / sem</span></div>
-          <div class="obj-bar"><div class="obj-fill" style="width:66%;background:#2e7d32;"></div></div>
-        </div>
+        <div class="obj-top"><span class="obj-lbl">🥩 Protéines</span><span class="obj-val"><?= $proteines ?>g</span></div>
+        <div class="obj-bar"><div class="obj-fill" style="width:55%;background:linear-gradient(90deg,var(--g),var(--g2));"></div></div>
       </div>
       <div class="obj-item">
-        <div class="obj-ico">💧</div>
-        <div class="obj-info">
-          <div class="obj-top"><span class="obj-lbl">Eau</span><span class="obj-val"><?= $eau ?>L</span></div>
-          <div class="obj-bar"><div class="obj-fill" style="width:40%;background:#1565c0;" id="waterObjBar"></div></div>
-        </div>
+        <div class="obj-top"><span class="obj-lbl">🏃 Activité</span><span class="obj-val">3× / sem</span></div>
+        <div class="obj-bar"><div class="obj-fill" style="width:66%;background:linear-gradient(90deg,var(--g),var(--g2));"></div></div>
       </div>
       <div class="obj-item">
-        <div class="obj-ico">😴</div>
-        <div class="obj-info">
-          <div class="obj-top"><span class="obj-lbl">Sommeil</span><span class="obj-val">8h</span></div>
-          <div class="obj-bar"><div class="obj-fill" style="width:75%;background:#546e54;"></div></div>
-        </div>
+        <div class="obj-top"><span class="obj-lbl">💧 Eau</span><span class="obj-val"><?= $eau ?>L</span></div>
+        <div class="obj-bar"><div class="obj-fill" id="eauObjBar" style="width:0%;background:linear-gradient(90deg,#1a56db,#63a4ff);"></div></div>
+      </div>
+      <div class="obj-item">
+        <div class="obj-top"><span class="obj-lbl">😴 Sommeil</span><span class="obj-val">8h</span></div>
+        <div class="obj-bar"><div class="obj-fill" style="width:75%;background:linear-gradient(90deg,#5b21b6,#a78bfa);"></div></div>
       </div>
     </div>
 
   </div>
 
-  <!-- ══ Plan + Alertes ══ -->
-  <div class="sec-title">Plan alimentaire & Recommandations</div>
+  <!-- ════ PLAN + ALERTES ════ -->
+  <div class="sec-lbl">Plan alimentaire & recommandations</div>
   <div class="g21">
 
-    <!-- Plan alimentaire -->
+    <!-- Plan -->
     <div class="card">
       <div class="card-hd">
-        <div class="card-title"><i class="fa fa-clipboard-list"></i> Plan alimentaire — <?= date('d/m/Y') ?></div>
-        <span class="card-tag">5 repas</span>
+        <div class="card-ttl"><i class="fa fa-clipboard-list"></i> Plan alimentaire — <?= date('d/m/Y') ?></div>
+        <span class="c-tag c-tag-g">5 repas</span>
       </div>
-      <table class="plan-table">
+      <table class="pt">
         <thead>
           <tr>
-            <th>Repas</th>
-            <th>Heure</th>
-            <th>Aliments</th>
-            <th style="text-align:right">Calories</th>
-            <th style="text-align:right">Protéines</th>
+            <th>Repas</th><th>Heure</th><th>Aliments</th>
+            <th style="text-align:right">Calories</th><th style="text-align:right">Protéines</th>
           </tr>
         </thead>
         <tbody>
-          <?php
-          $tags = ['pdj','dej','col','din','col'];
-          $labels = ['Matin','Midi','Snack','Soir','Snack'];
-          foreach($plan as $i => $r): ?>
+          <?php $badges=['a','b','c','d','c'];
+          foreach($plan as $i=>$r): ?>
           <tr>
-            <td><span class="plan-tag <?= $tags[$i] ?>"><?= $labels[$i] ?></span></td>
-            <td><span class="plan-time"><?= $r[1] ?></span></td>
-            <td>
-              <div><?= $r[0] ?></div>
-              <div class="plan-desc"><?= $r[2] ?></div>
-            </td>
-            <td style="text-align:right"><span class="plan-cal"><?= $r[3] ?> kcal</span></td>
-            <td style="text-align:right"><span class="plan-prot"><?= $r[4] ?>g</span></td>
+            <td><span class="pt-badge <?= $badges[$i] ?>"><?= $r[0] ?></span></td>
+            <td><span class="pt-time"><?= $r[1] ?></span></td>
+            <td><div class="pt-food"><?= $r[0] ?></div><div class="pt-desc"><?= $r[2] ?></div></td>
+            <td style="text-align:right"><span class="pt-kcal"><?= $r[3] ?> kcal</span></td>
+            <td style="text-align:right"><span class="pt-prot"><?= $r[4] ?>g</span></td>
           </tr>
           <?php endforeach; ?>
         </tbody>
       </table>
     </div>
 
-    <!-- Alertes & Profil -->
+    <!-- Alertes + Profil mini -->
     <div style="display:flex;flex-direction:column;gap:16px;">
 
       <div class="card">
         <div class="card-hd">
-          <div class="card-title"><i class="fa fa-triangle-exclamation" style="color:#e65100;"></i> Recommandations</div>
+          <div class="card-ttl"><i class="fa fa-lightbulb" style="color:var(--or);"></i> Recommandations</div>
         </div>
-
-        <?php if ($imc >= 18.5 && $imc < 25): ?>
-        <div class="alert-item">
-          <div class="alert-ico g">✅</div>
-          <div>
-            <div class="alert-txt">IMC normal — continuez ainsi</div>
-            <div class="alert-desc">Maintenez votre équilibre alimentaire actuel.</div>
-          </div>
-        </div>
-        <?php elseif ($imc >= 25): ?>
-        <div class="alert-item">
-          <div class="alert-ico o">⚠️</div>
-          <div>
-            <div class="alert-txt">IMC <?= $imc ?> — réduire les graisses</div>
-            <div class="alert-desc">Limitez les graisses saturées et les sucres rapides.</div>
-          </div>
-        </div>
+        <?php if($imc>=18.5&&$imc<25): ?>
+        <div class="ai"><div class="ai-ico g">✅</div><div><div class="ai-ttl">IMC normal — continuez !</div><div class="ai-sub">Maintenez votre équilibre alimentaire actuel pour rester dans la zone idéale.</div></div></div>
+        <?php elseif($imc>=25): ?>
+        <div class="ai"><div class="ai-ico o">⚠️</div><div><div class="ai-ttl">IMC <?= $imc ?> — réduire les graisses</div><div class="ai-sub">Limitez les graisses saturées, sucres rapides et sodas.</div></div></div>
         <?php endif; ?>
-
-        <div class="alert-item">
-          <div class="alert-ico b">💧</div>
-          <div>
-            <div class="alert-txt">Boire <?= $eau ?>L d'eau aujourd'hui</div>
-            <div class="alert-desc">Répartissez sur la journée, 1 verre toutes les 2h.</div>
-          </div>
-        </div>
-
-        <?php if (str_contains($obj, 'perte')): ?>
-        <div class="alert-item">
-          <div class="alert-ico o">🥗</div>
-          <div>
-            <div class="alert-txt">Objectif perte — éviter sucres rapides</div>
-            <div class="alert-desc">Préférez les glucides complexes et les fibres.</div>
-          </div>
-        </div>
-        <?php elseif (str_contains($obj, 'masse')): ?>
-        <div class="alert-item">
-          <div class="alert-ico g">💪</div>
-          <div>
-            <div class="alert-txt">Objectif masse — augmenter protéines</div>
-            <div class="alert-desc">Consommez <?= $proteines ?>g de protéines réparties en 4–5 prises.</div>
-          </div>
-        </div>
+        <div class="ai"><div class="ai-ico b">💧</div><div><div class="ai-ttl">Boire <?= $eau ?>L d'eau aujourd'hui</div><div class="ai-sub">Un verre toutes les 2h, commencez dès le matin.</div></div></div>
+        <?php if(str_contains($obj,'perte')): ?>
+        <div class="ai"><div class="ai-ico o">🥗</div><div><div class="ai-ttl">Objectif perte — priorité fibres</div><div class="ai-sub">Glucides complexes uniquement. Évitez les sucres rapides.</div></div></div>
+        <?php elseif(str_contains($obj,'masse')): ?>
+        <div class="ai"><div class="ai-ico g">💪</div><div><div class="ai-ttl">Objectif masse — maximiser protéines</div><div class="ai-sub"><?= $proteines ?>g en 4–5 prises réparties sur la journée.</div></div></div>
         <?php endif; ?>
       </div>
 
-      <!-- Profil -->
       <div class="card">
         <div class="card-hd">
-          <div class="card-title"><i class="fa fa-user"></i> Mon profil</div>
+          <div class="card-ttl"><i class="fa fa-user"></i> Mon profil</div>
         </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;">
-          <div class="imc-stat">
-            <div class="imc-stat-val"><?= $user['age'] ?: '—' ?></div>
-            <div class="imc-stat-lbl">Âge</div>
-          </div>
-          <div class="imc-stat">
-            <div class="imc-stat-val"><?= $poids ? $poids.'kg' : '—' ?></div>
-            <div class="imc-stat-lbl">Poids</div>
-          </div>
-          <div class="imc-stat">
-            <div class="imc-stat-val"><?= $taille ? $taille.'cm' : '—' ?></div>
-            <div class="imc-stat-lbl">Taille</div>
-          </div>
-          <div class="imc-stat">
-            <div class="imc-stat-val" style="font-size:12px;"><?= $user['activite'] ?: '—' ?></div>
-            <div class="imc-stat-lbl">Activité</div>
-          </div>
+        <div class="pm-grid">
+          <div class="pm-cell"><div class="pm-val"><?= $user['age']?:'—' ?></div><div class="pm-lbl">Âge</div></div>
+          <div class="pm-cell"><div class="pm-val"><?= $poids?$poids.'kg':'—' ?></div><div class="pm-lbl">Poids</div></div>
+          <div class="pm-cell"><div class="pm-val"><?= $taille?$taille.'cm':'—' ?></div><div class="pm-lbl">Taille</div></div>
+          <div class="pm-cell"><div class="pm-val" style="font-size:12px;"><?= $user['activite']??'—' ?></div><div class="pm-lbl">Activité</div></div>
         </div>
-
-        <a href="index.php?url=User/profile" class="btn-profil">
-          <i class="fa fa-pen" style="font-size:12px;"></i>
-          Modifier mon profil
-        </a>
+        <a href="index.php?url=User/profile" class="btn-g"><i class="fa fa-pen" style="font-size:11px;"></i> Modifier mon profil</a>
       </div>
 
     </div>
   </div>
 
-</div><!-- /db-wrap -->
+</div>
 
 <script>
-Chart.defaults.color       = '#9e9e9e';
-Chart.defaults.borderColor = '#f0f4f0';
-Chart.defaults.font.family = 'Inter';
-
-/* ── MACRO DONUT ── */
-new Chart(document.getElementById('macroChart'), {
-  type: 'doughnut',
-  data: {
-    labels: ['Protéines 25%', 'Glucides 50%', 'Lipides 25%'],
-    datasets: [{
-      data: [25, 50, 25],
-      backgroundColor: ['#2e7d32', '#1565c0', '#e65100'],
-      borderWidth: 3,
-      borderColor: '#ffffff',
-      hoverOffset: 6
+/* Macro donut */
+new Chart(document.getElementById('macroChart'),{
+  type:'doughnut',
+  data:{
+    labels:['Protéines','Glucides','Lipides'],
+    datasets:[{
+      data:[25,50,25],
+      backgroundColor:['#00b96b','#2979ff','#ff6b2b'],
+      borderWidth:4,borderColor:'#fff',hoverOffset:8
     }]
   },
-  options: {
-    cutout: '65%',
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: {
-          color: '#546e54',
-          padding: 14,
-          usePointStyle: true,
-          pointStyleWidth: 8,
-          font: { size: 12, family: 'Inter' }
-        }
-      }
-    }
+  options:{
+    cutout:'68%',
+    plugins:{legend:{display:false}},
+    animation:{animateScale:true}
   }
 });
 
-/* ── EAU TRACKER ── */
-let waterCount = 0;
-const dropCount  = document.querySelectorAll('.wdrop').length;
-const waterObj   = <?= $eau ?>;
-const perDrop    = waterObj / dropCount;
+/* Eau */
+let eauCount=0;
+const dc=document.querySelectorAll('.drop').length;
+const eauObj=<?= $eau ?>;
+const perDrop=eauObj/dc;
 
-function tapWater(idx) {
-  waterCount = idx + 1;
-  document.querySelectorAll('.wdrop').forEach((d, i) => {
-    d.classList.toggle('on', i < waterCount);
-  });
-  const liters = (waterCount * perDrop).toFixed(1);
-  document.getElementById('waterNum').textContent  = liters + ' L';
-  const pct = Math.min(100, (waterCount / dropCount) * 100);
-  document.getElementById('waterFill').style.width = pct + '%';
-  if (document.getElementById('waterObjBar')) {
-    document.getElementById('waterObjBar').style.width = pct + '%';
-  }
+function tapEau(idx){
+  eauCount=idx+1;
+  document.querySelectorAll('.drop').forEach((d,i)=>d.classList.toggle('on',i<eauCount));
+  const L=(eauCount*perDrop).toFixed(1);
+  document.getElementById('eauNum').textContent=L+' L';
+  const pct=Math.min(100,(eauCount/dc)*100);
+  document.getElementById('eauFill').style.width=pct+'%';
+  document.getElementById('eauObjBar').style.width=pct+'%';
 }
 
-/* ── ANIMATE PROG BARS ── */
-window.addEventListener('load', () => {
-  document.querySelectorAll('.prog-fill, .obj-fill, .mac-mini-fill').forEach(el => {
-    const w = el.style.width;
-    el.style.width = '0';
-    setTimeout(() => { el.style.width = w; }, 150);
+/* Animate bars */
+window.addEventListener('load',()=>{
+  document.querySelectorAll('.obj-fill,.imc-needle').forEach(el=>{
+    const w=el.style.width;
+    if(w){el.style.width='0';setTimeout(()=>{el.style.width=w;},200);}
   });
 });
 </script>

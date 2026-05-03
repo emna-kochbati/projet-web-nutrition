@@ -57,7 +57,9 @@ class UserController
                         "poids"    => $user['poids'],
                         "taille"   => $user['taille'],
                         "age"      => $user['age'] ?? '',
-                        "objectif" => $user['objectif']
+                        "objectif" => $user['objectif'],
+                        "activite" => $user['activite'] ?? '',
+                        "phone"    => $user['phone']    ?? '',
                     ];
 
                     if ($_SESSION['user']['role'] === 'admin') {
@@ -94,6 +96,7 @@ class UserController
             $role     = trim($_POST['role'] ?? 'user');
             $objectif = trim($_POST['objectif'] ?? '');
             $activite = trim($_POST['activite'] ?? '');
+            $phone    = preg_replace('/\s+/', '', trim($_POST['phone'] ?? ''));
 
             // Vérifier email unique
             $check = $db->prepare("SELECT id FROM user WHERE email = ?");
@@ -112,14 +115,14 @@ class UserController
 
             $stmt = $db->prepare("
                 INSERT INTO user 
-                (nom, email, password, age, poids, taille, maladie, role, objectif, activite, status, activation_token)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'inactive', ?)
+                (nom, email, password, age, poids, taille, maladie, role, objectif, activite, phone, status, activation_token)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'inactive', ?)
             ");
 
             $stmt->execute([
                 $nom, $email, $hashedPassword,
                 $age, $poids, $taille, $maladie,
-                $role, $objectif, $activite, $token
+                $role, $objectif, $activite, $phone, $token
             ]);
 
             // Lien d'activation
@@ -179,6 +182,19 @@ class UserController
     ========================== */
     public function resetPassword()
     {
+        // Si on arrive sur la page sans étape active → nettoyer toute session reset
+        // Cela évite qu'un reset précédent bloque un nouvel utilisateur
+        if (!isset($_GET['continue'])) {
+            unset(
+                $_SESSION['reset_step'],
+                $_SESSION['reset_code'],
+                $_SESSION['reset_user_id'],
+                $_SESSION['reset_user_id_tmp'],
+                $_SESSION['reset_phone'],
+                $_SESSION['reset_sms_sim'],
+                $_SESSION['reset_error']
+            );
+        }
         require_once __DIR__ . '/../View/front/pages/reset_password.php';
     }
 
@@ -194,31 +210,38 @@ class UserController
             exit;
         }
 
-        // Vérifier que ce numéro existe
-        $stmt = $db->prepare("SELECT id FROM user WHERE phone = ?");
-        $stmt->execute([$phone]);
+        // Nettoyer le numéro (retirer +216, espaces)
+        $phoneClean = preg_replace('/[^0-9]/', '', $phone);
+        $phoneClean = preg_replace('/^216/', '', $phoneClean);
+
+        // Recherche flexible : avec ou sans indicatif
+        $stmt = $db->prepare("
+            SELECT id FROM user
+            WHERE REGEXP_REPLACE(REGEXP_REPLACE(phone, '[^0-9]', ''), '^216', '') = ?
+               OR phone = ?
+               OR phone = CONCAT('+216', ?)
+               OR phone = CONCAT('216', ?)
+        ");
+        $stmt->execute([$phoneClean, $phoneClean, $phoneClean, $phoneClean]);
         $user = $stmt->fetch();
 
         if (!$user) {
-            $_SESSION['reset_error'] = "Aucun compte lié à ce numéro.";
+            $_SESSION['reset_error'] = "Aucun compte lié à ce numéro. Vérifiez et réessayez.";
             header("Location: index.php?url=User/resetPassword");
             exit;
         }
 
         $code = rand(100000, 999999);
 
-        $db->prepare("
-            UPDATE user 
-            SET reset_code = ?, reset_expire = DATE_ADD(NOW(), INTERVAL 10 MINUTE)
-            WHERE phone = ?
-        ")->execute([$code, $phone]);
+        $db->prepare("UPDATE user SET reset_code=?, reset_expire=DATE_ADD(NOW(), INTERVAL 10 MINUTE) WHERE id=?")
+           ->execute([$code, $user['id']]);
 
         // Simulation SMS : stocker en session pour afficher à l'utilisateur
         $_SESSION['reset_phone']   = $phone;
         $_SESSION['reset_sms_sim'] = $code;   // simulation uniquement
         $_SESSION['reset_step']    = 'verify';
 
-        header("Location: index.php?url=User/resetPassword");
+        header("Location: index.php?url=User/resetPassword&continue=1");
         exit;
     }
 
@@ -249,10 +272,10 @@ class UserController
             $_SESSION['reset_code']    = $code;
             $_SESSION['reset_step']    = 'newpwd';
             $_SESSION['reset_user_id'] = $user['id'];
-            header("Location: index.php?url=User/resetPassword");
+            header("Location: index.php?url=User/resetPassword&continue=1");
         } else {
             $_SESSION['reset_error'] = "Code invalide ou expiré.";
-            header("Location: index.php?url=User/resetPassword");
+            header("Location: index.php?url=User/resetPassword&continue=1");
         }
         exit;
     }

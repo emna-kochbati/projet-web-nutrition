@@ -1,929 +1,837 @@
 <?php
 session_start();
-
-if (!isset($_SESSION['user'])) {
-    header("Location: /ProjetWeb-User/index.php?url=User/auth");
-    exit;
-}
+if (!isset($_SESSION['user'])) { header("Location: /ProjetWeb-User/index.php?url=User/auth"); exit; }
 
 $user = $_SESSION['user'];
 
-$imc = ($user['poids'] > 0 && $user['taille'] > 0)
-    ? round($user['poids'] / pow($user['taille'] / 100, 2), 1) : 0;
+$imc = ($user['poids']>0 && $user['taille']>0)
+    ? round($user['poids'] / pow($user['taille']/100,2),1) : 0;
 
-$imcCat = '—'; $imcColor = '#2e7d32'; $imcBg = '#e8f5e9';
-if ($imc > 0) {
-    if      ($imc < 18.5) { $imcCat = 'Insuffisance pondérale'; $imcColor = '#1565c0'; $imcBg = '#e3f2fd'; }
-    elseif  ($imc < 25)   { $imcCat = 'Poids normal';           $imcColor = '#2e7d32'; $imcBg = '#e8f5e9'; }
-    elseif  ($imc < 30)   { $imcCat = 'Surpoids';               $imcColor = '#e65100'; $imcBg = '#fff3e0'; }
-    else                  { $imcCat = 'Obésité';                 $imcColor = '#c62828'; $imcBg = '#ffebee'; }
+$imcCat='—'; $imcColor='#00b96b'; $imcBg='#e6faf2';
+if($imc>0){
+  if     ($imc<18.5){$imcCat='Insuffisance pondérale';$imcColor='#2979ff';$imcBg='#e8f0ff';}
+  elseif ($imc<25)  {$imcCat='Poids normal';           $imcColor='#00b96b';$imcBg='#e6faf2';}
+  elseif ($imc<30)  {$imcCat='Surpoids';               $imcColor='#ff6b2b';$imcBg='#fff0eb';}
+  else              {$imcCat='Obésité';                 $imcColor='#e53935';$imcBg='#ffebee';}
 }
 
-$poidsIdealMin = $user['taille'] > 0 ? round(18.5 * pow($user['taille']/100, 2), 1) : 0;
-$poidsIdealMax = $user['taille'] > 0 ? round(24.9 * pow($user['taille']/100, 2), 1) : 0;
+$piMin=$user['taille']>0?round(18.5*pow($user['taille']/100,2),1):0;
+$piMax=$user['taille']>0?round(24.9*pow($user['taille']/100,2),1):0;
+
+$done=0;
+foreach(['nom','email','poids','taille','age','objectif'] as $f) if($user[$f]??'') $done++;
+$completPct=round($done/6*100);
 
 include __DIR__ . '/../partials/header.php';
 ?>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: 'Inter', sans-serif !important;
-  background: #f5f7f5 !important;
-  color: #1a2e1a !important;
+:root{
+  --g:    #00b96b;
+  --g2:   #00e676;
+  --gd:   #007a47;
+  --or:   #ff6b2b;
+  --or2:  #ff9a5c;
+  --bg:   #ffffff;
+  --bg2:  #f7faf8;
+  --bg3:  #f0f6f3;
+  --ink:  #0d1f0f;
+  --ink2: #4a6352;
+  --ink3: #8aa898;
+  --bdr:  #e2ede8;
+  --fh:   'Fraunces', serif;
+  --fb:   'Instrument Sans', sans-serif;
 }
 
-/* ── TOPBAR ── */
-.pf-topbar {
-  background: #fff;
-  border-bottom: 1px solid #e0e8e0;
-  height: 60px;
-  padding: 0 40px;
-  display: flex; align-items: center; justify-content: space-between;
-  position: sticky; top: 0; z-index: 100;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+
+body{
+  font-family:var(--fb)!important;
+  background:var(--bg)!important;
+  color:var(--ink)!important;
+  overflow-x:hidden;
 }
 
-.pf-logo { font-size: 16px; font-weight: 700; color: #1a2e1a; text-decoration: none; display: flex; align-items: center; gap: 8px; }
-.pf-logo-dot { width: 8px; height: 8px; background: #2e7d32; border-radius: 50%; }
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:var(--g);border-radius:10px;}
 
-.pf-nav { display: flex; gap: 4px; }
-.pf-nav-link {
-  display: flex; align-items: center; gap: 6px;
-  padding: 7px 14px; border-radius: 7px;
-  text-decoration: none; font-size: 13px; font-weight: 500; color: #546e54;
-  transition: all .15s;
+/* ════ TOPBAR ════ */
+.tb{
+  height:64px;background:#fff;border-bottom:1px solid var(--bdr);
+  padding:0 40px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
 }
-.pf-nav-link:hover { background: #f1f8f1; color: #1a2e1a; }
-.pf-nav-link.active { background: #e8f5e9; color: #2e7d32; }
-.pf-nav-link i { font-size: 12px; color: inherit; }
-
-/* ── HERO BANNER ── */
-.pf-hero {
-  position: relative;
-  height: 220px;
-  overflow: hidden;
+.tb-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.tb-logo-mark{
+  width:34px;height:34px;border-radius:10px;
+  background:linear-gradient(135deg,var(--g),var(--g2));
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+  box-shadow:0 4px 12px rgba(0,185,107,.3);
 }
-
-.pf-hero-img {
-  width: 100%; height: 100%;
-  object-fit: cover;
-  filter: brightness(0.7);
+.tb-logo-name{font-family:var(--fh);font-size:20px;font-weight:700;color:var(--ink);}
+.tb-logo-name em{color:var(--g);font-style:normal;}
+.tb-nav{display:flex;gap:2px;}
+.tb-link{
+  display:flex;align-items:center;gap:7px;
+  padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;
+  color:var(--ink2);text-decoration:none;transition:all .18s;
 }
-
-.pf-hero-overlay {
-  position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(46,125,50,0.75) 0%, rgba(230,101,0,0.4) 100%);
+.tb-link:hover{background:var(--bg3);color:var(--ink);}
+.tb-link.on{background:var(--bg3);color:var(--g);}
+.tb-link i{font-size:12px;color:inherit;}
+.tb-right{display:flex;align-items:center;gap:10px;}
+.tb-logout{
+  display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;
+  border:1px solid var(--bdr);font-size:13px;font-weight:500;color:var(--ink2);
+  text-decoration:none;transition:all .15s;
 }
+.tb-logout:hover{border-color:var(--or);color:var(--or);}
 
-.pf-hero-content {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  padding: 0 48px 28px;
-  display: flex; align-items: flex-end; gap: 22px;
+/* ════ HERO BANNER ════ */
+.hero{
+  position:relative;height:240px;overflow:hidden;
 }
-
-.pf-hero-av {
-  width: 88px; height: 88px; border-radius: 50%;
-  background: #fff;
-  border: 4px solid #fff;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 32px; font-weight: 800; color: #2e7d32;
-  flex-shrink: 0;
-  transform: translateY(24px);
+.hero-img{
+  width:100%;height:100%;object-fit:cover;
+  filter:brightness(.65) saturate(1.3);
+  transform:scale(1.04);
+  transition:transform 10s ease;
 }
+.hero:hover .hero-img{transform:scale(1);}
 
-.pf-hero-info { padding-bottom: 4px; }
-.pf-hero-name { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -.3px; }
-.pf-hero-sub  { font-size: 13px; color: rgba(255,255,255,.75); margin-top: 3px; }
-
-.pf-hero-chips {
-  margin-left: auto; display: flex; gap: 8px; padding-bottom: 4px; flex-wrap: wrap;
+.hero-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(0,122,71,.7),rgba(255,107,43,.3));
 }
 
-.pf-chip {
-  padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
-  background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.35);
-  color: #fff; backdrop-filter: blur(4px);
+/* Grain */
+.hero-overlay::after{
+  content:'';position:absolute;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity:.4;pointer-events:none;
 }
 
-/* ── WRAP ── */
-.pf-wrap {
-  max-width: 1100px; margin: 0 auto;
-  padding: 44px 32px 60px;
+.hero-content{
+  position:absolute;bottom:0;left:0;right:0;
+  padding:0 48px 32px;
+  display:flex;align-items:flex-end;gap:22px;
 }
 
-/* ── GRID ── */
-.g-3-9 { display: grid; grid-template-columns: 300px 1fr; gap: 24px; }
-.g2    { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.g4    { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
-
-/* ── CARD ── */
-.card {
-  background: #fff;
-  border: 1px solid #e0e8e0;
-  border-radius: 14px;
-  padding: 22px;
-  margin-bottom: 18px;
+.hero-av{
+  width:96px;height:96px;border-radius:50%;
+  background:linear-gradient(135deg,var(--g),var(--gd));
+  border:4px solid #fff;
+  box-shadow:0 8px 28px rgba(0,0,0,.2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fh);font-size:36px;font-weight:900;color:#fff;
+  flex-shrink:0;transform:translateY(28px);
+  position:relative;z-index:1;
 }
 
-.card-hd {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 16px; padding-bottom: 14px;
-  border-bottom: 1px solid #f0f4f0;
+/* Pulse ring */
+.hero-av::before{
+  content:'';
+  position:absolute;inset:-6px;border-radius:50%;
+  border:2px solid rgba(0,185,107,.4);
+  animation:avPulse 2.5s ease-in-out infinite;
+}
+@keyframes avPulse{0%,100%{transform:scale(1);opacity:.4}50%{transform:scale(1.06);opacity:.8}}
+
+.hero-info{padding-bottom:4px;}
+.hero-name{
+  font-family:var(--fh);font-size:26px;font-weight:900;
+  color:#fff;letter-spacing:-.5px;
+  text-shadow:0 2px 12px rgba(0,0,0,.2);
+}
+.hero-sub{font-size:13px;color:rgba(255,255,255,.7);margin-top:4px;}
+
+.hero-chips{
+  margin-left:auto;display:flex;gap:8px;padding-bottom:4px;flex-wrap:wrap;
+}
+.hchip{
+  padding:6px 16px;border-radius:30px;font-size:12px;font-weight:600;
+  background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);
+  color:#fff;backdrop-filter:blur(6px);
+  transition:all .2s;
+}
+.hchip:hover{background:rgba(255,255,255,.28);}
+
+/* ════ WRAP ════ */
+.wrap{max-width:1200px;margin:0 auto;padding:52px 40px 80px;}
+
+/* ════ GRID ════ */
+.g-main{display:grid;grid-template-columns:320px 1fr;gap:24px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+
+/* ════ CARD ════ */
+.card{
+  background:#fff;border:1px solid var(--bdr);border-radius:20px;
+  padding:24px;margin-bottom:18px;position:relative;overflow:hidden;
+  transition:box-shadow .22s;
+}
+.card:hover{box-shadow:0 8px 32px rgba(0,0,0,.06);}
+
+.card-hd{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:18px;padding-bottom:14px;
+  border-bottom:1px solid var(--bg3);
+}
+.card-ttl{
+  font-size:13px;font-weight:700;color:var(--ink);
+  display:flex;align-items:center;gap:8px;
+}
+.card-ttl i{font-size:13px;color:var(--g);}
+.c-tag{
+  font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;
+}
+.c-tag-g{background:#e6faf2;color:var(--g);border:1px solid #c3e8d6;}
+.c-tag-o{background:#fff0eb;color:var(--or);border:1px solid #ffd5bf;}
+
+/* ════ PHOTO METRIC CARDS ════ */
+.metric-card{
+  border-radius:18px;overflow:hidden;
+  border:1px solid var(--bdr);background:#fff;
+  transition:transform .22s,box-shadow .22s;
+}
+.metric-card:hover{transform:translateY(-5px);box-shadow:0 14px 36px rgba(0,0,0,.1);}
+.metric-img{width:100%;height:100px;object-fit:cover;display:block;}
+.metric-body{padding:14px;text-align:center;}
+.metric-ico{font-size:20px;margin-bottom:4px;display:block;}
+.metric-lbl{
+  font-size:9px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--ink3);
+}
+.metric-val{
+  font-family:var(--fh);font-size:22px;font-weight:900;
+  letter-spacing:-1px;margin-top:3px;
 }
 
-.card-title {
-  font-size: 14px; font-weight: 600; color: #1a2e1a;
-  display: flex; align-items: center; gap: 7px;
+/* ════ PROFIL SIDEBAR ════ */
+.profil-av-wrap{text-align:center;margin-bottom:20px;}
+.profil-av{
+  width:80px;height:80px;border-radius:50%;
+  background:linear-gradient(135deg,var(--g),var(--gd));
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fh);font-size:30px;font-weight:900;color:#fff;
+  margin:0 auto 12px;
+  box-shadow:0 8px 24px rgba(0,185,107,.3);
+}
+.profil-name{font-family:var(--fh);font-size:18px;font-weight:700;}
+.profil-email{font-size:12px;color:var(--ink3);margin-top:2px;}
+.profil-obj{
+  display:inline-block;margin-top:10px;
+  padding:5px 14px;border-radius:20px;
+  background:#e6faf2;color:var(--g);
+  border:1px solid #c3e8d6;font-size:11px;font-weight:600;
 }
 
-.card-title i { font-size: 13px; color: #2e7d32; }
+/* Stat rows */
+.sr{
+  display:flex;align-items:center;padding:11px 0;
+  border-bottom:1px solid var(--bg3);
+}
+.sr:last-child{border-bottom:none;}
+.sr-ico{
+  width:32px;height:32px;border-radius:9px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+}
+.sr-ico.g{background:#e6faf2;}
+.sr-ico.o{background:#fff0eb;}
+.sr-ico.b{background:#e8f0ff;}
+.sr-ico.v{background:#f3eaff;}
+.sr-lbl{font-size:12px;color:var(--ink3);margin-left:10px;flex:1;}
+.sr-val{font-size:13px;font-weight:700;color:var(--ink);}
 
-.card-tag {
-  font-size: 11px; font-weight: 500;
-  padding: 3px 10px; border-radius: 20px;
-  background: #e8f5e9; color: #2e7d32;
-  border: 1px solid #c8e6c9;
+/* Completeness bar */
+.compl-wrap{margin-top:16px;}
+.compl-top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;}
+.compl-lbl{color:var(--ink2);font-weight:500;}
+.compl-val{font-weight:700;color:var(--g);}
+.compl-bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+.compl-fill{
+  height:100%;border-radius:3px;
+  background:linear-gradient(90deg,var(--g),var(--g2));
+  transition:width 1.2s cubic-bezier(.34,1.56,.64,1);
 }
 
-/* ── STAT ROW ── */
-.stat-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 0; border-bottom: 1px solid #f8faf8;
+/* Objectif card */
+.obj-card{
+  background:linear-gradient(135deg,#e6faf2,#f0fdf7);
+  border:1px solid #c3e8d6;border-radius:14px;padding:16px;margin-top:18px;
 }
-.stat-row:last-child { border-bottom: none; padding-bottom: 0; }
+.obj-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:6px;}
+.obj-val{font-family:var(--fh);font-size:19px;font-weight:700;color:var(--gd);}
+.obj-sub{font-size:12px;color:var(--ink3);margin-top:2px;}
 
-.stat-ico {
-  width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center; font-size: 14px;
+/* ════ IMC SCALE ════ */
+.imc-big{
+  font-family:var(--fh);font-size:60px;font-weight:900;
+  letter-spacing:-3px;line-height:1;margin-bottom:4px;
 }
-.stat-ico.g { background: #e8f5e9; }
-.stat-ico.o { background: #fff3e0; }
-.stat-ico.b { background: #e3f2fd; }
-.stat-ico.r { background: #fce4ec; }
-
-.stat-label { font-size: 12px; color: #78909c; margin-left: 10px; flex: 1; }
-.stat-value { font-size: 14px; font-weight: 600; color: #1a2e1a; }
-
-/* ── PHOTO CARDS ── */
-.photo-card {
-  border-radius: 14px; overflow: hidden;
-  border: 1px solid #e0e8e0;
-  background: #fff;
-  transition: transform .2s, box-shadow .2s;
+.imc-cat{font-size:13px;font-weight:600;margin-bottom:20px;}
+.imc-scale{
+  height:10px;border-radius:5px;
+  background:linear-gradient(90deg,#2979ff 0%,var(--g) 35%,var(--or) 65%,#e53935 100%);
+  position:relative;margin-bottom:8px;
+  box-shadow:0 2px 8px rgba(0,0,0,.1);
 }
-
-.photo-card:hover { transform: translateY(-4px); box-shadow: 0 10px 28px rgba(0,0,0,.1); }
-
-.photo-card img {
-  width: 100%; height: 110px; object-fit: cover;
-  display: block;
+.imc-needle{
+  position:absolute;top:-5px;
+  width:5px;height:20px;border-radius:3px;
+  background:var(--ink);transform:translateX(-50%);
+  box-shadow:0 2px 6px rgba(0,0,0,.3);
+  transition:left 1.2s cubic-bezier(.34,1.56,.64,1);
 }
-
-.photo-card-body { padding: 14px; text-align: center; }
-.photo-card-icon { font-size: 20px; margin-bottom: 4px; }
-.photo-card-lbl  { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #9e9e9e; }
-.photo-card-val  { font-size: 20px; font-weight: 800; letter-spacing: -1px; margin-top: 2px; }
-
-/* ── IMC SCALE ── */
-.imc-scale {
-  height: 8px; border-radius: 4px; position: relative;
-  background: linear-gradient(90deg, #1565c0 0%, #2e7d32 35%, #e65100 65%, #c62828 100%);
-  margin: 14px 0 6px;
+.imc-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--ink3);}
+.imc-pills{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px;}
+.imc-pill{
+  text-align:center;padding:12px 6px;
+  background:var(--bg3);border:1px solid var(--bdr);border-radius:12px;
+  transition:all .2s;
 }
-.imc-needle {
-  position: absolute; top: -4px;
-  width: 4px; height: 16px;
-  background: #1a2e1a; border-radius: 2px;
-  transform: translateX(-50%);
-  box-shadow: 0 1px 4px rgba(0,0,0,.25);
-  transition: left 1s ease;
+.imc-pill:hover{border-color:var(--g);background:#e6faf2;}
+.imc-pill-val{font-size:14px;font-weight:700;color:var(--ink);}
+.imc-pill-lbl{font-size:9px;color:var(--ink3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em;}
+
+/* ════ PROGRESS BARS ════ */
+.prog-item{margin-bottom:14px;}
+.prog-item:last-child{margin-bottom:0;}
+.prog-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;}
+.prog-lbl{color:var(--ink2);font-weight:500;}
+.prog-val{font-weight:700;color:var(--ink);}
+.prog-bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:3px;transition:width 1.1s cubic-bezier(.34,1.56,.64,1);}
+
+/* ════ BTN ════ */
+.btn-g{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:13px;border-radius:12px;
+  background:linear-gradient(135deg,var(--g),var(--g2));
+  color:#fff;font-size:13px;font-weight:700;
+  font-family:var(--fb);border:none;cursor:pointer;
+  transition:all .22s;box-shadow:0 6px 20px rgba(0,185,107,.3);
+  width:100%;text-decoration:none;margin-top:18px;
 }
-.imc-scale-lbl { display: flex; justify-content: space-between; font-size: 10px; color: #9e9e9e; }
+.btn-g:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(0,185,107,.4);color:#fff;}
 
-/* ── OBJECTIF CARD ── */
-.obj-card {
-  background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
-  border: 1px solid #c8e6c9;
-  border-radius: 12px; padding: 16px;
+/* ════ OVERLAY / DRAWER ════ */
+.overlay{
+  position:fixed;inset:0;background:rgba(13,31,15,.35);
+  z-index:900;opacity:0;pointer-events:none;
+  transition:opacity .3s;backdrop-filter:blur(3px);
 }
+.overlay.open{opacity:1;pointer-events:all;}
 
-.obj-title  { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #78909c; margin-bottom: 6px; }
-.obj-val    { font-size: 18px; font-weight: 700; color: #2e7d32; }
-.obj-sub    { font-size: 12px; color: #546e54; margin-top: 3px; }
-
-/* ── PROGRESS BAR ── */
-.prog-item { margin-bottom: 12px; }
-.prog-item:last-child { margin-bottom: 0; }
-.prog-top  { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; }
-.prog-lbl  { color: #78909c; }
-.prog-val  { font-weight: 600; color: #1a2e1a; }
-.prog-bar  { height: 5px; background: #f0f4f0; border-radius: 3px; overflow: hidden; }
-.prog-fill { height: 100%; border-radius: 3px; transition: width 1.1s ease; }
-
-/* ── BOUTON ── */
-.btn-edit {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  width: 100%; padding: 12px;
-  background: #2e7d32; color: #fff;
-  border: none; border-radius: 10px;
-  font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif;
-  cursor: pointer; transition: background .15s;
-  text-decoration: none;
+.drawer{
+  position:fixed;top:0;right:-500px;
+  width:480px;height:100vh;
+  background:#fff;z-index:901;
+  box-shadow:-8px 0 40px rgba(0,0,0,.12);
+  display:flex;flex-direction:column;
+  transition:right .35s cubic-bezier(.25,.46,.45,.94);
+  overflow:hidden;
 }
-.btn-edit:hover { background: #1b5e20; color: #fff; }
+.drawer.open{right:0;}
 
-/* ══════════════════════════════════════════
-   DRAWER FORMULAIRE
-══════════════════════════════════════════ */
-.pf-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,.35);
-  z-index: 900;
-  opacity: 0; pointer-events: none;
-  transition: opacity .3s;
-  backdrop-filter: blur(2px);
+.dw-hd{
+  padding:24px 28px 20px;
+  border-bottom:1px solid var(--bdr);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+  background:linear-gradient(135deg,var(--bg3),#fff);
 }
 
-.pf-overlay.open { opacity: 1; pointer-events: all; }
-
-.pf-drawer {
-  position: fixed; top: 0; right: -480px;
-  width: 460px; height: 100vh;
-  background: #fff;
-  z-index: 901;
-  box-shadow: -4px 0 30px rgba(0,0,0,.12);
-  display: flex; flex-direction: column;
-  transition: right .3s ease;
-  overflow: hidden;
+/* Accent line */
+.dw-hd::after{
+  content:'';
+  position:absolute;bottom:0;left:0;
+  width:64px;height:2px;
+  background:linear-gradient(90deg,var(--g),var(--or));
 }
 
-.pf-drawer.open { right: 0; }
+.dw-hd-title{font-family:var(--fh);font-size:20px;font-weight:700;color:var(--ink);}
+.dw-hd-sub{font-size:12px;color:var(--ink3);margin-top:2px;}
 
-/* Header drawer */
-.drawer-hd {
-  padding: 22px 24px 18px;
-  border-bottom: 1px solid #e8f0e8;
-  display: flex; align-items: center; justify-content: space-between;
-  flex-shrink: 0;
-  background: linear-gradient(135deg, #f8fdf8, #fff);
+.dw-close{
+  width:34px;height:34px;border-radius:9px;
+  background:var(--bg3);border:1px solid var(--bdr);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--ink2);font-size:13px;transition:all .15s;
+}
+.dw-close:hover{background:#ffebee;border-color:#ffcdd2;color:#e53935;}
+
+.dw-body{
+  flex:1;overflow-y:auto;padding:24px 28px;
+  scrollbar-width:thin;scrollbar-color:var(--g) transparent;
 }
 
-.drawer-hd-left h3 { font-size: 17px; font-weight: 700; color: #1a2e1a; }
-.drawer-hd-left p  { font-size: 12px; color: #78909c; margin-top: 2px; }
-
-.drawer-close {
-  width: 32px; height: 32px; border-radius: 8px;
-  background: #f5f5f5; border: 1px solid #e0e0e0;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: #546e54;
-  font-size: 13px; transition: all .15s;
+/* Form sections */
+.fs-title{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;
+  color:var(--ink3);margin-bottom:14px;margin-top:22px;
+  display:flex;align-items:center;gap:8px;
 }
-.drawer-close:hover { background: #ffebee; border-color: #ef9a9a; color: #c62828; }
+.fs-title:first-child{margin-top:0;}
+.fs-title::after{content:'';flex:1;height:1px;background:var(--bdr);}
 
-/* Drawer body */
-.drawer-body {
-  flex: 1; overflow-y: auto; padding: 24px;
-  scrollbar-width: thin; scrollbar-color: #c8e6c9 transparent;
-}
+/* Field */
+.fg{margin-bottom:14px;position:relative;}
+.fg label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:5px;}
 
-/* Sections */
-.form-sec-title {
-  font-size: 10px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: .1em;
-  color: #9e9e9e; margin-bottom: 14px; margin-top: 20px;
-  display: flex; align-items: center; gap: 8px;
-}
-.form-sec-title:first-child { margin-top: 0; }
-.form-sec-title::after { content: ''; flex: 1; height: 1px; background: #f0f4f0; }
-
-/* Champ */
-.f-group { margin-bottom: 14px; position: relative; }
-
-.f-group label {
-  display: block; font-size: 12px; font-weight: 500;
-  color: #546e54; margin-bottom: 5px;
+.fg input,.fg select{
+  width:100%;padding:12px 14px;
+  border:1.5px solid var(--bdr);border-radius:11px;
+  font-family:var(--fb);font-size:14px;color:var(--ink);
+  background:#fff;outline:none;
+  transition:border-color .2s,box-shadow .2s,background .2s;
+  appearance:none;
 }
 
-.f-group input,
-.f-group select {
-  width: 100%;
-  padding: 11px 14px;
-  border: 1.5px solid #e0e8e0;
-  border-radius: 9px;
-  font-family: 'Inter', sans-serif;
-  font-size: 14px; color: #1a2e1a;
-  background: #fff;
-  outline: none;
-  transition: border-color .2s, box-shadow .2s, background .2s;
-  appearance: none;
+.fg input::placeholder{color:var(--ink3);}
+
+.fg input.ok,.fg select.ok{
+  border-color:var(--g)!important;
+  box-shadow:0 0 0 3px rgba(0,185,107,.12)!important;
+  background:#f7fdf9!important;
+}
+.fg input.err,.fg select.err{
+  border-color:var(--or)!important;
+  box-shadow:0 0 0 3px rgba(255,107,43,.1)!important;
+  background:#fff8f5!important;
 }
 
-.f-group input::placeholder { color: #bdbdbd; }
+.fg-msg{font-size:11px;margin-top:4px;display:none;}
+.fg-msg.show-err{display:block;color:var(--or);}
+.fg-msg.show-ok{display:block;color:var(--g);}
 
-/* États validation JS */
-.f-group input.v-ok,
-.f-group select.v-ok {
-  border-color: #2e7d32 !important;
-  box-shadow: 0 0 0 3px rgba(46,125,50,.12) !important;
-  background: #fafdf8 !important;
+/* State icon */
+.fg-ico{
+  position:absolute;right:13px;top:36px;
+  font-size:13px;pointer-events:none;opacity:0;transition:opacity .2s;
 }
+.fg.is-ok  .fg-ico{opacity:1;color:var(--g);}
+.fg.is-err .fg-ico{opacity:1;color:var(--or);}
 
-.f-group input.v-err,
-.f-group select.v-err {
-  border-color: #e53935 !important;
-  box-shadow: 0 0 0 3px rgba(229,57,53,.1) !important;
-  background: #fff8f8 !important;
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* Pwd strength */
+.pwd-s{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;margin:6px 0 4px;}
+.pwd-b{height:100%;border-radius:2px;width:0;transition:width .3s,background .3s;}
+
+/* Drawer footer */
+.dw-ft{
+  padding:16px 28px;border-top:1px solid var(--bdr);
+  display:flex;gap:10px;flex-shrink:0;background:var(--bg3);
 }
-
-.f-msg {
-  font-size: 11px;
-  margin-top: 4px;
-  padding-left: 2px;
-  display: none;
+.dw-save{
+  flex:1;padding:13px;
+  background:linear-gradient(135deg,var(--g),var(--g2));
+  color:#fff;border:none;border-radius:11px;
+  font-size:14px;font-weight:700;font-family:var(--fb);
+  cursor:pointer;transition:all .22s;
+  box-shadow:0 4px 16px rgba(0,185,107,.3);
 }
-
-.f-msg.err  { color: #e53935; display: block; }
-.f-msg.ok   { color: #2e7d32; display: block; }
-
-.f-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-/* Icône état dans le champ */
-.f-group .f-icon-state {
-  position: absolute; right: 12px; top: 34px;
-  font-size: 13px; pointer-events: none;
-  opacity: 0; transition: opacity .2s;
+.dw-save:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,185,107,.4);}
+.dw-cancel{
+  padding:13px 20px;background:#fff;color:var(--ink2);
+  border:1.5px solid var(--bdr);border-radius:11px;
+  font-size:13px;font-weight:600;font-family:var(--fb);
+  cursor:pointer;transition:all .15s;
 }
+.dw-cancel:hover{border-color:var(--or);color:var(--or);}
 
-.f-group.has-ok  .f-icon-state { opacity: 1; color: #2e7d32; }
-.f-group.has-err .f-icon-state { opacity: 1; color: #e53935; }
-
-/* Hint pwd */
-.pwd-hint {
-  font-size: 11px; color: #9e9e9e;
-  margin-top: 4px; padding-left: 2px;
+/* ════ FLASH ════ */
+.flash{
+  position:fixed;top:76px;right:24px;
+  background:#fff;border:1px solid #c3e8d6;
+  border-left:4px solid var(--g);
+  border-radius:12px;padding:14px 20px;
+  display:flex;align-items:center;gap:10px;
+  font-size:13px;font-weight:500;color:var(--ink);
+  box-shadow:0 8px 28px rgba(0,0,0,.1);z-index:9999;
+  animation:flashIn .35s ease;
 }
+@keyframes flashIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
 
-/* Force pwd */
-.pwd-strength { height: 4px; background: #f0f4f0; border-radius: 2px; overflow: hidden; margin: 6px 0 4px; }
-.pwd-bar      { height: 100%; border-radius: 2px; width: 0; transition: width .3s, background .3s; }
-
-/* Footer drawer */
-.drawer-ft {
-  padding: 16px 24px;
-  border-top: 1px solid #e8f0e8;
-  display: flex; gap: 10px;
-  flex-shrink: 0;
-  background: #fafdf8;
+/* ════ RESPONSIVE ════ */
+@media(max-width:960px){
+  .g-main{grid-template-columns:1fr;}
+  .imc-pills{grid-template-columns:repeat(2,1fr);}
+  .g4{grid-template-columns:1fr 1fr;}
+  .drawer{width:100%;right:-100%;}
 }
-
-.btn-save {
-  flex: 1; padding: 13px;
-  background: #2e7d32; color: #fff;
-  border: none; border-radius: 10px;
-  font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif;
-  cursor: pointer; transition: background .15s;
-}
-.btn-save:hover { background: #1b5e20; }
-
-.btn-cancel {
-  padding: 13px 20px;
-  background: #fff; color: #546e54;
-  border: 1.5px solid #e0e8e0; border-radius: 10px;
-  font-size: 14px; font-weight: 500; font-family: 'Inter', sans-serif;
-  cursor: pointer; transition: all .15s;
-}
-.btn-cancel:hover { border-color: #c62828; color: #c62828; background: #ffebee; }
-
-/* ── SUCCESS FLASH ── */
-.pf-flash {
-  position: fixed; top: 80px; right: 24px;
-  background: #fff; border: 1px solid #c8e6c9;
-  border-left: 4px solid #2e7d32;
-  border-radius: 10px; padding: 14px 18px;
-  display: flex; align-items: center; gap: 10px;
-  font-size: 13px; font-weight: 500; color: #1a2e1a;
-  box-shadow: 0 4px 20px rgba(0,0,0,.1);
-  z-index: 9999;
-  animation: slideIn .3s ease;
-}
-@keyframes slideIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
-
-/* ── RESPONSIVE ── */
-@media (max-width: 900px) {
-  .g-3-9 { grid-template-columns: 1fr; }
-  .g4    { grid-template-columns: 1fr 1fr; }
-  .pf-hero-content { flex-wrap: wrap; }
-  .pf-hero-chips { margin-left: 0; }
-  .pf-drawer { width: 100%; right: -100%; }
+@media(max-width:640px){
+  .wrap{padding:40px 16px 60px;}
+  .hero-content{padding:0 20px 28px;}
+  .g4{grid-template-columns:1fr 1fr;}
+  .tb{padding:0 16px;}
 }
 </style>
 
-<!-- ══ TOPBAR ══ -->
-<div class="pf-topbar">
-  <a href="#" class="pf-logo">
-    <div class="pf-logo-dot"></div>
-    EcoNutri
+<!-- ════ TOPBAR ════ -->
+<div class="tb">
+  <a href="#" class="tb-logo">
+    <div class="tb-logo-mark">🌿</div>
+    <div class="tb-logo-name">Eco<em>Nutri</em></div>
   </a>
-  <nav class="pf-nav">
-    <a href="index.php?url=User/dashboard" class="pf-nav-link"><i class="fa fa-gauge"></i>Dashboard</a>
-    <a href="index.php?url=User/profile"   class="pf-nav-link active"><i class="fa fa-user"></i>Profil</a>
+  <nav class="tb-nav">
+    <a href="index.php?url=User/dashboard" class="tb-link"><i class="fa fa-gauge"></i> Dashboard</a>
+    <a href="index.php?url=User/profile"   class="tb-link on"><i class="fa fa-user"></i> Profil</a>
   </nav>
-  <a href="index.php?url=User/logout" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid #e0e8e0;border-radius:7px;text-decoration:none;font-size:13px;color:#546e54;">
-    <i class="fa fa-right-from-bracket" style="font-size:12px;"></i> Déconnexion
-  </a>
+  <div class="tb-right">
+    <a href="index.php?url=User/logout" class="tb-logout"><i class="fa fa-right-from-bracket"></i> Déconnexion</a>
+  </div>
 </div>
 
-<!-- ══ HERO ══ -->
-<div class="pf-hero">
-  <img class="pf-hero-img"
-       src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=1400&q=80"
-       alt="nutrition">
-  <div class="pf-hero-overlay"></div>
-  <div class="pf-hero-content">
-    <div class="pf-hero-av"><?= strtoupper(substr($user['nom'], 0, 1)) ?></div>
-    <div class="pf-hero-info">
-      <div class="pf-hero-name"><?= htmlspecialchars($user['nom']) ?></div>
-      <div class="pf-hero-sub"><?= htmlspecialchars($user['email']) ?></div>
+<!-- ════ HERO BANNER ════ -->
+<div class="hero">
+  <img class="hero-img"
+       src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1400&q=85"
+       alt="profile banner">
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <div class="hero-av"><?= strtoupper(substr($user['nom'],0,1)) ?></div>
+    <div class="hero-info">
+      <div class="hero-name"><?= htmlspecialchars($user['nom']) ?></div>
+      <div class="hero-sub"><?= htmlspecialchars($user['email']) ?> &nbsp;·&nbsp; Membre EcoNutri</div>
     </div>
-    <div class="pf-hero-chips">
-      <?php if($user['objectif']): ?>
-      <span class="pf-chip">🎯 <?= htmlspecialchars($user['objectif']) ?></span>
-      <?php endif; ?>
-      <?php if($user['activite'] ?? ''): ?>
-      <span class="pf-chip">🏃 <?= htmlspecialchars($user['activite']) ?></span>
-      <?php endif; ?>
-      <span class="pf-chip">IMC <?= $imc ?: '—' ?></span>
+    <div class="hero-chips">
+      <?php if($user['objectif']??''): ?><span class="hchip">🎯 <?= htmlspecialchars($user['objectif']) ?></span><?php endif; ?>
+      <?php if($user['activite']??''): ?><span class="hchip">🏃 <?= htmlspecialchars($user['activite']) ?></span><?php endif; ?>
+      <?php if($imc>0): ?><span class="hchip" style="background:<?= $imcColor ?>33;border-color:<?= $imcColor ?>55;">IMC <?= $imc ?></span><?php endif; ?>
     </div>
   </div>
 </div>
 
-<!-- ══ BODY ══ -->
-<div class="pf-wrap">
-
-  <!-- PHOTO CARDS — 4 métriques -->
-  <div class="g4" style="margin-bottom:24px;margin-top:12px;">
-
-    <div class="photo-card">
-      <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&q=80" alt="age">
-      <div class="photo-card-body">
-        <div class="photo-card-icon">🎂</div>
-        <div class="photo-card-lbl">Âge</div>
-        <div class="photo-card-val" style="color:#1565c0;"><?= $user['age'] ?: '—' ?> <small style="font-size:12px;font-weight:400;color:#9e9e9e;">ans</small></div>
+<!-- ════ METRIC CARDS ════ -->
+<div style="max-width:1200px;margin:0 auto;padding:28px 40px 0;">
+  <div class="g4">
+    <div class="metric-card">
+      <img class="metric-img" src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&q=80" alt="">
+      <div class="metric-body">
+        <span class="metric-ico">🎂</span>
+        <div class="metric-lbl">Âge</div>
+        <div class="metric-val" style="color:#2979ff"><?= $user['age']??'—' ?><small style="font-size:12px;font-weight:400;color:var(--ink3);"> ans</small></div>
       </div>
     </div>
-
-    <div class="photo-card">
-      <img src="https://images.unsplash.com/photo-1554284126-aa88f22d8b74?w=400&q=80" alt="poids">
-      <div class="photo-card-body">
-        <div class="photo-card-icon">⚖️</div>
-        <div class="photo-card-lbl">Poids</div>
-        <div class="photo-card-val" style="color:#e65100;"><?= $user['poids'] ?: '—' ?> <small style="font-size:12px;font-weight:400;color:#9e9e9e;">kg</small></div>
+    <div class="metric-card">
+      <img class="metric-img" src="https://images.unsplash.com/photo-1554284126-aa88f22d8b74?w=400&q=80" alt="">
+      <div class="metric-body">
+        <span class="metric-ico">⚖️</span>
+        <div class="metric-lbl">Poids</div>
+        <div class="metric-val" style="color:var(--or)"><?= $user['poids']??'—' ?><small style="font-size:12px;font-weight:400;color:var(--ink3);"> kg</small></div>
       </div>
     </div>
-
-    <div class="photo-card">
-      <img src="https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400&q=80" alt="taille">
-      <div class="photo-card-body">
-        <div class="photo-card-icon">📏</div>
-        <div class="photo-card-lbl">Taille</div>
-        <div class="photo-card-val" style="color:#6a1b9a;"><?= $user['taille'] ?: '—' ?> <small style="font-size:12px;font-weight:400;color:#9e9e9e;">cm</small></div>
+    <div class="metric-card">
+      <img class="metric-img" src="https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400&q=80" alt="">
+      <div class="metric-body">
+        <span class="metric-ico">📏</span>
+        <div class="metric-lbl">Taille</div>
+        <div class="metric-val" style="color:#7c3aed"><?= $user['taille']??'—' ?><small style="font-size:12px;font-weight:400;color:var(--ink3);"> cm</small></div>
       </div>
     </div>
-
-    <div class="photo-card">
-      <img src="https://images.unsplash.com/photo-1505576399279-565b52d4ac71?w=400&q=80" alt="imc">
-      <div class="photo-card-body">
-        <div class="photo-card-icon">🩺</div>
-        <div class="photo-card-lbl">IMC</div>
-        <div class="photo-card-val" style="color:<?= $imcColor ?>;"><?= $imc ?: '—' ?></div>
+    <div class="metric-card">
+      <img class="metric-img" src="https://images.unsplash.com/photo-1505576399279-565b52d4ac71?w=400&q=80" alt="">
+      <div class="metric-body">
+        <span class="metric-ico">🩺</span>
+        <div class="metric-lbl">IMC</div>
+        <div class="metric-val" style="color:<?= $imcColor ?>"><?= $imc?:'—' ?></div>
       </div>
     </div>
+  </div>
+</div>
 
+<!-- ════ MAIN BODY ════ -->
+<div class="wrap">
+<div class="g-main">
+
+  <!-- ── COLONNE GAUCHE ── -->
+  <div>
+    <div class="card">
+      <div class="profil-av-wrap">
+        <div class="profil-av"><?= strtoupper(substr($user['nom'],0,1)) ?></div>
+        <div class="profil-name"><?= htmlspecialchars($user['nom']) ?></div>
+        <div class="profil-email"><?= htmlspecialchars($user['email']) ?></div>
+        <?php if($user['objectif']??''): ?>
+        <div class="profil-obj">🎯 <?= htmlspecialchars($user['objectif']) ?></div>
+        <?php endif; ?>
+      </div>
+
+      <div class="sr"><div class="sr-ico g">🎂</div><span class="sr-lbl">Âge</span><span class="sr-val"><?= $user['age']??'—' ?> ans</span></div>
+      <div class="sr"><div class="sr-ico o">⚖️</div><span class="sr-lbl">Poids</span><span class="sr-val"><?= $user['poids']??'—' ?> kg</span></div>
+      <div class="sr"><div class="sr-ico b">📏</div><span class="sr-lbl">Taille</span><span class="sr-val"><?= $user['taille']??'—' ?> cm</span></div>
+      <div class="sr"><div class="sr-ico v">🏃</div><span class="sr-lbl">Activité</span><span class="sr-val"><?= htmlspecialchars($user['activite']??'—') ?></span></div>
+
+      <div class="compl-wrap">
+        <div class="compl-top">
+          <span class="compl-lbl">Profil complété</span>
+          <span class="compl-val"><?= $completPct ?>%</span>
+        </div>
+        <div class="compl-bar"><div class="compl-fill" style="width:<?= $completPct ?>%"></div></div>
+      </div>
+
+      <button class="btn-g" onclick="openDrawer()">
+        <i class="fa fa-pen" style="font-size:11px;"></i> Modifier mon profil
+      </button>
+    </div>
+
+    <div class="obj-card">
+      <div class="obj-lbl">Mon objectif</div>
+      <div class="obj-val"><?= htmlspecialchars($user['objectif']??'Non défini') ?></div>
+      <div class="obj-sub">Programme nutrition personnalisé</div>
+    </div>
   </div>
 
-  <!-- MAIN GRID -->
-  <div class="g-3-9">
+  <!-- ── COLONNE DROITE ── -->
+  <div>
 
-    <!-- COLONNE GAUCHE -->
-    <div>
+    <!-- IMC détaillé -->
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-ttl"><i class="fa fa-weight-scale"></i> Indice de Masse Corporelle</div>
+        <span class="c-tag" style="background:<?= $imcBg ?>;color:<?= $imcColor ?>;border:1px solid <?= $imcColor ?>33;"><?= $imcCat ?></span>
+      </div>
 
-      <!-- Profil card -->
-      <div class="card">
-        <div class="card-hd">
-          <div class="card-title"><i class="fa fa-user-circle"></i> Mon profil</div>
-        </div>
-
-        <div style="text-align:center;margin-bottom:18px;">
-          <div style="width:70px;height:70px;border-radius:50%;background:#e8f5e9;color:#2e7d32;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;margin:0 auto 10px;">
-            <?= strtoupper(substr($user['nom'], 0, 1)) ?>
-          </div>
-          <div style="font-size:16px;font-weight:700;"><?= htmlspecialchars($user['nom']) ?></div>
-          <div style="font-size:12px;color:#78909c;margin-top:2px;"><?= htmlspecialchars($user['email']) ?></div>
-          <?php if($user['objectif']): ?>
-          <div style="margin-top:8px;">
-            <span style="background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:500;">
-              🎯 <?= htmlspecialchars($user['objectif']) ?>
-            </span>
-          </div>
-          <?php endif; ?>
-        </div>
-
+      <div style="display:flex;align-items:flex-end;gap:28px;margin-bottom:22px;">
         <div>
-          <div class="stat-row">
-            <div class="stat-ico g">🎂</div>
-            <span class="stat-label">Âge</span>
-            <span class="stat-value"><?= $user['age'] ?: '—' ?> ans</span>
+          <div class="imc-big" style="color:<?= $imcColor ?>"><?= $imc?:'—' ?></div>
+          <div class="imc-cat" style="color:<?= $imcColor ?>"><?= $imcCat ?></div>
+        </div>
+        <div style="flex:1;">
+          <div class="imc-scale">
+            <div class="imc-needle" style="left:<?= $imc>0?min(97,max(2,($imc/40)*100)):2 ?>%"></div>
           </div>
-          <div class="stat-row">
-            <div class="stat-ico o">⚖️</div>
-            <span class="stat-label">Poids</span>
-            <span class="stat-value"><?= $user['poids'] ?: '—' ?> kg</span>
-          </div>
-          <div class="stat-row">
-            <div class="stat-ico b">📏</div>
-            <span class="stat-label">Taille</span>
-            <span class="stat-value"><?= $user['taille'] ?: '—' ?> cm</span>
-          </div>
-          <div class="stat-row">
-            <div class="stat-ico r">🏃</div>
-            <span class="stat-label">Activité</span>
-            <span class="stat-value"><?= htmlspecialchars($user['activite'] ?? '—') ?></span>
+          <div class="imc-labels">
+            <span>&lt;18.5<br>Insuffisant</span>
+            <span style="text-align:center">18.5–24.9<br>Normal ✓</span>
+            <span style="text-align:center">25–29.9<br>Surpoids</span>
+            <span style="text-align:right">&gt;30<br>Obésité</span>
           </div>
         </div>
-
-        <button class="btn-edit" onclick="openDrawer()" style="margin-top:18px;">
-          <i class="fa fa-pen" style="font-size:12px;"></i> Modifier mon profil
-        </button>
       </div>
 
-      <!-- Objectif card -->
-      <div class="obj-card">
-        <div class="obj-title">Mon objectif</div>
-        <div class="obj-val"><?= htmlspecialchars($user['objectif'] ?: 'Non défini') ?></div>
-        <div class="obj-sub">Programme nutrition personnalisé</div>
+      <div class="imc-pills">
+        <div class="imc-pill"><div class="imc-pill-val" style="color:var(--or)"><?= $user['poids']??'—' ?> kg</div><div class="imc-pill-lbl">Poids actuel</div></div>
+        <div class="imc-pill"><div class="imc-pill-val" style="color:#7c3aed"><?= $user['taille']??'—' ?> cm</div><div class="imc-pill-lbl">Taille</div></div>
+        <div class="imc-pill"><div class="imc-pill-val" style="color:var(--g)"><?= $piMin ?>–<?= $piMax ?> kg</div><div class="imc-pill-lbl">Poids idéal</div></div>
+        <div class="imc-pill"><div class="imc-pill-val" style="color:#2979ff">18.5–24.9</div><div class="imc-pill-lbl">IMC cible</div></div>
       </div>
-
     </div>
 
-    <!-- COLONNE DROITE -->
-    <div>
+    <!-- 2 cols : photo info + objectifs -->
+    <div class="g2">
 
-      <!-- IMC détaillé -->
-      <div class="card">
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:0;">
+        <img src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600&q=80"
+             style="width:100%;height:170px;object-fit:cover;display:block;">
+        <div style="padding:18px;">
+          <div style="font-size:14px;font-weight:700;margin-bottom:6px;">🥗 Alimentation durable</div>
+          <div style="font-size:12px;color:var(--ink2);line-height:1.65;">Adoptez des habitudes alimentaires saines et respectueuses de l'environnement. Chaque repas compte.</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:0;">
         <div class="card-hd">
-          <div class="card-title"><i class="fa fa-weight-scale"></i> Indice de Masse Corporelle</div>
-          <span class="card-tag" style="color:<?= $imcColor ?>;background:<?= $imcBg ?>;border-color:<?= $imcColor ?>44;"><?= $imcCat ?></span>
+          <div class="card-ttl"><i class="fa fa-bullseye"></i> Mes objectifs</div>
         </div>
-
-        <div style="display:flex;align-items:center;gap:24px;">
-          <div>
-            <div style="font-size:48px;font-weight:800;letter-spacing:-3px;color:<?= $imcColor ?>;line-height:1;"><?= $imc ?: '—' ?></div>
-            <div style="font-size:12px;color:#78909c;margin-top:4px;"><?= $user['poids'] ?>kg / (<?= $user['taille'] ?>cm)²</div>
-          </div>
-          <div style="flex:1;">
-            <div class="imc-scale">
-              <div class="imc-needle" style="left:<?= $imc > 0 ? min(97, max(2, ($imc/40)*100)) : 2 ?>%"></div>
-            </div>
-            <div class="imc-scale-lbl">
-              <span>&lt;18.5<br>Insuffisant</span>
-              <span style="text-align:center">18.5–24.9<br>Normal</span>
-              <span style="text-align:center">25–29.9<br>Surpoids</span>
-              <span style="text-align:right">&gt;30<br>Obésité</span>
-            </div>
-          </div>
+        <div class="prog-item">
+          <div class="prog-top"><span class="prog-lbl">Profil complété</span><span class="prog-val" style="color:var(--g)"><?= $completPct ?>%</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:<?= $completPct ?>%;background:linear-gradient(90deg,var(--g),var(--g2));"></div></div>
         </div>
-
-        <div class="g4" style="margin-top:16px;gap:10px;">
-          <?php
-          $stats4 = [
-            ['Poids actuel', $user['poids'].'kg', '#e65100'],
-            ['Taille',       $user['taille'].'cm', '#6a1b9a'],
-            ['Poids idéal',  $poidsIdealMin.'–'.$poidsIdealMax.'kg', '#2e7d32'],
-            ['IMC cible',    '18.5–24.9', '#1565c0'],
-          ];
-          foreach ($stats4 as $s):
-          ?>
-          <div style="text-align:center;background:#f8fdf8;border:1px solid #e8f0e8;border-radius:10px;padding:12px 8px;">
-            <div style="font-size:14px;font-weight:700;color:<?= $s[2] ?>;"><?= $s[1] ?></div>
-            <div style="font-size:10px;color:#9e9e9e;margin-top:2px;"><?= $s[0] ?></div>
-          </div>
-          <?php endforeach; ?>
+        <div class="prog-item">
+          <div class="prog-top"><span class="prog-lbl">Activité physique</span><span class="prog-val" style="color:var(--or)">60%</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:60%;background:linear-gradient(90deg,var(--or),var(--or2));"></div></div>
         </div>
-      </div>
-
-      <!-- Photo + Conseils -->
-      <div class="g2" style="margin-bottom:18px;">
-
-        <div class="card" style="padding:0;overflow:hidden;margin-bottom:0;">
-          <img src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&q=80"
-               style="width:100%;height:160px;object-fit:cover;display:block;">
-          <div style="padding:16px;">
-            <div style="font-size:13px;font-weight:600;margin-bottom:4px;">🥗 Alimentation durable</div>
-            <div style="font-size:12px;color:#546e54;line-height:1.6;">Adoptez des habitudes alimentaires saines et respectueuses de l'environnement.</div>
-          </div>
+        <div class="prog-item">
+          <div class="prog-top"><span class="prog-lbl">Hydratation</span><span class="prog-val" style="color:#2979ff">45%</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:45%;background:linear-gradient(90deg,#2979ff,#63a4ff);"></div></div>
         </div>
-
-        <div class="card" style="margin-bottom:0;">
-          <div class="card-hd">
-            <div class="card-title"><i class="fa fa-bullseye"></i> Objectifs</div>
-          </div>
-          <div class="prog-item">
-            <div class="prog-top"><span class="prog-lbl">Profil complété</span><span class="prog-val" style="color:#2e7d32;">
-              <?php
-              $done = 0;
-              if ($user['nom'])      $done++;
-              if ($user['email'])    $done++;
-              if ($user['poids'])    $done++;
-              if ($user['taille'])   $done++;
-              if ($user['age'])      $done++;
-              if ($user['objectif']) $done++;
-              echo round($done/6*100).'%';
-              ?>
-            </span></div>
-            <div class="prog-bar"><div class="prog-fill" style="width:<?= round($done/6*100) ?>%;background:#2e7d32;"></div></div>
-          </div>
-          <div class="prog-item">
-            <div class="prog-top"><span class="prog-lbl">Activité physique</span><span class="prog-val" style="color:#e65100;">60%</span></div>
-            <div class="prog-bar"><div class="prog-fill" style="width:60%;background:#e65100;"></div></div>
-          </div>
-          <div class="prog-item">
-            <div class="prog-top"><span class="prog-lbl">Hydratation</span><span class="prog-val" style="color:#1565c0;">45%</span></div>
-            <div class="prog-bar"><div class="prog-fill" style="width:45%;background:#1565c0;"></div></div>
-          </div>
+        <div class="prog-item">
+          <div class="prog-top"><span class="prog-lbl">Alimentation équilibrée</span><span class="prog-val" style="color:#7c3aed">72%</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:72%;background:linear-gradient(90deg,#7c3aed,#a78bfa);"></div></div>
         </div>
-
       </div>
 
     </div>
+
   </div>
 </div>
+</div>
 
-<!-- ══ OVERLAY ══ -->
-<div class="pf-overlay" id="pfOverlay" onclick="closeDrawer()"></div>
+<!-- ════ OVERLAY ════ -->
+<div class="overlay" id="overlay" onclick="closeDrawer()"></div>
 
-<!-- ══ DRAWER FORMULAIRE ══ -->
-<div class="pf-drawer" id="pfDrawer">
-
-  <div class="drawer-hd">
-    <div class="drawer-hd-left">
-      <h3>✏ Modifier mon profil</h3>
-      <p>Mettez à jour vos informations personnelles</p>
+<!-- ════ DRAWER ════ -->
+<div class="drawer" id="drawer">
+  <div class="dw-hd" style="position:relative;">
+    <div>
+      <div class="dw-hd-title">✏ Modifier mon profil</div>
+      <div class="dw-hd-sub">Mettez à jour vos informations personnelles</div>
     </div>
-    <div class="drawer-close" onclick="closeDrawer()">
-      <i class="fa fa-xmark"></i>
-    </div>
+    <div class="dw-close" onclick="closeDrawer()"><i class="fa fa-xmark"></i></div>
   </div>
 
-  <div class="drawer-body">
-    <form id="profileForm" method="POST" action="index.php?url=User/update" novalidate>
+  <div class="dw-body">
+    <form id="pf" method="POST" action="index.php?url=User/update" novalidate>
 
-      <!-- Identité -->
-      <div class="form-sec-title">Identité</div>
+      <div class="fs-title">Identité</div>
 
-      <div class="f-group" id="grp-nom">
+      <div class="fg" id="g-nom">
         <label>Nom complet</label>
-        <input type="text" id="f-nom" name="nom"
-               value="<?= htmlspecialchars($user['nom']) ?>"
-               placeholder="ex: Ahmed Ben Ali"
-               data-rule="required">
-        <span class="f-icon-state"><i class="fa fa-circle-check"></i></span>
-        <div class="f-msg" id="msg-nom"></div>
+        <input type="text" id="f-nom" name="nom" value="<?= htmlspecialchars($user['nom']) ?>" placeholder="Ahmed Ben Ali" data-r="required">
+        <span class="fg-ico"><i class="fa fa-circle-check"></i></span>
+        <div class="fg-msg" id="m-nom"></div>
       </div>
 
-      <div class="f-group" id="grp-email">
+      <div class="fg" id="g-email">
         <label>Adresse email</label>
-        <input type="text" id="f-email" name="email"
-               value="<?= htmlspecialchars($user['email']) ?>"
-               placeholder="nom@email.com"
-               data-rule="email">
-        <span class="f-icon-state"><i class="fa fa-circle-check"></i></span>
-        <div class="f-msg" id="msg-email"></div>
+        <input type="text" id="f-email" name="email" value="<?= htmlspecialchars($user['email']) ?>" placeholder="nom@email.com" data-r="email">
+        <span class="fg-ico"><i class="fa fa-circle-check"></i></span>
+        <div class="fg-msg" id="m-email"></div>
       </div>
 
-      <div class="f-group" id="grp-pwd">
-        <label>Nouveau mot de passe <span style="color:#bdbdbd;font-size:10px;font-weight:400;">(laisser vide = inchangé)</span></label>
-        <input type="password" id="f-pwd" name="password"
-               placeholder="••••••••"
-               data-rule="optpwd">
-        <span class="f-icon-state"><i class="fa fa-circle-check"></i></span>
-        <div class="pwd-strength"><div class="pwd-bar" id="pwdBar"></div></div>
-        <div class="f-msg" id="msg-pwd"></div>
-        <div class="pwd-hint">Minimum 8 caractères, mélanger lettres et chiffres</div>
+      <div class="fg" id="g-pwd">
+        <label>Nouveau mot de passe <span style="color:var(--ink3);font-size:10px;font-weight:400;">(vide = inchangé)</span></label>
+        <input type="password" id="f-pwd" name="password" placeholder="••••••••" data-r="optpwd">
+        <span class="fg-ico"><i class="fa fa-circle-check"></i></span>
+        <div class="pwd-s"><div class="pwd-b" id="pwdBar"></div></div>
+        <div class="fg-msg" id="m-pwd"></div>
       </div>
 
-      <!-- Données santé -->
-      <div class="form-sec-title">Données santé</div>
+      <div class="fs-title">Données santé</div>
 
-      <div class="f-row">
-        <div class="f-group" id="grp-age">
+      <div class="fg-row">
+        <div class="fg" id="g-age">
           <label>Âge</label>
-          <input type="number" id="f-age" name="age"
-                 value="<?= htmlspecialchars($user['age'] ?? '') ?>"
-                 placeholder="ex: 28" min="10" max="120"
-                 data-rule="age">
-          <span class="f-icon-state"><i class="fa fa-circle-check"></i></span>
-          <div class="f-msg" id="msg-age"></div>
+          <input type="number" id="f-age" name="age" value="<?= htmlspecialchars($user['age']??'') ?>" placeholder="28" min="10" max="120" data-r="age">
+          <span class="fg-ico"><i class="fa fa-circle-check"></i></span>
+          <div class="fg-msg" id="m-age"></div>
         </div>
-        <div class="f-group" id="grp-poids">
+        <div class="fg" id="g-poids">
           <label>Poids (kg)</label>
-          <input type="number" id="f-poids" name="poids"
-                 value="<?= htmlspecialchars($user['poids']) ?>"
-                 placeholder="ex: 70" step="0.1" min="20" max="300"
-                 data-rule="poids">
-          <span class="f-icon-state"><i class="fa fa-circle-check"></i></span>
-          <div class="f-msg" id="msg-poids"></div>
+          <input type="number" id="f-poids" name="poids" value="<?= htmlspecialchars($user['poids']) ?>" placeholder="70" step="0.1" min="20" max="300" data-r="poids">
+          <span class="fg-ico"><i class="fa fa-circle-check"></i></span>
+          <div class="fg-msg" id="m-poids"></div>
         </div>
       </div>
 
-      <div class="f-group" id="grp-taille">
+      <div class="fg" id="g-taille">
         <label>Taille (cm)</label>
-        <input type="number" id="f-taille" name="taille"
-               value="<?= htmlspecialchars($user['taille']) ?>"
-               placeholder="ex: 175" min="100" max="250"
-               data-rule="taille">
-        <span class="f-icon-state"><i class="fa fa-circle-check"></i></span>
-        <div class="f-msg" id="msg-taille"></div>
+        <input type="number" id="f-taille" name="taille" value="<?= htmlspecialchars($user['taille']) ?>" placeholder="175" min="100" max="250" data-r="taille">
+        <span class="fg-ico"><i class="fa fa-circle-check"></i></span>
+        <div class="fg-msg" id="m-taille"></div>
       </div>
 
-      <!-- Préférences -->
-      <div class="form-sec-title">Préférences</div>
+      <div class="fs-title">Préférences</div>
 
-      <div class="f-group" id="grp-obj">
+      <div class="fg" id="g-obj">
         <label>Objectif nutritionnel</label>
-        <select id="f-obj" name="objectif" data-rule="select"
-                style="padding-right:36px;background-image:url('data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'10\' height=\'6\'><path d=\'M0 0l5 6 5-6z\' fill=\'%239e9e9e\'/></svg>');background-repeat:no-repeat;background-position:right 12px center;">
-          <option value="">-- Choisir un objectif --</option>
-          <option value="Perte de poids"       <?= $user['objectif']==='Perte de poids'       ? 'selected':'' ?>>Perte de poids</option>
-          <option value="Prise de masse"        <?= $user['objectif']==='Prise de masse'        ? 'selected':'' ?>>Prise de masse</option>
-          <option value="Équilibre alimentaire" <?= $user['objectif']==='Équilibre alimentaire' ? 'selected':'' ?>>Équilibre alimentaire</option>
-          <option value="Végétarien"            <?= $user['objectif']==='Végétarien'            ? 'selected':'' ?>>Végétarien</option>
-          <option value="Sportif"               <?= $user['objectif']==='Sportif'               ? 'selected':'' ?>>Sportif</option>
+        <select id="f-obj" name="objectif" data-r="select" style="background-image:url('data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'10\' height=\'6\'><path d=\'M0 0l5 6 5-6z\' fill=\'%238aa898\'/></svg>');background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;">
+          <option value="">-- Choisir --</option>
+          <option value="Perte de poids" <?= ($user['objectif']??'')==='Perte de poids'?'selected':'' ?>>Perte de poids</option>
+          <option value="Prise de masse" <?= ($user['objectif']??'')==='Prise de masse'?'selected':'' ?>>Prise de masse</option>
+          <option value="Équilibre alimentaire" <?= ($user['objectif']??'')==='Équilibre alimentaire'?'selected':'' ?>>Équilibre alimentaire</option>
+          <option value="Végétarien" <?= ($user['objectif']??'')==='Végétarien'?'selected':'' ?>>Végétarien</option>
         </select>
-        <div class="f-msg" id="msg-obj"></div>
+        <div class="fg-msg" id="m-obj"></div>
       </div>
 
     </form>
   </div>
 
-  <div class="drawer-ft">
-    <button class="btn-cancel" onclick="closeDrawer()">Annuler</button>
-    <button class="btn-save" onclick="submitForm()">
-      <i class="fa fa-floppy-disk" style="font-size:13px;margin-right:6px;"></i> Enregistrer
-    </button>
+  <div class="dw-ft">
+    <button class="dw-cancel" onclick="closeDrawer()">Annuler</button>
+    <button class="dw-save" onclick="submitPf()">💾 Enregistrer les modifications</button>
   </div>
-
 </div>
 
-<!-- FLASH -->
-<?php if (!empty($_SESSION['profile_success'])): ?>
-<div class="pf-flash" id="flashMsg">
-  ✅ <?= htmlspecialchars($_SESSION['profile_success']) ?>
-</div>
+<?php if(!empty($_SESSION['profile_success'])): ?>
+<div class="flash" id="flash">✅ <?= htmlspecialchars($_SESSION['profile_success']) ?></div>
 <?php unset($_SESSION['profile_success']); ?>
-<script>setTimeout(() => { const f = document.getElementById('flashMsg'); if(f) f.style.opacity='0'; }, 3000);</script>
+<script>setTimeout(()=>{const f=document.getElementById('flash');if(f){f.style.opacity=0;setTimeout(()=>f.remove(),400);}},3500);</script>
 <?php endif; ?>
 
-<!-- ══════════════════════════════════════
-     VALIDATION JS — RÈGLES COMPLÈTES
-══════════════════════════════════════ -->
 <script>
 /* ── Règles ── */
-const rules = {
-  required: v => v.trim() !== '' ? null : 'Ce champ est obligatoire.',
-  email:    v => {
-    if (!v.trim()) return 'Email obligatoire.';
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? null : 'Format email invalide (ex: nom@domaine.com).';
-  },
-  age:      v => {
-    if (!v) return 'Âge obligatoire.';
-    const n = parseInt(v);
-    return (!isNaN(n) && n >= 10 && n <= 120) ? null : 'Âge invalide (entre 10 et 120 ans).';
-  },
-  poids:    v => {
-    if (!v) return 'Poids obligatoire.';
-    const n = parseFloat(v);
-    return (!isNaN(n) && n >= 20 && n <= 300) ? null : 'Poids invalide (entre 20 et 300 kg).';
-  },
-  taille:   v => {
-    if (!v) return 'Taille obligatoire.';
-    const n = parseFloat(v);
-    return (!isNaN(n) && n >= 100 && n <= 250) ? null : 'Taille invalide (entre 100 et 250 cm).';
-  },
-  optpwd:   v => v === '' ? null : (v.length >= 8 ? null : 'Minimum 8 caractères requis.'),
-  select:   v => v !== '' ? null : 'Veuillez sélectionner une option.',
+const rules={
+  required:v=>v.trim()!==''?null:'Ce champ est obligatoire.',
+  email:v=>{if(!v.trim())return'Email obligatoire.';return/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())?null:'Format invalide (ex: nom@domaine.com).';},
+  age:v=>{if(!v)return'Âge obligatoire.';const n=parseInt(v);return(!isNaN(n)&&n>=10&&n<=120)?null:'Entre 10 et 120 ans.';},
+  poids:v=>{if(!v)return'Poids obligatoire.';const n=parseFloat(v);return(!isNaN(n)&&n>=20&&n<=300)?null:'Entre 20 et 300 kg.';},
+  taille:v=>{if(!v)return'Taille obligatoire.';const n=parseFloat(v);return(!isNaN(n)&&n>=100&&n<=250)?null:'Entre 100 et 250 cm.';},
+  optpwd:v=>v===''?null:(v.length>=8?null:'Minimum 8 caractères.'),
+  select:v=>v!==''?null:'Veuillez choisir une option.',
 };
 
-/* ── Appliquer état sur un champ ── */
-function applyState(inputEl, grpEl, msgEl, error) {
-  if (error) {
-    inputEl.classList.remove('v-ok'); inputEl.classList.add('v-err');
-    grpEl.classList.remove('has-ok'); grpEl.classList.add('has-err');
-    msgEl.textContent = error; msgEl.className = 'f-msg err';
-    grpEl.querySelector('.f-icon-state i').className = 'fa fa-circle-xmark';
-  } else if (inputEl.value.trim() !== '' || inputEl.tagName === 'SELECT') {
-    inputEl.classList.remove('v-err'); inputEl.classList.add('v-ok');
-    grpEl.classList.remove('has-err'); grpEl.classList.add('has-ok');
-    msgEl.textContent = ''; msgEl.className = 'f-msg';
-    grpEl.querySelector('.f-icon-state i').className = 'fa fa-circle-check';
+function applyState(id,error){
+  const inp=document.getElementById('f-'+id);
+  const grp=document.getElementById('g-'+id);
+  const msg=document.getElementById('m-'+id);
+  if(!inp||!grp||!msg)return!error;
+  const ico=grp.querySelector('.fg-ico');
+
+  if(error){
+    inp.classList.remove('ok');inp.classList.add('err');
+    grp.classList.remove('is-ok');grp.classList.add('is-err');
+    if(ico)ico.innerHTML='<i class="fa fa-circle-xmark"></i>';
+    msg.textContent='⚠ '+error;msg.className='fg-msg show-err';
+  } else if(inp.value.trim()!==''||inp.tagName==='SELECT'){
+    inp.classList.remove('err');inp.classList.add('ok');
+    grp.classList.remove('is-err');grp.classList.add('is-ok');
+    if(ico)ico.innerHTML='<i class="fa fa-circle-check"></i>';
+    msg.textContent='';msg.className='fg-msg';
   } else {
-    inputEl.classList.remove('v-ok','v-err');
-    grpEl.classList.remove('has-ok','has-err');
-    msgEl.textContent = ''; msgEl.className = 'f-msg';
+    inp.classList.remove('ok','err');
+    grp.classList.remove('is-ok','is-err');
+    msg.className='fg-msg';
   }
   return !error;
 }
 
-/* ── Valider un champ ── */
-function validateField(id) {
-  const input = document.getElementById('f-' + id);
-  if (!input) return true;
-  const grp   = document.getElementById('grp-' + id);
-  const msg   = document.getElementById('msg-' + id);
-  const rule  = input.dataset.rule;
-  const err   = rules[rule] ? rules[rule](input.value) : null;
-  return applyState(input, grp, msg, err);
+function vField(id){
+  const inp=document.getElementById('f-'+id);
+  if(!inp)return true;
+  return applyState(id,rules[inp.dataset.r]?rules[inp.dataset.r](inp.value):null);
 }
 
-/* ── Force mot de passe ── */
-document.getElementById('f-pwd').addEventListener('input', function() {
-  const v   = this.value;
-  const bar = document.getElementById('pwdBar');
-  let score = 0;
-  if (v.length >= 8)          score += 30;
-  if (/[A-Z]/.test(v))        score += 20;
-  if (/[0-9]/.test(v))        score += 25;
-  if (/[^A-Za-z0-9]/.test(v)) score += 25;
-  bar.style.width      = score + '%';
-  bar.style.background = score < 40 ? '#e53935' : score < 70 ? '#ff9800' : '#2e7d32';
-  validateField('pwd');
+/* Live validation */
+['nom','email','age','poids','taille'].forEach(id=>{
+  const el=document.getElementById('f-'+id);
+  if(!el)return;
+  el.addEventListener('input',()=>{if(el.value.trim().length>0)vField(id);else{el.classList.remove('ok','err');document.getElementById('g-'+id).classList.remove('is-ok','is-err');document.getElementById('m-'+id).className='fg-msg';}});
+  el.addEventListener('blur',()=>vField(id));
+});
+document.getElementById('f-obj').addEventListener('change',()=>vField('obj'));
+
+/* Pwd strength */
+document.getElementById('f-pwd').addEventListener('input',function(){
+  const v=this.value;const bar=document.getElementById('pwdBar');
+  let s=0;if(v.length>=8)s+=30;if(/[A-Z]/.test(v))s+=20;if(/[0-9]/.test(v))s+=25;if(/[^A-Za-z0-9]/.test(v))s+=25;
+  bar.style.width=s+'%';
+  bar.style.background=s<40?'var(--or)':s<70?'#ffa726':'var(--g)';
+  vField('pwd');
 });
 
-/* ── Validation temps réel sur tous les champs ── */
-const fieldIds = ['nom','email','age','poids','taille'];
-
-fieldIds.forEach(id => {
-  const el = document.getElementById('f-' + id);
-  if (!el) return;
-
-  el.addEventListener('input', () => {
-    if (el.value.trim().length > 0) validateField(id);
-    else {
-      el.classList.remove('v-ok','v-err');
-      document.getElementById('grp-' + id).classList.remove('has-ok','has-err');
-      document.getElementById('msg-' + id).className = 'f-msg';
-    }
-  });
-
-  el.addEventListener('blur',  () => validateField(id));
-  el.addEventListener('focus', () => { if (!el.value.trim()) { el.classList.remove('v-ok','v-err'); } });
-});
-
-/* Select objectif */
-document.getElementById('f-obj').addEventListener('change', () => validateField('obj'));
-
-/* ── Validation complète avant submit ── */
-function submitForm() {
-  const fields = ['nom','email','pwd','age','poids','taille','obj'];
-  let allOk = true;
-
-  fields.forEach(id => {
-    if (!validateField(id)) allOk = false;
-  });
-
-  if (allOk) {
-    document.getElementById('profileForm').submit();
-  } else {
-    // Scroll vers le premier champ en erreur
-    const firstErr = document.querySelector('.f-group.has-err input, .f-group.has-err select');
-    if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
+function submitPf(){
+  const fields=['nom','email','pwd','age','poids','taille','obj'];
+  let ok=true;
+  fields.forEach(id=>{if(!vField(id))ok=false;});
+  if(ok)document.getElementById('pf').submit();
+  else{const first=document.querySelector('.fg.is-err input,.fg.is-err select');if(first)first.scrollIntoView({behavior:'smooth',block:'center'});first?.focus();}
 }
 
-/* ── Drawer open/close ── */
-function openDrawer() {
-  document.getElementById('pfDrawer').classList.add('open');
-  document.getElementById('pfOverlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
+function openDrawer(){document.getElementById('drawer').classList.add('open');document.getElementById('overlay').classList.add('open');document.body.style.overflow='hidden';}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('overlay').classList.remove('open');document.body.style.overflow='';}
 
-function closeDrawer() {
-  document.getElementById('pfDrawer').classList.remove('open');
-  document.getElementById('pfOverlay').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-/* ── Animate progress bars ── */
-window.addEventListener('load', () => {
-  document.querySelectorAll('.prog-fill').forEach(el => {
-    const w = el.style.width;
-    el.style.width = '0';
-    setTimeout(() => { el.style.width = w; }, 200);
+/* Animate bars */
+window.addEventListener('load',()=>{
+  document.querySelectorAll('.prog-fill,.compl-fill,.obj-fill').forEach(el=>{
+    const w=el.style.width;el.style.width='0';
+    setTimeout(()=>{el.style.width=w;},200);
   });
 });
 </script>
