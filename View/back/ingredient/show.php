@@ -73,6 +73,62 @@ ob_start();
             </div>
         </div>
 
+        <!-- Valeurs nutritionnelles pour 100g -->
+        <?php
+        $prot = (float)($ingredient['proteines'] ?? 0);
+        $cal  = (float)($ingredient['calcium']   ?? 0);
+        $gluc = (float)($ingredient['glucides']  ?? 0);
+        $lip  = (float)($ingredient['lipides']   ?? 0);
+        $kcal = round(($prot * 4) + ($gluc * 4) + ($lip * 9), 1);
+        $hasNutri = ($prot + $cal + $gluc + $lip) > 0;
+        ?>
+        <div style="margin-bottom:22px;">
+            <div style="font-size:0.85rem;font-weight:700;color:var(--green);text-transform:uppercase;
+                        letter-spacing:.05em;margin-bottom:12px;padding-bottom:8px;
+                        border-bottom:2px solid #e8f5e9;">
+                🧪 Valeurs nutritionnelles (pour 100g)
+            </div>
+
+            <?php if (!$hasNutri): ?>
+                <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;
+                            padding:12px 16px;color:#f57c00;font-weight:600;font-size:0.85rem;">
+                    ⚠️ Valeurs nutritionnelles non renseignées.
+                    <a href="/2A35/Admin/ingredient/edit/<?= $ingredient['id'] ?>"
+                       style="color:#f57c00;text-decoration:underline;margin-left:6px;">
+                        Remplir avec l'IA →
+                    </a>
+                </div>
+            <?php else: ?>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:12px;">
+                    <div style="background:#e8f5e9;border-radius:10px;padding:14px;text-align:center;border:1px solid #c8e6c9;">
+                        <div style="font-size:1.4rem;">💪</div>
+                        <div style="font-size:1.1rem;font-weight:800;color:#2e7d32;"><?= $prot ?> g</div>
+                        <div style="font-size:0.72rem;color:#777;">Protéines</div>
+                    </div>
+                    <div style="background:#e3f2fd;border-radius:10px;padding:14px;text-align:center;border:1px solid #bbdefb;">
+                        <div style="font-size:1.4rem;">🦴</div>
+                        <div style="font-size:1.1rem;font-weight:800;color:#1565c0;"><?= $cal ?> mg</div>
+                        <div style="font-size:0.72rem;color:#777;">Calcium</div>
+                    </div>
+                    <div style="background:#fff3e0;border-radius:10px;padding:14px;text-align:center;border:1px solid #ffe0b2;">
+                        <div style="font-size:1.4rem;">⚡</div>
+                        <div style="font-size:1.1rem;font-weight:800;color:#f57c00;"><?= $gluc ?> g</div>
+                        <div style="font-size:0.72rem;color:#777;">Glucides</div>
+                    </div>
+                    <div style="background:#fce4ec;border-radius:10px;padding:14px;text-align:center;border:1px solid #f8bbd0;">
+                        <div style="font-size:1.4rem;">🫧</div>
+                        <div style="font-size:1.1rem;font-weight:800;color:#c62828;"><?= $lip ?> g</div>
+                        <div style="font-size:0.72rem;color:#777;">Lipides</div>
+                    </div>
+                    <div style="background:#f3e5f5;border-radius:10px;padding:14px;text-align:center;border:1px solid #e1bee7;">
+                        <div style="font-size:1.4rem;">🔥</div>
+                        <div style="font-size:1.1rem;font-weight:800;color:#6a1b9a;"><?= $kcal ?> kcal</div>
+                        <div style="font-size:0.72rem;color:#777;">Calories</div>
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
+
         <div class="show-actions">
             <a href="/2A35/Admin/ingredient/edit/<?= $ingredient['id'] ?>" class="btn-edit-s">✏️ Modifier</a>
             <button class="btn-del-s" onclick="document.getElementById('modalDel').classList.add('show')">🗑 Supprimer</button>

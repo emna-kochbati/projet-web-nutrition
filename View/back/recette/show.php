@@ -113,6 +113,25 @@ ob_start();
         <!-- Nutri-Score -->
         <?php if (isset($nutriScore) && $nutriScore['lettre'] !== '?'): ?>
         <div class="section-title">🏅 Nutri-Score</div>
+
+        <?php
+        // Définir l'animation de clignotement selon la lettre
+        $animNom = match($nutriScore['lettre']) {
+            'A', 'B' => 'clignote-vert',
+            'C'      => 'clignote-jaune',
+            'D'      => 'clignote-orange',
+            'E'      => 'clignote-rouge',
+            default  => 'clignote-vert',
+        };
+        ?>
+
+        <style>
+        @keyframes clignote-vert   { 0%,100%{box-shadow:0 0 0 0 rgba(26,122,26,0);}  50%{box-shadow:0 0 18px 8px rgba(26,122,26,.55);} }
+        @keyframes clignote-jaune  { 0%,100%{box-shadow:0 0 0 0 rgba(245,200,0,0);}  50%{box-shadow:0 0 18px 8px rgba(245,200,0,.6);} }
+        @keyframes clignote-orange { 0%,100%{box-shadow:0 0 0 0 rgba(224,120,0,0);}  50%{box-shadow:0 0 18px 8px rgba(224,120,0,.6);} }
+        @keyframes clignote-rouge  { 0%,100%{box-shadow:0 0 0 0 rgba(211,47,47,0);}  50%{box-shadow:0 0 18px 8px rgba(211,47,47,.6);} }
+        </style>
+
         <div style="background:#fff;border-radius:12px;border:2px solid #e0e0e0;padding:20px;margin-bottom:20px;">
 
             <!-- Barre des 5 lettres -->
@@ -139,7 +158,7 @@ ob_start();
                     font-weight:900;
                     opacity:<?= $isActive ? '1' : '0.35' ?>;
                     transition:all .2s;
-                    <?= $isActive ? 'box-shadow:0 4px 12px rgba(0,0,0,.25);transform:scale(1.1);' : '' ?>
+                    <?= $isActive ? 'animation:'.$animNom.' 1.2s ease-in-out infinite;transform:scale(1.1);' : '' ?>
                 "><?= $l ?></div>
                 <?php endforeach; ?>
 
