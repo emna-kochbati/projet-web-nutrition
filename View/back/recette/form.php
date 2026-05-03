@@ -758,9 +758,12 @@ function traiterReponseIA(data, type) {
     // ── Description (type description ou tout) ───────────────────────────────
     if ((type === 'description' || type === 'tout') && data.description) {
         insererDescription(data.description, null);
+        const sourceLabel = data.source === 'gemini'
+            ? '🤖 <strong style="color:#6c3fc5;">Générée par Gemini IA</strong>'
+            : '⚙️ <strong>Générée localement</strong>';
         let extrasDesc = `
         <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 12px;margin-top:6px;font-size:0.85rem;color:#166534;">
-            <strong>✅ Description insérée automatiquement !</strong><br>
+            ${sourceLabel} — insérée automatiquement !<br>
             <em style="color:#555;">${escHtml(data.description)}</em>
         </div>
         <button class="btn-regenerer" onclick="regenererDescription(this)" title="Générer une nouvelle version">
