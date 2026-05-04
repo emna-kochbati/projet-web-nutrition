@@ -223,11 +223,14 @@ const recetteData = {
     ingredients: <?= json_encode(array_map(fn($i) => $i['nom'], $ingredients ?? [])) ?>,
 };
 
+// Récupérer le profil sauvegardé depuis la page liste
+const userProfil    = JSON.parse(sessionStorage.getItem('userProfil')    || '{}');
+const profilActif   = sessionStorage.getItem('profilActif') === 'true';
+
 async function analyserRecette() {
     const btn = document.getElementById('btnAnalyseIA');
     const panneau = document.getElementById('panneauIA');
 
-    // Afficher le panneau avec le loader
     panneau.style.display = 'block';
     document.getElementById('iaLoading').style.display  = 'block';
     document.getElementById('iaResultats').style.display = 'none';
@@ -235,15 +238,14 @@ async function analyserRecette() {
 
     btn.disabled = true;
     btn.innerHTML = '⏳ Analyse en cours...';
-
-    // Scroll vers le panneau
     panneau.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     try {
         const resp = await fetch('/2A35/Admin/Ai/analyser', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ recette: recetteData })
+            // Envoyer la recette + le profil utilisateur si disponible
+            body: JSON.stringify({ recette: recetteData, profil: userProfil })
         });
 
         const data = await resp.json();
@@ -255,42 +257,110 @@ async function analyserRecette() {
             document.getElementById('iaErreur').textContent   = '❌ ' + data.error;
         } else {
             document.getElementById('iaResultats').style.display = 'block';
-            document.getElementById('sourceLabel').textContent   =
-                data.source === 'gemini' ? '🤖 Analyse par Google Gemini IA' : '⚙️ Analyse locale';
 
-            // Afficher les badges profils
-            const configs = {
-                diabetique: { icon: '🩺', label: 'Diabétiques' },
-                sportif:    { icon: '💪', label: 'Sportifs' },
-                regime:     { icon: '⚖️', label: 'Régime' },
-                energie:    { icon: '⚡', label: 'Énergie' },
+            // ── Source + badge profil utilisateur ────────────────────────────
+            const p = userProfil;
+            const labelsP = {
+                objectif: {'perte-poids':'Perte de poids','prise-masse':'Prise de masse','maintien':'Maintien du poids'},
+                regime:   {'diabetique':'Diabétique','vegetarien':'Végétarien','sportif':'Sportif','normal':'Normal'},
+                activite: {'sedentaire':'Sédentaire','modere':'Modéré','sportif':'Sportif intensif'},
             };
+            const srcLabel = data.source === 'gemini'
+                ? '🤖 <strong style="color:#6c3fc5;">Analyse par Google Gemini IA</strong>'
+                : '⚙️ Analyse locale';
+            let profilBadge = '';
+            if ((p.objectif || p.regime || p.activite) && profilActif) {
+                profilBadge = `<div style="margin-bottom:8px;padding:6px 12px;background:#f0fdf4;
+                    border-radius:8px;border:1px solid #a5d6a7;font-size:0.78rem;color:#2e7d32;font-weight:600;">
+                    🎯 Analyse selon votre profil :
+                    ${p.objectif ? ' ⚖️ '+(labelsP.objectif[p.objectif]||p.objectif) : ''}
+                    ${p.regime && p.regime!=='normal' ? ' · 🩺 '+(labelsP.regime[p.regime]||p.regime) : ''}
+                    ${p.activite ? ' · 🏃 '+(labelsP.activite[p.activite]||p.activite) : ''}
+                </div>`;
+            }
+            document.getElementById('sourceLabel').innerHTML = profilBadge + srcLabel;
+
+            // ── Badges : profil utilisateur OU profils génériques ────────────
             const statutStyles = {
-                adapte:  { bg: '#e8f5e9', color: '#2e7d32', border: '#a5d6a7', txt: '✅ Adapté' },
-                modere:  { bg: '#fff8e1', color: '#f57c00', border: '#ffe082', txt: '⚠️ Modéré' },
-                non:     { bg: '#ffebee', color: '#c62828', border: '#ef9a9a', txt: '❌ Déconseillé' },
+                adapte: { bg:'#e8f5e9', color:'#2e7d32', border:'#a5d6a7', txt:'✅ Adapté',       anim:'clignote-vert' },
+                modere: { bg:'#fff8e1', color:'#f57c00', border:'#ffe082', txt:'⚠️ Modéré',       anim:'clignote-orange' },
+                non:    { bg:'#ffebee', color:'#c62828', border:'#ef9a9a', txt:'❌ Déconseillé',  anim:'clignote-rouge' },
             };
+
+            // Injecter les animations CSS
+            if (!document.getElementById('badge-anim-style')) {
+                const s = document.createElement('style');
+                s.id = 'badge-anim-style';
+                s.textContent = `
+                    @keyframes clignote-vert   { 0%,100%{box-shadow:0 0 0 0 rgba(46,125,50,0);}   50%{box-shadow:0 0 10px 4px rgba(46,125,50,.4);} }
+                    @keyframes clignote-orange { 0%,100%{box-shadow:0 0 0 0 rgba(245,124,0,0);}   50%{box-shadow:0 0 10px 4px rgba(245,124,0,.4);} }
+                    @keyframes clignote-rouge  { 0%,100%{box-shadow:0 0 0 0 rgba(198,40,40,0);}   50%{box-shadow:0 0 10px 4px rgba(198,40,40,.4);} }
+                `;
+                document.head.appendChild(s);
+            }
 
             const container = document.getElementById('profilsBadges');
             container.innerHTML = '';
-            Object.entries(data.profils).forEach(([key, val]) => {
-                const cfg = configs[key] || { icon: '•', label: key };
-                const st  = statutStyles[val.statut] || statutStyles.modere;
-                container.innerHTML += `
-                    <div style="background:${st.bg};border:1.5px solid ${st.border};
-                                border-radius:10px;padding:10px 16px;display:flex;
-                                align-items:center;gap:8px;min-width:150px;">
-                        <span style="font-size:1.3rem;">${cfg.icon}</span>
-                        <div>
-                            <div style="font-weight:700;color:#333;font-size:0.82rem;">${cfg.label}</div>
-                            <div style="font-weight:800;color:${st.color};font-size:0.85rem;">${st.txt}</div>
-                        </div>
-                    </div>`;
-            });
 
-            // Afficher l'analyse textuelle
+            function creerBadge(icon, label, statut) {
+                const st = statutStyles[statut] || statutStyles.modere;
+                return `<div style="background:${st.bg};border:2px solid ${st.border};
+                     border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:10px;
+                     min-width:150px;animation:${st.anim} 1.5s ease-in-out infinite;">
+                    <span style="font-size:1.4rem;">${icon}</span>
+                    <div>
+                        <div style="font-weight:700;color:#333;font-size:0.85rem;">${label}</div>
+                        <div style="font-weight:800;color:${st.color};font-size:0.88rem;">${st.txt}</div>
+                    </div>
+                </div>`;
+            }
+
+            if (p.regime && p.regime !== 'normal' && profilActif) {
+                // ── CAS 1 : Profil avec régime → afficher SEULEMENT le régime ─
+                const regimeIcons = {
+                    'diabetique':'🩺','vegetarien':'🥦','sportif':'💪','normal':'🍽️'
+                };
+                const regimeLabels = {
+                    'diabetique':'Diabétique','vegetarien':'Végétarien',
+                    'sportif':'Sportif','normal':'Normal'
+                };
+                // Calculer le statut pour ce régime
+                let statut = 'modere';
+                if (p.regime === 'diabetique' && data.profils.diabetique)   statut = data.profils.diabetique.statut;
+                else if (p.regime === 'vegetarien' && data.profils.vegetarien) statut = data.profils.vegetarien.statut;
+                else if (p.regime === 'sportif' && data.profils.sportif)    statut = data.profils.sportif.statut;
+                else if (p.regime === 'normal' && data.profils.normal)      statut = data.profils.normal.statut;
+
+                container.innerHTML = creerBadge(
+                    regimeIcons[p.regime] || '🩺',
+                    regimeLabels[p.regime] || p.regime,
+                    statut
+                );            } else {
+                // ── CAS 2 : Pas de profil → afficher TOUS les types avec clignotement
+                const tousTypes = [
+                    { key:'diabetique', icon:'🩺', label:'Diabétique' },
+                    { key:'sportif',    icon:'💪', label:'Sportif' },
+                    { key:'vegetarien', icon:'🥦', label:'Végétarien' },
+                    { key:'normal',     icon:'🍽️', label:'Normal' },
+                ];
+                tousTypes.forEach(t => {
+                    const statut = data.profils[t.key]?.statut || 'modere';
+                    container.innerHTML += creerBadge(t.icon, t.label, statut);
+                });
+            }
+
+            // ── Analyse structurée en points ──────────────────────────────────
             document.getElementById('analyseTexte').innerHTML =
-                data.analyse.replace(/\n/g, '<br>');
+                data.analyse
+                    .replace(/✅ COMPATIBILITÉ AVEC VOTRE PROFIL/gi,
+                        '<div style="font-weight:800;color:#2e7d32;font-size:0.9rem;margin:12px 0 6px;">✅ Compatibilité avec votre profil</div>')
+                    .replace(/💡 CONSEILS PERSONNALISÉS/gi,
+                        '<div style="font-weight:800;color:#f57c00;font-size:0.9rem;margin:12px 0 6px;">💡 Conseils personnalisés</div>')
+                    .replace(/🔧 AMÉLIORATIONS SUGGÉRÉES/gi,
+                        '<div style="font-weight:800;color:#6c3fc5;font-size:0.9rem;margin:12px 0 6px;">🔧 Améliorations suggérées</div>')
+                    .replace(/\n• /g, '</p><p style="margin:4px 0;padding-left:12px;border-left:3px solid #e0d4ff;">• ')
+                    .replace(/^• /,   '<p style="margin:4px 0;padding-left:12px;border-left:3px solid #e0d4ff;">• ')
+                    .replace(/\n/g, '<br>') + '</p>';
         }
     } catch (e) {
         document.getElementById('iaLoading').style.display = 'none';

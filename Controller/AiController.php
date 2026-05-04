@@ -1,21 +1,19 @@
 <?php
 require_once 'Model/Ingredient.php';
+require_once 'Model/Recette.php';
 
 /**
  * AiController
  * ─────────────────────────────────────────────────────────────────────────────
  * - Description  : générée via l'API Google Gemini (IA externe)
  * - Suggestions  : calculées localement depuis la BDD (logique métier)
- *
- * Route : POST /2A35/Admin/Ai/chat
+ * - Recommandation : recettes personnalisées selon profil utilisateur
  *
  * ► Clé Gemini gratuite : https://aistudio.google.com/app/apikey
- *   Collez-la dans la constante GEMINI_API_KEY ci-dessous.
  */
 class AiController {
 
     // ── Clé API Gemini ────────────────────────────────────────────────────────
-    // Remplacez par votre clé : https://aistudio.google.com/app/apikey
     private const GEMINI_API_KEY = 'VOTRE_CLE_GEMINI_ICI';
     private const GEMINI_URL     = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
@@ -89,6 +87,7 @@ class AiController {
 
         $body    = json_decode(file_get_contents('php://input'), true);
         $recette = $body['recette'] ?? [];
+        $profil  = $body['profil']  ?? []; // Profil utilisateur si disponible
 
         $nom         = trim($recette['nom']         ?? '');
         $calories    = (float)($recette['calories'] ?? 0);
@@ -99,8 +98,6 @@ class AiController {
         }
 
         // ── 1. Récupérer les valeurs nutritionnelles depuis la BDD ────────────
-        require_once 'Model/Ingredient.php';
-        require_once 'Model/Recette.php';
         $recetteModel = new Recette();
         $nutri        = $recetteModel->calculerNutriScore((int)($recette['id'] ?? 0));
         $details      = $nutri['details'] ?? [
@@ -111,27 +108,27 @@ class AiController {
         // ── 2. Logique métier : calcul des profils de santé ───────────────────
         $profils = $this->calculerProfils($details);
 
-        // ── 3. Analyse textuelle via Gemini ───────────────────────────────────
+        // ── 3. Analyse Gemini personnalisée selon le profil utilisateur ───────
         $analyse = null;
         $source  = 'local';
 
         if (self::GEMINI_API_KEY !== 'VOTRE_CLE_GEMINI_ICI' && self::GEMINI_API_KEY !== '') {
-            $result = $this->analyserGemini($nom, $details, $ingredients, $profils);
+            $result = $this->analyserGemini($nom, $details, $ingredients, $profils, $profil);
             if ($result !== null) {
                 $analyse = $result;
                 $source  = 'gemini';
             }
         }
 
-        // Fallback si Gemini échoue
         if ($analyse === null) {
-            $analyse = $this->analyseLocale($nom, $details, $profils);
+            $analyse = $this->analyseLocale($nom, $details, $profils, $profil);
         }
 
         echo json_encode([
             'profils' => $profils,
             'analyse' => $analyse,
             'source'  => $source,
+            'profil'  => $profil, // Renvoyer le profil pour l'affichage
         ]);
         exit;
     }
@@ -143,22 +140,32 @@ class AiController {
         $lip  = (float)($d['lipides']   ?? 0);
         $kcal = (float)($d['calories']  ?? 0);
 
-        // Règles métier
+        // Diabétique : faible en glucides
         $diabetique = $gluc <= 15  ? 'adapte' : ($gluc <= 25 ? 'modere' : 'non');
-        $sportif    = $prot >= 15  ? 'adapte' : ($prot >= 8  ? 'modere' : 'non');
-        $regime     = ($kcal <= 250 && $lip <= 5) ? 'adapte' : ($kcal <= 400 ? 'modere' : 'non');
-        $energie    = ($kcal >= 250 && $gluc >= 20) ? 'adapte' : ($kcal >= 150 ? 'modere' : 'non');
+
+        // Sportif : riche en protéines OU calories suffisantes pour l'effort
+        // Minimum modéré — jamais déconseillé pour un sportif sauf si vraiment mauvais
+        if ($prot >= 12)       $sportif = 'adapte';
+        elseif ($prot >= 5)    $sportif = 'modere';
+        elseif ($kcal >= 150)  $sportif = 'modere';
+        else                   $sportif = 'modere'; // Toujours au moins modéré
+
+        // Végétarien : faible en lipides et calories modérées (pas de viande supposée)
+        $vegetarien = ($lip <= 8 && $kcal <= 400) ? 'adapte' : ($kcal <= 600 ? 'modere' : 'non');
+
+        // Normal : toujours adapté si valeurs raisonnables
+        $normal     = ($kcal <= 600) ? 'adapte' : ($kcal <= 900 ? 'modere' : 'non');
 
         return [
             'diabetique' => ['statut' => $diabetique],
             'sportif'    => ['statut' => $sportif],
-            'regime'     => ['statut' => $regime],
-            'energie'    => ['statut' => $energie],
+            'vegetarien' => ['statut' => $vegetarien],
+            'normal'     => ['statut' => $normal],
         ];
     }
 
     // ── Analyse textuelle via Gemini ──────────────────────────────────────────
-    private function analyserGemini(string $nom, array $d, array $ingredients, array $profils): ?string {
+    private function analyserGemini(string $nom, array $d, array $ingredients, array $profils, array $profil = []): ?string {
         $ingList = implode(', ', array_slice($ingredients, 0, 8));
 
         $profilsTexte = '';
@@ -168,19 +175,36 @@ class AiController {
             $profilsTexte .= '- ' . ($labels[$key] ?? $key) . ' : ' . ($statutLabels[$val['statut']] ?? '') . "\n";
         }
 
+        // Ajouter le profil utilisateur si disponible
+        $profilUtilisateur = '';
+        if (!empty($profil['objectif']) || !empty($profil['regime']) || !empty($profil['activite'])) {
+            $labelsP = [
+                'objectif' => ['perte-poids' => 'perte de poids', 'prise-masse' => 'prise de masse', 'maintien' => 'maintien'],
+                'regime'   => ['diabetique' => 'diabétique', 'vegetarien' => 'végétarien', 'sportif' => 'sportif', 'normal' => 'normal'],
+                'activite' => ['sedentaire' => 'sédentaire', 'modere' => 'modéré', 'sportif' => 'sportif intensif'],
+            ];
+            $profilUtilisateur  = "\nPROFIL DE L'UTILISATEUR :\n";
+            if (!empty($profil['objectif'])) $profilUtilisateur .= "- Objectif : " . ($labelsP['objectif'][$profil['objectif']] ?? $profil['objectif']) . "\n";
+            if (!empty($profil['regime']))   $profilUtilisateur .= "- Régime : "   . ($labelsP['regime'][$profil['regime']]     ?? $profil['regime'])   . "\n";
+            if (!empty($profil['activite'])) $profilUtilisateur .= "- Activité : " . ($labelsP['activite'][$profil['activite']] ?? $profil['activite']) . "\n";
+        }
+
         $prompt  = "Tu es un nutritionniste expert. Analyse cette recette de manière professionnelle.\n\n";
         $prompt .= "Recette : $nom\n";
-        $prompt .= "Valeurs pour 100g :\n";
-        $prompt .= "- Protéines : {$d['proteines']}g\n";
-        $prompt .= "- Glucides : {$d['glucides']}g\n";
-        $prompt .= "- Lipides : {$d['lipides']}g\n";
-        $prompt .= "- Calories : {$d['calories']} kcal\n";
-        if ($ingList) $prompt .= "- Ingrédients : $ingList\n";
-        $prompt .= "\nProfils calculés :\n$profilsTexte\n";
-        $prompt .= "Donne une analyse courte (3-4 phrases) en français sur :\n";
-        $prompt .= "1. Les bienfaits principaux de cette recette\n";
-        $prompt .= "2. Pour qui elle est particulièrement recommandée\n";
-        $prompt .= "3. Une suggestion concrète pour l'améliorer\n";
+        $prompt .= "Valeurs pour 100g : protéines {$d['proteines']}g, glucides {$d['glucides']}g, lipides {$d['lipides']}g, calories {$d['calories']} kcal\n";
+        if ($ingList) $prompt .= "Ingrédients : $ingList\n";
+        $prompt .= "\nCompatibilité nutritionnelle :\n$profilsTexte";
+        $prompt .= $profilUtilisateur;
+        $prompt .= "\nDonne une analyse courte (3-4 phrases) en français :\n";
+        if (!empty($profilUtilisateur)) {
+            $prompt .= "1. Est-ce que cette recette est adaptée au profil de l'utilisateur ? Pourquoi ?\n";
+            $prompt .= "2. Quels sont les bienfaits pour ce profil spécifique ?\n";
+            $prompt .= "3. Un conseil personnalisé pour cet utilisateur.\n";
+        } else {
+            $prompt .= "1. Les bienfaits principaux de cette recette\n";
+            $prompt .= "2. Pour qui elle est particulièrement recommandée\n";
+            $prompt .= "3. Une suggestion concrète pour l'améliorer\n";
+        }
         $prompt .= "Sois direct et professionnel. Pas de titre, juste le texte.";
 
         $payload = json_encode([
@@ -208,7 +232,7 @@ class AiController {
     }
 
     // ── Analyse locale (fallback sans Gemini) ─────────────────────────────────
-    private function analyseLocale(string $nom, array $d, array $profils): string {
+    private function analyseLocale(string $nom, array $d, array $profils, array $profil = []): string {
         $prot = (float)($d['proteines'] ?? 0);
         $gluc = (float)($d['glucides']  ?? 0);
         $kcal = (float)($d['calories']  ?? 0);
@@ -219,13 +243,249 @@ class AiController {
         if ($kcal <= 250) $points[] = "légère en calories ({$kcal} kcal/100g)";
 
         $adaptes = array_keys(array_filter($profils, fn($p) => $p['statut'] === 'adapte'));
-        $labels  = ['diabetique' => 'diabétiques', 'sportif' => 'sportifs', 'regime' => 'régime', 'energie' => 'énergie'];
+        $labels  = ['diabetique' => 'diabétiques', 'sportif' => 'sportifs', 'vegetarien' => 'végétariens', 'normal' => 'alimentation normale'];
         $adaptesTxt = implode(', ', array_map(fn($k) => $labels[$k] ?? $k, $adaptes));
 
         $analyse = ucfirst($nom) . ' est une recette ' . (empty($points) ? 'équilibrée' : implode(', ', $points)) . '.';
-        if ($adaptesTxt) $analyse .= " Elle est particulièrement adaptée aux profils : $adaptesTxt.";
+
+        // Personnaliser selon le profil utilisateur si disponible
+        if (!empty($profil['objectif']) || !empty($profil['regime'])) {
+            $labelsObj = ['perte-poids' => 'perte de poids', 'prise-masse' => 'prise de masse', 'maintien' => 'maintien'];
+            $labelsReg = ['diabetique' => 'diabétique', 'vegetarien' => 'végétarien', 'sportif' => 'sportif', 'normal' => 'normal'];
+            $obj = $labelsObj[$profil['objectif'] ?? ''] ?? '';
+            $reg = $labelsReg[$profil['regime']   ?? ''] ?? '';
+
+            if ($obj) $analyse .= " Pour votre objectif de $obj, cette recette " . ($kcal <= 300 ? "est bien adaptée grâce à ses calories modérées." : "peut convenir avec des portions contrôlées.");
+            if ($reg === 'diabétique') $analyse .= " Pour un régime diabétique, " . ($gluc <= 20 ? "elle est recommandée car faible en glucides." : "surveillez les glucides.");
+        } elseif ($adaptesTxt) {
+            $analyse .= " Elle est particulièrement adaptée aux profils : $adaptesTxt.";
+        }
+
         $analyse .= " Vous pouvez modifier les quantités d'ingrédients pour ajuster les valeurs nutritionnelles selon vos besoins.";
         return $analyse;
+    }
+
+    // =========================================================================
+    // RECOMMANDATION — Recettes personnalisées selon profil utilisateur
+    // =========================================================================
+    public function recommander(): void {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['error' => 'Méthode non autorisée.']); exit;
+        }
+
+        $body    = json_decode(file_get_contents('php://input'), true);
+        $profil  = $body['profil'] ?? [];
+
+        $objectif = trim($profil['objectif'] ?? '');
+        $regime   = trim($profil['regime']   ?? '');
+        $activite = trim($profil['activite'] ?? '');
+
+        if (!$objectif && !$regime && !$activite) {
+            echo json_encode(['error' => 'Veuillez remplir votre profil.']); exit;
+        }
+
+        // ── 1. Récupérer toutes les recettes avec leurs valeurs nutritionnelles
+        $recetteModel = new Recette();
+        $toutes       = $recetteModel->getAll();
+
+        if (empty($toutes)) {
+            echo json_encode(['error' => 'Aucune recette dans la base.']); exit;
+        }
+
+        // ── 2. Calculer le score de compatibilité pour chaque recette
+        $recettesScorées = [];
+        foreach ($toutes as $r) {
+            $nutri = $recetteModel->calculerNutriScore((int)$r['id']);
+            $score = $this->calculerScoreProfil($r, $nutri, $objectif, $regime, $activite);
+            $recettesScorées[] = [
+                'recette'    => $r,
+                'nutriscore' => $nutri,
+                'score'      => $score['score'],
+                'statut'     => $score['statut'],
+                'couleur'    => $score['couleur'],
+            ];
+        }
+
+        // ── 3. Trier par score décroissant → top 6
+        usort($recettesScorées, fn($a, $b) => $b['score'] - $a['score']);
+        $top6 = array_slice($recettesScorées, 0, 6);
+
+        // ── 4. Analyse Gemini du profil utilisateur
+        $analyseGlobale = $this->analyserProfilGemini($objectif, $regime, $activite, $top6);
+
+        echo json_encode([
+            'recettes'       => $top6,
+            'analyseGlobale' => $analyseGlobale,
+            'source'         => (self::GEMINI_API_KEY !== 'VOTRE_CLE_GEMINI_ICI') ? 'gemini' : 'local',
+        ]);
+        exit;
+    }
+
+    // ── Score de compatibilité recette ↔ profil (logique métier PHP) ──────────
+    private function calculerScoreProfil(array $r, array $nutri, string $objectif, string $regime, string $activite): array {
+        $score = 30;
+
+        $details = $nutri['details'] ?? [];
+        $prot    = (float)($details['proteines'] ?? 0);
+        $gluc    = (float)($details['glucides']  ?? 0);
+        $lip     = (float)($details['lipides']   ?? 0);
+        $kcal    = (float)($details['calories']  ?? 0);
+        $lettre  = $nutri['lettre'] ?? '?';
+
+        // Si pas de valeurs nutritionnelles calculées → utiliser les calories de la recette
+        if ($kcal <= 0 && isset($r['calories']) && $r['calories'] > 0) {
+            $kcal = (float)$r['calories'];
+            // Estimer protéines/glucides/lipides depuis les calories et la catégorie
+            $cat = $r['categorie'] ?? '';
+            if (in_array($cat, ['sportif','dejeuner','diner'])) {
+                $prot = $kcal * 0.25 / 4;  // 25% des calories en protéines
+                $gluc = $kcal * 0.45 / 4;  // 45% en glucides
+                $lip  = $kcal * 0.30 / 9;  // 30% en lipides
+            } else {
+                $prot = $kcal * 0.15 / 4;
+                $gluc = $kcal * 0.55 / 4;
+                $lip  = $kcal * 0.30 / 9;
+            }
+        }
+
+        // ── Bonus Nutri-Score ─────────────────────────────────────────────────
+        $score += match($lettre) {
+            'A' => 15, 'B' => 10, 'C' => 3, 'D' => -8, 'E' => -15, default => 5
+        };
+
+        // ── Objectif ─────────────────────────────────────────────────────────
+        if ($objectif === 'perte-poids') {
+            if ($kcal > 0) {
+                if ($kcal <= 150)     $score += 20;
+                elseif ($kcal <= 300) $score += 10;
+                elseif ($kcal <= 450) $score += 0;
+                else                  $score -= 15;
+            }
+            if ($lip > 0)  { if ($lip <= 3) $score += 8; elseif ($lip > 10) $score -= 10; }
+            if ($prot > 0) { if ($prot >= 12) $score += 8; }
+        } elseif ($objectif === 'prise-masse') {
+            if ($prot > 0) {
+                if ($prot >= 20)      $score += 20;
+                elseif ($prot >= 12)  $score += 12;
+                else                  $score -= 5;
+            }
+            if ($kcal > 0) {
+                if ($kcal >= 350)     $score += 12;
+                elseif ($kcal < 150)  $score -= 10;
+            }
+            if ($gluc > 0 && $gluc >= 25) $score += 8;
+        } elseif ($objectif === 'maintien') {
+            if ($kcal > 0 && $kcal >= 150 && $kcal <= 350) $score += 12;
+            if ($prot > 0 && $prot >= 8) $score += 8;
+        }
+
+        // ── Régime ────────────────────────────────────────────────────────────
+        if ($regime === 'diabetique') {
+            if ($gluc > 0) {
+                if ($gluc <= 10)      $score += 20;
+                elseif ($gluc <= 20)  $score += 10;
+                elseif ($gluc <= 30)  $score -= 5;
+                else                  $score -= 20;
+            } else {
+                // Pas de valeurs → se baser sur la catégorie
+                if (in_array($r['categorie'] ?? '', ['regime','vegetarien'])) $score += 10;
+                elseif (in_array($r['categorie'] ?? '', ['dessert','collation'])) $score -= 10;
+            }
+        } elseif ($regime === 'vegetarien') {
+            if (in_array($r['categorie'] ?? '', ['vegetarien','regime','dessert','collation'])) $score += 15;
+            else $score -= 5;
+        } elseif ($regime === 'sportif') {
+            if ($prot > 0) {
+                if ($prot >= 15)      $score += 18;
+                elseif ($prot >= 8)   $score += 8;
+                else                  $score -= 8;
+            }
+            if (($r['categorie'] ?? '') === 'sportif') $score += 10;
+        } elseif ($regime === 'normal') {
+            $score += 5;
+        }
+
+        // ── Activité ──────────────────────────────────────────────────────────
+        if ($activite === 'sportif') {
+            if ($prot > 0 && $prot >= 15) $score += 10;
+            if ($kcal > 0 && $kcal >= 250) $score += 8;
+            elseif ($kcal > 0 && $kcal < 100) $score -= 8;
+        } elseif ($activite === 'sedentaire') {
+            if ($kcal > 0 && $kcal <= 200) $score += 12;
+            elseif ($kcal > 0 && $kcal > 400) $score -= 12;
+            if ($lip > 0 && $lip <= 5) $score += 8;
+        } elseif ($activite === 'modere') {
+            if ($kcal > 0 && $kcal >= 150 && $kcal <= 350) $score += 8;
+        }
+
+        // ── Bonus catégorie selon profil ──────────────────────────────────────
+        $cat = $r['categorie'] ?? '';
+        if ($objectif === 'perte-poids' && in_array($cat, ['regime','vegetarien'])) $score += 8;
+        if ($objectif === 'prise-masse' && $cat === 'sportif') $score += 8;
+        if ($regime === 'diabetique'    && $cat === 'regime')   $score += 5;
+
+        $score = max(0, min(100, $score));
+        $statut  = $score >= 70 ? 'adapte'  : ($score >= 45 ? 'modere' : 'non');
+        $couleur = $score >= 70 ? '#2e7d32' : ($score >= 45 ? '#f57c00' : '#c62828');
+
+        return ['score' => $score, 'statut' => $statut, 'couleur' => $couleur];
+    }
+
+    // ── Analyse Gemini du profil utilisateur ──────────────────────────────────
+    private function analyserProfilGemini(string $objectif, string $regime, string $activite, array $top6): string {
+        $nomsRecettes = implode(', ', array_map(fn($r) => $r['recette']['nom'], array_slice($top6, 0, 3)));
+
+        $labels = [
+            'objectif' => ['perte-poids' => 'perte de poids', 'prise-masse' => 'prise de masse', 'maintien' => 'maintien du poids'],
+            'regime'   => ['diabetique' => 'diabétique', 'vegetarien' => 'végétarien', 'sportif' => 'sportif', 'normal' => 'normal'],
+            'activite' => ['sedentaire' => 'sédentaire', 'modere' => 'modéré', 'sportif' => 'sportif intensif'],
+        ];
+
+        $objLabel = $labels['objectif'][$objectif] ?? $objectif;
+        $regLabel = $labels['regime'][$regime]     ?? $regime;
+        $actLabel = $labels['activite'][$activite] ?? $activite;
+
+        if (self::GEMINI_API_KEY !== 'VOTRE_CLE_GEMINI_ICI' && self::GEMINI_API_KEY !== '') {
+            $prompt  = "Tu es un nutritionniste expert. Analyse ce profil utilisateur en 3-4 phrases en français :\n";
+            $prompt .= "- Objectif : $objLabel\n";
+            $prompt .= "- Régime : $regLabel\n";
+            $prompt .= "- Niveau d'activité : $actLabel\n";
+            $prompt .= "- Recettes recommandées : $nomsRecettes\n\n";
+            $prompt .= "Donne des conseils nutritionnels personnalisés et explique pourquoi ces recettes sont adaptées. Sois direct et professionnel.";
+
+            $payload = json_encode([
+                'contents' => [['role' => 'user', 'parts' => [['text' => $prompt]]]],
+                'generationConfig' => ['temperature' => 0.6, 'maxOutputTokens' => 200]
+            ]);
+
+            $ch = curl_init(self::GEMINI_URL . '?key=' . self::GEMINI_API_KEY);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $payload,
+                CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+                CURLOPT_TIMEOUT => 15, CURLOPT_SSL_VERIFYPEER => false,
+            ]);
+            $result   = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode === 200) {
+                $data = json_decode($result, true);
+                $text = trim($data['candidates'][0]['content']['parts'][0]['text'] ?? '');
+                if ($text) return $text;
+            }
+        }
+
+        // Fallback local
+        $conseils = [
+            'perte-poids' => 'Pour votre objectif de perte de poids, privilégiez les recettes faibles en calories et riches en protéines pour maintenir la satiété.',
+            'prise-masse' => 'Pour la prise de masse, choisissez des recettes riches en protéines et en glucides complexes pour soutenir vos efforts.',
+            'maintien'    => 'Pour maintenir votre poids, optez pour des recettes équilibrées avec un bon apport en protéines et des glucides modérés.',
+        ];
+        return ($conseils[$objectif] ?? 'Voici les recettes les mieux adaptées à votre profil.') .
+               " Avec un régime $regLabel et une activité $actLabel, ces recettes ont été sélectionnées pour leur compatibilité nutritionnelle.";
     }
 
     // =========================================================================
