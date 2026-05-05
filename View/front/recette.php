@@ -13,102 +13,6 @@
     </div>
 </div>
 
-<!-- Section Profil Personnalisé -->
-<div class="container-xxl py-4">
-    <div class="container">
-        <div style="background:linear-gradient(135deg,#f0fdf4,#e8f5e9);border-radius:14px;
-             padding:24px;border:2px solid #a5d6a7;box-shadow:0 4px 16px rgba(46,125,50,.1);">
-
-            <!-- Titre -->
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
-                <div style="width:38px;height:38px;background:#2e7d32;border-radius:50%;
-                     display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🎯</div>
-                <div>
-                    <h5 style="margin:0;font-weight:800;color:#1b5e20;">Recettes personnalisées selon votre profil</h5>
-                    <p style="margin:0;font-size:0.8rem;color:#555;">Entrez votre profil et l'IA sélectionne les recettes les plus adaptées</p>
-                </div>
-            </div>
-
-            <!-- Formulaire profil -->
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:16px;">
-                <div>
-                    <label style="font-size:0.8rem;font-weight:700;color:#2e7d32;display:block;margin-bottom:5px;">🎯 Objectif</label>
-                    <select id="profilObjectif" style="width:100%;padding:10px 12px;border:2px solid #a5d6a7;border-radius:8px;font-size:0.88rem;outline:none;background:#fff;">
-                        <option value="">-- Choisir --</option>
-                        <option value="perte-poids">⚖️ Perte de poids</option>
-                        <option value="prise-masse">💪 Prise de masse</option>
-                        <option value="maintien">🔄 Maintien du poids</option>
-                    </select>
-                </div>
-                <div>
-                    <label style="font-size:0.8rem;font-weight:700;color:#2e7d32;display:block;margin-bottom:5px;">🩺 Régime</label>
-                    <select id="profilRegime" style="width:100%;padding:10px 12px;border:2px solid #a5d6a7;border-radius:8px;font-size:0.88rem;outline:none;background:#fff;">
-                        <option value="">-- Choisir --</option>
-                        <option value="normal">🍽️ Normal</option>
-                        <option value="diabetique">🩺 Diabétique</option>
-                        <option value="vegetarien">🥦 Végétarien</option>
-                        <option value="sportif">💪 Sportif</option>
-                    </select>
-                </div>
-                <div>
-                    <label style="font-size:0.8rem;font-weight:700;color:#2e7d32;display:block;margin-bottom:5px;">🏃 Activité</label>
-                    <select id="profilActivite" style="width:100%;padding:10px 12px;border:2px solid #a5d6a7;border-radius:8px;font-size:0.88rem;outline:none;background:#fff;">
-                        <option value="">-- Choisir --</option>
-                        <option value="sedentaire">🪑 Sédentaire</option>
-                        <option value="modere">🚶 Modéré</option>
-                        <option value="sportif">🏋️ Sportif intensif</option>
-                    </select>
-                </div>
-                <div style="display:flex;align-items:flex-end;">
-                    <button onclick="recommanderRecettes()" id="btnRecommander"
-                        style="width:100%;padding:11px;background:#2e7d32;color:#fff;border:none;
-                               border-radius:8px;font-weight:700;font-size:0.9rem;cursor:pointer;
-                               display:flex;align-items:center;justify-content:center;gap:8px;
-                               transition:background .2s;">
-                        🤖 Trouver mes recettes
-                    </button>
-                </div>
-            </div>
-
-            <!-- Résultats IA -->
-            <div id="profilResultats" style="display:none;">
-                <!-- Analyse Gemini -->
-                <div id="profilAnalyse" style="background:#fff;border-radius:10px;padding:14px 18px;
-                     margin-bottom:16px;border-left:4px solid #6c3fc5;">
-                    <div style="font-size:0.8rem;font-weight:700;color:#6c3fc5;margin-bottom:6px;">
-                        🤖 Analyse IA de votre profil
-                    </div>
-                    <div id="profilAnalyseTexte" style="font-size:0.88rem;color:#444;line-height:1.6;"></div>
-                </div>
-
-                <!-- Recettes recommandées -->
-                <div style="font-size:0.85rem;font-weight:700;color:#1b5e20;margin-bottom:10px;">
-                    ✅ Recettes recommandées pour votre profil :
-                </div>
-                <div id="profilRecettes" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;"></div>
-            </div>
-
-            <!-- Loader -->
-            <div id="profilLoader" style="display:none;text-align:center;padding:16px;">
-                <div style="display:inline-flex;gap:5px;align-items:center;">
-                    <span style="width:8px;height:8px;background:#2e7d32;border-radius:50%;animation:bounce-p .8s infinite;"></span>
-                    <span style="width:8px;height:8px;background:#2e7d32;border-radius:50%;animation:bounce-p .8s .2s infinite;"></span>
-                    <span style="width:8px;height:8px;background:#2e7d32;border-radius:50%;animation:bounce-p .8s .4s infinite;"></span>
-                </div>
-                <div style="color:#2e7d32;font-weight:600;margin-top:6px;font-size:0.88rem;">
-                    L'IA analyse votre profil et sélectionne les meilleures recettes...
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<style>
-@keyframes bounce-p {
-    0%,60%,100% { transform:translateY(0); }
-    30%          { transform:translateY(-8px); }
-}
-</style>
 
 <!-- Filtres -->
 <div class="container-xxl py-3">
@@ -610,116 +514,6 @@ async function rechercherParIngredients(ingredients) {
     }
 }
 
-// ════════════════════════════════════════════════════════
-// RECOMMANDATION PERSONNALISÉE — Profil utilisateur + IA
-// ════════════════════════════════════════════════════════
-async function recommanderRecettes() {
-    const objectif = document.getElementById('profilObjectif').value;
-    const regime   = document.getElementById('profilRegime').value;
-    const activite = document.getElementById('profilActivite').value;
-
-    if (!objectif || !regime || !activite) {
-        alert('⚠️ Veuillez remplir les 3 champs de votre profil.');
-        return;
-    }
-
-    const btn = document.getElementById('btnRecommander');
-    btn.disabled = true;
-    btn.innerHTML = '⏳ Analyse en cours...';
-    document.getElementById('profilLoader').style.display    = 'block';
-    document.getElementById('profilResultats').style.display = 'none';
-
-    try {
-        const resp = await fetch('/2A35/Admin/Ai/recommander', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ profil: { objectif, regime, activite } })
-        });
-        const data = await resp.json();
-
-        document.getElementById('profilLoader').style.display = 'none';
-
-        if (data.error) {
-            alert('❌ ' + data.error);
-        } else {
-            // Masquer le conseil global — l'IA explique sur la page détail recette
-            document.getElementById('profilAnalyse').style.display = 'none';
-
-            // Sauvegarder le profil pour la page détail
-            sauvegarderProfil();
-
-            // Afficher les recettes filtrées par PHP
-            const container = document.getElementById('profilRecettes');
-            const statutCfg = {
-                'adapte':  { label: '✅ Adapté',      bg: '#e8f5e9', border: '#a5d6a7', color: '#2e7d32' },
-                'modere':  { label: '⚠️ Modéré',      bg: '#fff8e1', border: '#ffe082', color: '#f57c00' },
-                'non':     { label: '❌ Déconseillé', bg: '#ffebee', border: '#ef9a9a', color: '#c62828' },
-            };
-
-            container.innerHTML = data.recettes.map(item => {
-                const r   = item.recette;
-                const cfg = statutCfg[item.statut] || statutCfg.modere;
-
-                return `
-                <div style="background:#fff;border-radius:10px;overflow:hidden;
-                     border:2px solid ${cfg.border};box-shadow:0 2px 8px rgba(0,0,0,.06);">
-                    <div style="height:120px;overflow:hidden;position:relative;">
-                        ${r.image
-                            ? `<img src="/2A35/assets/uploads/recettes/${r.image}" style="width:100%;height:100%;object-fit:cover;" alt="">`
-                            : `<div style="width:100%;height:100%;background:linear-gradient(135deg,#2e7d32,#66bb6a);display:flex;align-items:center;justify-content:center;"><i class="fa fa-utensils fa-2x text-white opacity-75"></i></div>`
-                        }
-                        <div style="position:absolute;top:8px;right:8px;background:${cfg.color};
-                             color:#fff;border-radius:12px;padding:3px 10px;font-size:0.72rem;font-weight:800;">
-                            ${cfg.label}
-                        </div>
-                    </div>
-                    <div style="padding:10px 12px;">
-                        <div style="font-weight:800;font-size:0.88rem;color:#333;margin-bottom:8px;
-                             white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                            ${r.nom}
-                        </div>
-                        <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
-                            <span style="font-size:0.75rem;color:#666;"><i class="fa fa-clock text-primary me-1"></i>${r.duree} min</span>
-                            <span style="font-size:0.75rem;color:#666;"><i class="fa fa-fire text-danger me-1"></i>${r.calories} kcal</span>
-                        </div>
-                        <a href="/2A35/RecetteFront/detail/${r.id}"
-                           onclick="sauvegarderProfil()"
-                           style="display:block;text-align:center;background:#2e7d32;color:#fff;
-                                  border-radius:7px;padding:7px;font-size:0.82rem;font-weight:700;
-                                  text-decoration:none;">
-                            Voir la recette →
-                        </a>
-                    </div>
-                </div>`;
-            }).join('');
-
-            document.getElementById('profilResultats').style.display = 'block';
-            // Scroll vers les résultats
-            document.getElementById('profilResultats').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    } catch (e) {
-        document.getElementById('profilLoader').style.display = 'none';
-        alert('❌ Erreur serveur. Réessayez.');
-    }
-
-    btn.disabled = false;
-    btn.innerHTML = '🎯 Mon profil — Trouver mes recettes';
-}
-
-// ── Sauvegarder le profil dans sessionStorage pour la page détail ─────────────
-function sauvegarderProfil() {
-    const objectif = document.getElementById('profilObjectif')?.value || '';
-    const regime   = document.getElementById('profilRegime')?.value   || '';
-    const activite = document.getElementById('profilActivite')?.value || '';
-    if (objectif || regime || activite) {
-        sessionStorage.setItem('userProfil',  JSON.stringify({ objectif, regime, activite }));
-        sessionStorage.setItem('profilActif', 'true');
-    }
-}
-
-// Appeler sauvegarderProfil aussi quand on clique sur "Mon profil"
-document.getElementById('btnRecommander')?.addEventListener('click', sauvegarderProfil);
-
 // Animation pulsation microphone
 const styleEl = document.createElement('style');
 styleEl.textContent = `
@@ -734,14 +528,10 @@ window.addEventListener('load', function() {
     document.getElementById('barreEcoute').style.display  = 'none';
     document.getElementById('texteVoix').innerHTML        = '&nbsp;';
     document.getElementById('filtresDetectes').style.display = 'none';
-    // Vider le champ recherche si vide dans l'URL
     if (!new URLSearchParams(window.location.search).get('search')) {
         document.getElementById('searchFront').value = '';
     }
-    // Réinitialiser le flag profilActif à chaque chargement de la page liste
-    sessionStorage.removeItem('profilActif');
 });
-</script>
 </script>
 
 <?php include 'View/front/partials/footer.php'; ?>

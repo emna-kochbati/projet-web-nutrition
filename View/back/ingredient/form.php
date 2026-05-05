@@ -64,7 +64,7 @@ ob_start();
                     🤖 Remplir avec l'IA
                 </button>
             </div>
-            <!-- Bandeau résultat IA -->
+            <!-- Bandeau résultat IA / Open Food Facts -->
             <div id="aiNutriResult" style="display:none;margin-top:10px;padding:10px 14px;
                  background:#f5f0ff;border:1.5px solid #d4c5f9;border-radius:8px;
                  font-size:0.85rem;color:#6c3fc5;font-weight:600;">
@@ -276,6 +276,7 @@ function afficherResultatIA(msg, type) {
     div.style.cssText = 'display:block;margin-top:10px;padding:10px 14px;border-radius:8px;font-size:0.85rem;font-weight:600;border:1.5px solid;' + (styles[type] || styles.loading);
     div.innerHTML = msg;
 }
+
 </script>
 
 <?php $content = ob_get_clean(); require_once 'View/back/layout.php'; ?>
