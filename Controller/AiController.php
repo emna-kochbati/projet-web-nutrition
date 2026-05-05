@@ -489,6 +489,113 @@ class AiController {
     }
 
     // =========================================================================
+    // UNSPLASH — Génération d'image pour un INGRÉDIENT
+    // =========================================================================
+    public function genererImageIngredient(): void {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['error' => 'Méthode non autorisée.']); exit;
+        }
+
+        $body = json_decode(file_get_contents('php://input'), true);
+        $nom  = trim($body['nom'] ?? '');
+
+        if ($nom === '') {
+            echo json_encode(['error' => 'Nom de l\'ingrédient manquant.']); exit;
+        }
+
+        $accessKey = 'VOTRE_CLE_UNSPLASH_ICI';
+
+        // Traduire les noms français courants vers anglais pour Unsplash
+        $traductions = [
+            'raisin' => 'grape', 'pomme' => 'apple', 'poire' => 'pear',
+            'banane' => 'banana', 'fraise' => 'strawberry', 'cerise' => 'cherry',
+            'citron' => 'lemon', 'orange' => 'orange', 'mangue' => 'mango',
+            'ananas' => 'pineapple', 'peche' => 'peach', 'pêche' => 'peach',
+            'tomate' => 'tomato', 'carotte' => 'carrot', 'oignon' => 'onion',
+            'ail' => 'garlic', 'poivron' => 'bell pepper', 'courgette' => 'zucchini',
+            'aubergine' => 'eggplant', 'brocoli' => 'broccoli', 'epinard' => 'spinach',
+            'épinard' => 'spinach', 'laitue' => 'lettuce', 'concombre' => 'cucumber',
+            'poulet' => 'chicken', 'boeuf' => 'beef', 'bœuf' => 'beef',
+            'porc' => 'pork', 'agneau' => 'lamb', 'saumon' => 'salmon',
+            'thon' => 'tuna', 'crevette' => 'shrimp', 'oeuf' => 'egg', 'œuf' => 'egg',
+            'lait' => 'milk', 'fromage' => 'cheese', 'beurre' => 'butter',
+            'yaourt' => 'yogurt', 'creme' => 'cream', 'crème' => 'cream',
+            'farine' => 'flour', 'riz' => 'rice', 'pates' => 'pasta', 'pâtes' => 'pasta',
+            'pain' => 'bread', 'sucre' => 'sugar', 'sel' => 'salt',
+            'huile' => 'oil', 'vinaigre' => 'vinegar', 'miel' => 'honey',
+            'cannelle' => 'cinnamon', 'cumin' => 'cumin', 'paprika' => 'paprika',
+            'piment' => 'chili pepper', 'persil' => 'parsley', 'basilic' => 'basil',
+            'menthe' => 'mint', 'thym' => 'thyme', 'romarin' => 'rosemary',
+        ];
+        $nomRecherche = strtolower(trim($nom));
+        $nomAnglais   = $traductions[$nomRecherche] ?? $nom;
+
+        $query = urlencode($nomAnglais . ' fresh ingredient food isolated');
+        $page  = rand(1, 3);
+        $url       = 'https://api.unsplash.com/search/photos?query=' . $query
+                   . '&per_page=10&page=' . $page . '&orientation=squarish&client_id=' . $accessKey;
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_HTTPHEADER => ['Accept-Version: v1']]);
+        $result   = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200) {
+            // Fallback : utiliser Gemini pour décrire et Pollinations pour l'image
+            $prompt   = urlencode($nom . ' ingredient, food photography, isolated, white background');
+            $imageUrl = 'https://image.pollinations.ai/prompt/' . $prompt . '?width=400&height=400&nologo=true';
+            $ch2 = curl_init($imageUrl);
+            curl_setopt_array($ch2, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 30, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_FOLLOWLOCATION => true]);
+            $imageData2 = curl_exec($ch2);
+            curl_close($ch2);
+            if (!empty($imageData2) && strlen($imageData2) > 1000) {
+                $dir = 'assets/uploads/ingredients/';
+                if (!is_dir($dir)) mkdir($dir, 0755, true);
+                $fichier = 'gen_' . uniqid() . '.jpg';
+                file_put_contents($dir . $fichier, $imageData2);
+                echo json_encode(['fichier' => $fichier, 'auteur' => 'IA', 'source' => 'pollinations']); exit;
+            }
+            echo json_encode(['error' => 'Service image indisponible (code ' . $httpCode . '). Confirmez votre email Unsplash ou réessayez.']); exit;
+        }
+
+        $data    = json_decode($result, true);
+        $results = $data['results'] ?? [];
+
+        if (empty($results)) {
+            $urlFallback = 'https://api.unsplash.com/search/photos?query=fresh+ingredient+food&per_page=10&page=' . rand(1,5) . '&orientation=squarish&client_id=' . $accessKey;
+            $ch2 = curl_init($urlFallback);
+            curl_setopt_array($ch2, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_HTTPHEADER => ['Accept-Version: v1']]);
+            $r2      = json_decode(curl_exec($ch2), true);
+            curl_close($ch2);
+            $results = $r2['results'] ?? [];
+        }
+
+        if (empty($results)) { echo json_encode(['error' => 'Aucune photo trouvée.']); exit; }
+
+        $photo    = $results[array_rand($results)];
+        $imageUrl = $photo['urls']['regular'] ?? $photo['urls']['small'] ?? '';
+        $auteur   = $photo['user']['name'] ?? 'Unsplash';
+
+        $ch3 = curl_init($imageUrl);
+        curl_setopt_array($ch3, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_FOLLOWLOCATION => true]);
+        $imageData = curl_exec($ch3);
+        curl_close($ch3);
+
+        if (empty($imageData)) { echo json_encode(['error' => 'Impossible de télécharger l\'image.']); exit; }
+
+        $dir = 'assets/uploads/ingredients/';
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
+        $fichier = 'unsplash_' . uniqid() . '.jpg';
+        file_put_contents($dir . $fichier, $imageData);
+
+        echo json_encode(['fichier' => $fichier, 'auteur' => $auteur, 'source' => 'unsplash']);
+        exit;
+    }
+
+    // =========================================================================
     // UNSPLASH API — Recherche de photo pour une recette (gratuit, instantané)
     // Votre app → https://api.unsplash.com → photo professionnelle
     // =========================================================================
@@ -509,8 +616,20 @@ class AiController {
         // ── Clé Unsplash (gratuite sur unsplash.com/developers) ──────────────
         $accessKey = 'VOTRE_CLE_UNSPLASH_ICI';
 
-        // ── Appel à l'API Unsplash ────────────────────────────────────────────
-        $query = urlencode($nom . ' food recipe');
+        // Traduire les noms de recettes français → anglais pour Unsplash
+        $traductionsRecettes = [
+            'couscous' => 'couscous', 'pizza' => 'pizza', 'pates' => 'pasta',
+            'pâtes' => 'pasta', 'salade' => 'salad', 'soupe' => 'soup',
+            'poulet' => 'chicken dish', 'boeuf' => 'beef dish', 'poisson' => 'fish dish',
+            'gateau' => 'cake', 'gâteau' => 'cake', 'tarte' => 'tart',
+            'quiche' => 'quiche', 'omelette' => 'omelette', 'crepe' => 'crepe',
+            'crêpe' => 'crepe', 'risotto' => 'risotto', 'tajine' => 'tagine',
+            'burger' => 'burger', 'sandwich' => 'sandwich', 'sushi' => 'sushi',
+        ];
+        $nomLower     = strtolower(trim($nom));
+        $nomRecherche = $traductionsRecettes[$nomLower] ?? $nom;
+
+        $query = urlencode($nomRecherche . ' food recipe dish');
         $page  = rand(1, 3); // Page aléatoire pour varier les résultats
         $url   = 'https://api.unsplash.com/search/photos?query=' . $query
                . '&per_page=10&page=' . $page . '&orientation=landscape&client_id=' . $accessKey;
@@ -532,7 +651,21 @@ class AiController {
             echo json_encode(['error' => 'Erreur réseau : ' . $curlErr]); exit;
         }
         if ($httpCode !== 200) {
-            echo json_encode(['error' => 'Unsplash indisponible (code ' . $httpCode . ').']); exit;
+            // Fallback Pollinations si Unsplash indisponible
+            $prompt   = urlencode($nom . ', food photography, professional, appetizing');
+            $imgUrl   = 'https://image.pollinations.ai/prompt/' . $prompt . '?width=800&height=600&nologo=true';
+            $ch2 = curl_init($imgUrl);
+            curl_setopt_array($ch2, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 30, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_FOLLOWLOCATION => true]);
+            $imgData = curl_exec($ch2);
+            curl_close($ch2);
+            if (!empty($imgData) && strlen($imgData) > 1000) {
+                $dir = 'assets/uploads/recettes/';
+                if (!is_dir($dir)) mkdir($dir, 0755, true);
+                $fichier = 'gen_' . uniqid() . '.jpg';
+                file_put_contents($dir . $fichier, $imgData);
+                echo json_encode(['fichier' => $fichier, 'auteur' => 'IA', 'source' => 'pollinations']); exit;
+            }
+            echo json_encode(['error' => 'Service image indisponible (code ' . $httpCode . '). Confirmez votre email Unsplash.']); exit;
         }
 
         $data    = json_decode($result, true);

@@ -130,6 +130,59 @@ ob_start();
                     <p>Image actuelle — laisser vide pour la conserver.</p>
                 </div>
             <?php endif; ?>
+
+            <!-- Bouton génération image Unsplash -->
+            <div style="margin-top:10px;">
+                <button type="button" id="btnGenImageIng" onclick="genererImageIngredient()"
+                    style="background:linear-gradient(135deg,#e65100,#ff6d00);color:#fff;border:none;
+                           border-radius:7px;padding:10px 18px;cursor:pointer;font-weight:700;
+                           font-size:0.88rem;display:inline-flex;align-items:center;gap:8px;
+                           transition:all .2s;box-shadow:0 2px 8px rgba(230,81,0,.3);">
+                    🎨 Générer une image
+                </button>
+            </div>
+
+            <!-- Aperçu image générée -->
+            <div id="imageIngPreview" style="display:none;margin-top:14px;padding:14px;
+                 background:#fff8f0;border:2px solid #ffcc80;border-radius:10px;">
+                <div style="font-size:0.82rem;font-weight:700;color:#e65100;margin-bottom:10px;">
+                    🎨 Image trouvée via Unsplash API
+                </div>
+                <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
+                    <img id="imageIngImg" src="" alt="Image générée"
+                         style="width:120px;height:120px;object-fit:cover;border-radius:8px;
+                                border:2px solid #ffcc80;display:none;">
+                    <div id="imageIngLoader" style="width:120px;height:120px;background:#f5f5f5;
+                         border-radius:8px;display:flex;align-items:center;justify-content:center;
+                         flex-direction:column;gap:8px;border:2px solid #e0e0e0;">
+                        <div style="display:flex;gap:4px;">
+                            <span style="width:8px;height:8px;background:#ff6d00;border-radius:50%;animation:bounce-img .8s infinite;"></span>
+                            <span style="width:8px;height:8px;background:#ff6d00;border-radius:50%;animation:bounce-img .8s .2s infinite;"></span>
+                            <span style="width:8px;height:8px;background:#ff6d00;border-radius:50%;animation:bounce-img .8s .4s infinite;"></span>
+                        </div>
+                        <span style="font-size:0.75rem;color:#888;">Recherche...</span>
+                    </div>
+                    <div style="flex:1;min-width:150px;">
+                        <div id="imageIngNom" style="font-weight:700;color:#333;font-size:0.88rem;margin-bottom:8px;"></div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <button type="button" id="btnUtiliserImageIng" onclick="utiliserImageIngredient()"
+                                style="background:#2e7d32;color:#fff;border:none;border-radius:6px;
+                                       padding:8px 14px;cursor:pointer;font-weight:700;font-size:0.82rem;">
+                                ✅ Utiliser cette image
+                            </button>
+                            <button type="button" onclick="genererImageIngredient()"
+                                style="background:#e0e0e0;color:#333;border:none;border-radius:6px;
+                                       padding:8px 14px;cursor:pointer;font-weight:600;font-size:0.82rem;">
+                                🔄 Régénérer
+                            </button>
+                        </div>
+                        <div id="imageIngStatut" style="margin-top:8px;font-size:0.78rem;color:#888;"></div>
+                    </div>
+                </div>
+            </div>
+            <!-- Champ caché pour l'image générée -->
+            <input type="hidden" id="imageIngGenereeNom" name="image_generee" value="">
+        </div>
         </div>
 
         <div class="form-actions">
@@ -276,6 +329,91 @@ function afficherResultatIA(msg, type) {
     div.innerHTML = msg;
 }
 
+// ════════════════════════════════════════════════════════
+// GÉNÉRATION D'IMAGE INGRÉDIENT — Unsplash API
+// ════════════════════════════════════════════════════════
+let imageIngGenereeUrl = null;
+
+async function genererImageIngredient() {
+    const nom = document.getElementById('nom').value.trim();
+    if (!nom || nom.length < 2) {
+        alert('⚠️ Saisissez d\'abord le nom de l\'ingrédient.');
+        return;
+    }
+
+    const btn = document.getElementById('btnGenImageIng');
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Recherche...';
+
+    document.getElementById('imageIngPreview').style.display = 'block';
+    document.getElementById('imageIngLoader').style.display  = 'flex';
+    document.getElementById('imageIngImg').style.display     = 'none';
+    document.getElementById('imageIngNom').textContent       = '"' + nom + '"';
+    document.getElementById('imageIngStatut').textContent    = 'Recherche d\'une photo sur Unsplash...';
+
+    // Réinitialiser le bouton Utiliser
+    const btnUtiliser = document.getElementById('btnUtiliserImageIng');
+    btnUtiliser.textContent = '✅ Utiliser cette image';
+    btnUtiliser.style.background = '#2e7d32';
+    btnUtiliser.disabled = false;
+    btnUtiliser.style.display = 'none';
+    document.getElementById('imageIngGenereeNom').value = '';
+    imageIngGenereeUrl = null;
+
+    document.getElementById('imageIngPreview').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    try {
+        const controller = new AbortController();
+        const timeoutId  = setTimeout(() => controller.abort(), 15000);
+
+        const resp = await fetch('/2A35/Admin/Ai/genererImageIngredient', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nom: nom }),
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        const data = await resp.json();
+
+        if (data.error) {
+            document.getElementById('imageIngStatut').textContent = '❌ ' + data.error;
+            document.getElementById('imageIngLoader').style.display = 'none';
+        } else {
+            const img = document.getElementById('imageIngImg');
+            img.src = '/2A35/assets/uploads/ingredients/' + data.fichier;
+            img.style.display = 'block';
+            document.getElementById('imageIngLoader').style.display = 'none';
+            const source = '📷 Photo Unsplash par ' + (data.auteur || 'Unsplash');
+            document.getElementById('imageIngStatut').textContent = '✅ ' + source;
+            document.getElementById('btnUtiliserImageIng').style.display = 'inline-block';
+            imageIngGenereeUrl = data.fichier;
+        }
+    } catch (e) {
+        document.getElementById('imageIngStatut').textContent = '❌ Erreur. Réessayez.';
+        document.getElementById('imageIngLoader').style.display = 'none';
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '🎨 Générer une image';
+}
+
+function utiliserImageIngredient() {
+    if (!imageIngGenereeUrl) return;
+    document.getElementById('imageIngGenereeNom').value = imageIngGenereeUrl;
+    document.getElementById('imageIngStatut').textContent = '✅ Image sélectionnée !';
+    document.getElementById('btnUtiliserImageIng').textContent = '✅ Image sélectionnée';
+    document.getElementById('btnUtiliserImageIng').style.background = '#1b5e20';
+    document.getElementById('btnUtiliserImageIng').disabled = true;
+}
+
+// Animation loader
+if (!document.getElementById('ing-anim-style')) {
+    const s = document.createElement('style');
+    s.id = 'ing-anim-style';
+    s.textContent = `@keyframes bounce-img { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }`;
+    document.head.appendChild(s);
+}
 </script>
 
 <?php $content = ob_get_clean(); require_once 'View/back/layout.php'; ?>
