@@ -1,5 +1,6 @@
 .env
 config.php
+database.sql
 scratch/
 assets/img/*
 !assets/img/.gitkeep

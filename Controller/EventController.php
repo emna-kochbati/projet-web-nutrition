@@ -165,9 +165,46 @@ class EventController {
     }
 
     public function register($id) {
-        $this->decrementAvailablePlaces($id);
+        $event = $this->getById($id);
+        if ($event) {
+            // LOGIQUE MÉTIER : Vérifier si l'inscription est possible via les méthodes du contrôleur
+            if ($this->hasAvailablePlaces($event) && !$this->isPast($event)) {
+                $this->decrementAvailablePlaces($id);
+            }
+        }
+        
         header('Location: /2A35/Event');
         exit;
+    }
+
+    /* --- LOGIQUE MÉTIER (Déplacée du Modèle) --- */
+
+    public function hasAvailablePlaces(array $event): bool {
+        return (int)$event['number_of_participants'] > 0;
+    }
+
+    public function isPast(array $event): bool {
+        return strtotime($event['date']) < strtotime('today');
+    }
+
+    public function getStatusLabel(array $event): string {
+        if ($this->isPast($event)) {
+            return "Terminé";
+        }
+        if (!$this->hasAvailablePlaces($event)) {
+            return "Complet";
+        }
+        if ((int)$event['number_of_participants'] <= 5) {
+            return "Dernières places !";
+        }
+        return "Ouvert";
+    }
+
+    public function getStatusColor(array $event): string {
+        if ($this->isPast($event)) return "secondary";
+        if (!$this->hasAvailablePlaces($event)) return "danger";
+        if ((int)$event['number_of_participants'] <= 5) return "warning";
+        return "success";
     }
 
     private function callGemini($prompt) {

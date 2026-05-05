@@ -42,9 +42,25 @@ $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_
                     </div>
                 </div>
                 
+                <?php 
+                    $statusLabel = $this->getStatusLabel($event);
+                    $statusColor = $this->getStatusColor($event);
+                    $canRegister = $this->hasAvailablePlaces($event) && !$this->isPast($event);
+                ?>
+                <div class="mb-3">
+                    <span class="badge bg-<?= $statusColor ?>" style="border-radius: 5px; font-size: 0.85rem;">
+                        <i class="fa <?= $this->isPast($event) ? 'fa-history' : ($this->hasAvailablePlaces($event) ? 'fa-check' : 'fa-times-circle') ?> me-1"></i>
+                        <?= $statusLabel ?>
+                    </span>
+                </div>
+
                 <div class="d-flex gap-2">
                     <a class="btn btn-outline-primary py-2 px-3 flex-grow-1" href="/2A35/Event/show/<?= $event['id'] ?>" style="border-radius: 5px; font-weight: bold;">Details</a>
-                    <a class="btn btn-primary py-2 px-3 flex-grow-1" href="/2A35/Event/register/<?= $event['id'] ?>" style="border-radius: 5px; font-weight: bold;">Register</a>
+                    <?php if ($canRegister): ?>
+                        <a class="btn btn-primary py-2 px-3 flex-grow-1" href="/2A35/Event/register/<?= $event['id'] ?>" style="border-radius: 5px; font-weight: bold;">Register</a>
+                    <?php else: ?>
+                        <button class="btn btn-secondary py-2 px-3 flex-grow-1 disabled" style="border-radius: 5px; font-weight: bold; cursor: not-allowed;">Full/Closed</button>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

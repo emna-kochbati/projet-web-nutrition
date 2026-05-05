@@ -8,6 +8,13 @@
         <div class="d-flex justify-content-center gap-3">
             <span class="badge bg-primary px-3 py-2" style="border-radius: 20px;"><i class="fa fa-tag me-2"></i><?= htmlspecialchars($event['type_label']) ?></span>
             <span class="badge bg-light text-dark px-3 py-2" style="border-radius: 20px;"><i class="fa fa-map-marker-alt me-2 text-primary"></i><?= htmlspecialchars($event['location']) ?></span>
+            <?php 
+                $statusColor = $this->getStatusColor($event);
+                $statusLabel = $this->getStatusLabel($event);
+            ?>
+            <span class="badge bg-<?= $statusColor ?> px-3 py-2" style="border-radius: 20px;">
+                <i class="fa <?= $this->isPast($event) ? 'fa-history' : 'fa-info-circle' ?> me-2"></i><?= $statusLabel ?>
+            </span>
         </div>
     </div>
 </div>
@@ -93,9 +100,18 @@
                         <p class="text-muted">Limited places available for this event. Register now to participate!</p>
                     </div>
                     
-                    <a href="/2A35/Event/register/<?= $event['id'] ?>" class="btn btn-primary w-100 py-3 mb-3" style="border-radius: 10px; font-weight: 700; font-size: 1.1rem;">
-                        <i class="fa fa-check-circle me-2"></i>Register for Event
-                    </a>
+                    <?php 
+                        $canRegister = $this->hasAvailablePlaces($event) && !$this->isPast($event);
+                    ?>
+                    <?php if ($canRegister): ?>
+                        <a href="/2A35/Event/register/<?= $event['id'] ?>" class="btn btn-primary w-100 py-3 mb-3" style="border-radius: 10px; font-weight: 700; font-size: 1.1rem;">
+                            <i class="fa fa-check-circle me-2"></i>Register for Event
+                        </a>
+                    <?php else: ?>
+                        <button class="btn btn-secondary w-100 py-3 mb-3 disabled" style="border-radius: 10px; font-weight: 700; font-size: 1.1rem; cursor: not-allowed;">
+                            <i class="fa fa-times-circle me-2"></i>Registration Closed
+                        </button>
+                    <?php endif; ?>
                     
                     <button class="btn btn-outline-secondary w-100 py-2" style="border-radius: 10px;">
                         <i class="fa fa-share-alt me-2"></i>Share Event
