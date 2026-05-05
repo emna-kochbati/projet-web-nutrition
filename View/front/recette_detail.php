@@ -187,14 +187,6 @@
                 <a href="/2A35/RecetteFront" class="btn btn-outline-secondary">
                     <i class="fa fa-arrow-left me-2"></i>Retour aux recettes
                 </a>
-                <!-- Bouton Analyse IA -->
-                <button type="button" id="btnAnalyseIA" onclick="analyserRecette()"
-                    style="background:linear-gradient(135deg,#6c3fc5,#8b5cf6);color:#fff;border:none;
-                           border-radius:8px;padding:10px 22px;cursor:pointer;font-weight:700;
-                           font-size:0.95rem;display:flex;align-items:center;gap:8px;
-                           box-shadow:0 4px 14px rgba(108,63,197,.3);transition:all .2s;">
-                    🤖 Analyser avec l'IA
-                </button>
             </div>
 
             <!-- Panneau d'analyse IA -->
@@ -259,6 +251,99 @@
     </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════════
+     CHATBOT FLOTTANT — Assistant Nutrition
+     ══════════════════════════════════════════════════════ -->
+
+<!-- Icône flottante -->
+<button id="chatbotToggle" onclick="toggleChatbot()"
+    style="position:fixed;bottom:28px;right:28px;width:60px;height:60px;
+           background:linear-gradient(135deg,#6c3fc5,#8b5cf6);color:#fff;
+           border:none;border-radius:50%;cursor:pointer;font-size:1.6rem;
+           box-shadow:0 6px 20px rgba(108,63,197,.45);z-index:9999;
+           transition:all .3s;display:flex;align-items:center;justify-content:center;">
+    🤖
+</button>
+
+<!-- Bulle indicateur -->
+<div id="chatbotBulle" style="position:fixed;bottom:88px;right:28px;
+     background:#6c3fc5;color:#fff;border-radius:20px;padding:6px 14px;
+     font-size:0.78rem;font-weight:700;z-index:9998;
+     box-shadow:0 4px 12px rgba(108,63,197,.4);white-space:nowrap;">
+    💬 Posez vos questions sur cette recette !
+</div>
+
+<!-- Fenêtre chatbot -->
+<div id="chatbotWindow" style="display:none;position:fixed;bottom:100px;right:28px;
+     width:360px;height:520px;background:#fff;border-radius:16px;
+     box-shadow:0 8px 40px rgba(108,63,197,.25);border:2px solid #e0d4ff;
+     z-index:9997;display:none;flex-direction:column;overflow:hidden;">
+
+    <!-- En-tête -->
+    <div style="background:linear-gradient(135deg,#6c3fc5,#8b5cf6);padding:14px 18px;
+         display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;background:rgba(255,255,255,.2);border-radius:50%;
+                 display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🤖</div>
+            <div>
+                <div style="color:#fff;font-weight:800;font-size:0.95rem;">Assistant Nutrition</div>
+                <div style="color:rgba(255,255,255,.8);font-size:0.72rem;"><?= htmlspecialchars($recette['nom']) ?></div>
+            </div>
+        </div>
+        <button onclick="toggleChatbot()"
+            style="background:rgba(255,255,255,.2);border:none;color:#fff;
+                   border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:1rem;">✕</button>
+    </div>
+
+    <!-- Messages -->
+    <div id="chatMessages" style="flex:1;overflow-y:auto;padding:14px;
+         display:flex;flex-direction:column;gap:10px;background:#faf8ff;">
+        <!-- Message de bienvenue -->
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+            <div style="width:28px;height:28px;background:#e0d4ff;border-radius:50%;
+                 display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;">🤖</div>
+            <div style="background:#fff;border:1px solid #e0d4ff;border-radius:4px 12px 12px 12px;
+                 padding:10px 14px;font-size:0.85rem;color:#333;line-height:1.5;max-width:85%;">
+                Bonjour ! Je suis votre assistant nutrition pour <strong><?= htmlspecialchars($recette['nom']) ?></strong>.<br><br>
+                Posez-moi vos questions, par exemple :<br>
+                • <em>Est-ce adapté aux diabétiques ?</em><br>
+                • <em>Combien de calories pour 2 portions ?</em><br>
+                • <em>Est-ce bon pour perdre du poids ?</em>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div style="padding:8px 12px;border-top:1px solid #f0e8ff;background:#faf8ff;
+         display:flex;flex-wrap:wrap;gap:6px;">
+        <button onclick="envoyerQuestion('Est-ce adapté aux diabétiques ?')"
+            style="background:#fff;border:1.5px solid #d4c5f9;color:#6c3fc5;border-radius:16px;
+                   padding:4px 10px;cursor:pointer;font-size:0.75rem;font-weight:600;">🩺 Diabétiques</button>
+        <button onclick="envoyerQuestion('Est-ce bon pour perdre du poids ?')"
+            style="background:#fff;border:1.5px solid #d4c5f9;color:#6c3fc5;border-radius:16px;
+                   padding:4px 10px;cursor:pointer;font-size:0.75rem;font-weight:600;">⚖️ Perte de poids</button>
+        <button onclick="envoyerQuestion('Quels sont les bienfaits nutritionnels de cette recette ?')"
+            style="background:#fff;border:1.5px solid #d4c5f9;color:#6c3fc5;border-radius:16px;
+                   padding:4px 10px;cursor:pointer;font-size:0.75rem;font-weight:600;">💪 Bienfaits</button>
+        <button onclick="envoyerQuestion('Comment améliorer cette recette pour la rendre plus saine ?')"
+            style="background:#fff;border:1.5px solid #d4c5f9;color:#6c3fc5;border-radius:16px;
+                   padding:4px 10px;cursor:pointer;font-size:0.75rem;font-weight:600;">🔧 Améliorer</button>
+    </div>
+
+    <!-- Zone de saisie -->
+    <div style="padding:10px 12px;border-top:2px solid #f0e8ff;background:#fff;
+         display:flex;gap:8px;align-items:center;">
+        <input type="text" id="chatInput" placeholder="Votre question..."
+            style="flex:1;padding:9px 14px;border:2px solid #e0d4ff;border-radius:20px;
+                   font-size:0.85rem;outline:none;font-family:inherit;"
+            onkeydown="if(event.key==='Enter') envoyerQuestion()">
+        <button onclick="envoyerQuestion()" id="chatSendBtn"
+            style="width:38px;height:38px;background:#6c3fc5;color:#fff;border:none;
+                   border-radius:50%;cursor:pointer;font-size:1rem;flex-shrink:0;
+                   display:flex;align-items:center;justify-content:center;">➤</button>
+    </div>
+</div>
+
 <?php include 'View/front/partials/footer.php'; ?>
 
 <style>
@@ -266,163 +351,119 @@
     0%,60%,100% { transform:translateY(0); }
     30%          { transform:translateY(-8px); }
 }
+@keyframes clignote-vert   { 0%,100%{box-shadow:0 0 0 0 rgba(46,125,50,0);}   50%{box-shadow:0 0 10px 4px rgba(46,125,50,.4);} }
+@keyframes clignote-orange { 0%,100%{box-shadow:0 0 0 0 rgba(245,124,0,0);}   50%{box-shadow:0 0 10px 4px rgba(245,124,0,.4);} }
+@keyframes clignote-rouge  { 0%,100%{box-shadow:0 0 0 0 rgba(198,40,40,0);}   50%{box-shadow:0 0 10px 4px rgba(198,40,40,.4);} }
+#chatMessages::-webkit-scrollbar { width:4px; }
+#chatMessages::-webkit-scrollbar-thumb { background:#d4c5f9; border-radius:4px; }
 </style>
 
 <script>
-// Données de la recette passées au JS
+// Données de la recette
 const recetteData = {
     id:          <?= (int)$recette['id'] ?>,
     nom:         <?= json_encode($recette['nom']) ?>,
     calories:    <?= (int)$recette['calories'] ?>,
     ingredients: <?= json_encode(array_map(fn($i) => $i['nom'], $ingredients ?? [])) ?>,
 };
+const userProfil  = JSON.parse(sessionStorage.getItem('userProfil') || '{}');
+const profilActif = sessionStorage.getItem('profilActif') === 'true';
 
-// Récupérer le profil sauvegardé depuis la page liste
-const userProfil    = JSON.parse(sessionStorage.getItem('userProfil')    || '{}');
-const profilActif   = sessionStorage.getItem('profilActif') === 'true';
+// ── Toggle chatbot ────────────────────────────────────────────────────────────
+function toggleChatbot() {
+    const win   = document.getElementById('chatbotWindow');
+    const bulle = document.getElementById('chatbotBulle');
+    const isOpen = win.style.display === 'flex';
+    win.style.display   = isOpen ? 'none' : 'flex';
+    bulle.style.display = isOpen ? 'block' : 'none';
+    if (!isOpen) document.getElementById('chatInput').focus();
+}
 
-async function analyserRecette() {
-    const btn = document.getElementById('btnAnalyseIA');
-    const panneau = document.getElementById('panneauIA');
+// Masquer la bulle après 4 secondes
+setTimeout(() => {
+    const b = document.getElementById('chatbotBulle');
+    if (b) b.style.opacity = '0';
+    setTimeout(() => { if (b) b.style.display = 'none'; }, 500);
+}, 4000);
 
-    panneau.style.display = 'block';
-    document.getElementById('iaLoading').style.display  = 'block';
-    document.getElementById('iaResultats').style.display = 'none';
-    document.getElementById('iaErreur').style.display   = 'none';
+// ── Ajouter une bulle dans le chat ────────────────────────────────────────────
+function ajouterMessage(role, html) {
+    const msgs = document.getElementById('chatMessages');
+    const div  = document.createElement('div');
+    div.style.cssText = 'display:flex;gap:8px;align-items:flex-start;' + (role === 'user' ? 'flex-direction:row-reverse;' : '');
 
-    btn.disabled = true;
-    btn.innerHTML = '⏳ Analyse en cours...';
-    panneau.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const avatar = role === 'user'
+        ? '<div style="width:28px;height:28px;background:#e8f5e9;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;">👤</div>'
+        : '<div style="width:28px;height:28px;background:#e0d4ff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;">🤖</div>';
+
+    const bubble = role === 'user'
+        ? `<div style="background:#6c3fc5;color:#fff;border-radius:12px 4px 12px 12px;padding:10px 14px;font-size:0.85rem;line-height:1.5;max-width:85%;">${html}</div>`
+        : `<div style="background:#fff;border:1px solid #e0d4ff;border-radius:4px 12px 12px 12px;padding:10px 14px;font-size:0.85rem;color:#333;line-height:1.5;max-width:85%;">${html}</div>`;
+
+    div.innerHTML = avatar + bubble;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ── Indicateur de frappe ──────────────────────────────────────────────────────
+function afficherTyping() {
+    const msgs = document.getElementById('chatMessages');
+    const div  = document.createElement('div');
+    div.id = 'typingMsg';
+    div.style.cssText = 'display:flex;gap:8px;align-items:flex-start;';
+    div.innerHTML = `
+        <div style="width:28px;height:28px;background:#e0d4ff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;">🤖</div>
+        <div style="background:#fff;border:1px solid #e0d4ff;border-radius:4px 12px 12px 12px;padding:10px 14px;">
+            <div style="display:flex;gap:4px;">
+                <span style="width:7px;height:7px;background:#c4b5fd;border-radius:50%;animation:bounce-ia .8s infinite;"></span>
+                <span style="width:7px;height:7px;background:#c4b5fd;border-radius:50%;animation:bounce-ia .8s .2s infinite;"></span>
+                <span style="width:7px;height:7px;background:#c4b5fd;border-radius:50%;animation:bounce-ia .8s .4s infinite;"></span>
+            </div>
+        </div>`;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+}
+function supprimerTyping() { document.getElementById('typingMsg')?.remove(); }
+
+// ── Envoyer une question ──────────────────────────────────────────────────────
+async function envoyerQuestion(questionForce) {
+    const input = document.getElementById('chatInput');
+    const question = questionForce || input.value.trim();
+    if (!question) return;
+
+    ajouterMessage('user', escHtml(question));
+    input.value = '';
+    document.getElementById('chatSendBtn').disabled = true;
+    afficherTyping();
 
     try {
-        const resp = await fetch('/2A35/Admin/Ai/analyser', {
+        const resp = await fetch('/2A35/Admin/Ai/chatRecette', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            // Envoyer la recette + le profil utilisateur si disponible
-            body: JSON.stringify({ recette: recetteData, profil: userProfil })
+            body: JSON.stringify({
+                question: question,
+                recette:  recetteData,
+                profil:   userProfil
+            })
         });
-
         const data = await resp.json();
-
-        document.getElementById('iaLoading').style.display = 'none';
+        supprimerTyping();
 
         if (data.error) {
-            document.getElementById('iaErreur').style.display = 'block';
-            document.getElementById('iaErreur').textContent   = '❌ ' + data.error;
+            ajouterMessage('bot', '❌ ' + escHtml(data.error));
         } else {
-            document.getElementById('iaResultats').style.display = 'block';
-
-            // ── Source + badge profil utilisateur ────────────────────────────
-            const p = userProfil;
-            const labelsP = {
-                objectif: {'perte-poids':'Perte de poids','prise-masse':'Prise de masse','maintien':'Maintien du poids'},
-                regime:   {'diabetique':'Diabétique','vegetarien':'Végétarien','sportif':'Sportif','normal':'Normal'},
-                activite: {'sedentaire':'Sédentaire','modere':'Modéré','sportif':'Sportif intensif'},
-            };
-            const srcLabel = data.source === 'gemini'
-                ? '🤖 <strong style="color:#6c3fc5;">Analyse par Google Gemini IA</strong>'
-                : '⚙️ Analyse locale';
-            let profilBadge = '';
-            if ((p.objectif || p.regime || p.activite) && profilActif) {
-                profilBadge = `<div style="margin-bottom:8px;padding:6px 12px;background:#f0fdf4;
-                    border-radius:8px;border:1px solid #a5d6a7;font-size:0.78rem;color:#2e7d32;font-weight:600;">
-                    🎯 Analyse selon votre profil :
-                    ${p.objectif ? ' ⚖️ '+(labelsP.objectif[p.objectif]||p.objectif) : ''}
-                    ${p.regime && p.regime!=='normal' ? ' · 🩺 '+(labelsP.regime[p.regime]||p.regime) : ''}
-                    ${p.activite ? ' · 🏃 '+(labelsP.activite[p.activite]||p.activite) : ''}
-                </div>`;
-            }
-            document.getElementById('sourceLabel').innerHTML = profilBadge + srcLabel;
-
-            // ── Badges : profil utilisateur OU profils génériques ────────────
-            const statutStyles = {
-                adapte: { bg:'#e8f5e9', color:'#2e7d32', border:'#a5d6a7', txt:'✅ Adapté',       anim:'clignote-vert' },
-                modere: { bg:'#fff8e1', color:'#f57c00', border:'#ffe082', txt:'⚠️ Modéré',       anim:'clignote-orange' },
-                non:    { bg:'#ffebee', color:'#c62828', border:'#ef9a9a', txt:'❌ Déconseillé',  anim:'clignote-rouge' },
-            };
-
-            // Injecter les animations CSS
-            if (!document.getElementById('badge-anim-style')) {
-                const s = document.createElement('style');
-                s.id = 'badge-anim-style';
-                s.textContent = `
-                    @keyframes clignote-vert   { 0%,100%{box-shadow:0 0 0 0 rgba(46,125,50,0);}   50%{box-shadow:0 0 10px 4px rgba(46,125,50,.4);} }
-                    @keyframes clignote-orange { 0%,100%{box-shadow:0 0 0 0 rgba(245,124,0,0);}   50%{box-shadow:0 0 10px 4px rgba(245,124,0,.4);} }
-                    @keyframes clignote-rouge  { 0%,100%{box-shadow:0 0 0 0 rgba(198,40,40,0);}   50%{box-shadow:0 0 10px 4px rgba(198,40,40,.4);} }
-                `;
-                document.head.appendChild(s);
-            }
-
-            const container = document.getElementById('profilsBadges');
-            container.innerHTML = '';
-
-            function creerBadge(icon, label, statut) {
-                const st = statutStyles[statut] || statutStyles.modere;
-                return `<div style="background:${st.bg};border:2px solid ${st.border};
-                     border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:10px;
-                     min-width:150px;animation:${st.anim} 1.5s ease-in-out infinite;">
-                    <span style="font-size:1.4rem;">${icon}</span>
-                    <div>
-                        <div style="font-weight:700;color:#333;font-size:0.85rem;">${label}</div>
-                        <div style="font-weight:800;color:${st.color};font-size:0.88rem;">${st.txt}</div>
-                    </div>
-                </div>`;
-            }
-
-            if (p.regime && p.regime !== 'normal' && profilActif) {
-                // ── CAS 1 : Profil avec régime → afficher SEULEMENT le régime ─
-                const regimeIcons = {
-                    'diabetique':'🩺','vegetarien':'🥦','sportif':'💪','normal':'🍽️'
-                };
-                const regimeLabels = {
-                    'diabetique':'Diabétique','vegetarien':'Végétarien',
-                    'sportif':'Sportif','normal':'Normal'
-                };
-                // Calculer le statut pour ce régime
-                let statut = 'modere';
-                if (p.regime === 'diabetique' && data.profils.diabetique)   statut = data.profils.diabetique.statut;
-                else if (p.regime === 'vegetarien' && data.profils.vegetarien) statut = data.profils.vegetarien.statut;
-                else if (p.regime === 'sportif' && data.profils.sportif)    statut = data.profils.sportif.statut;
-                else if (p.regime === 'normal' && data.profils.normal)      statut = data.profils.normal.statut;
-
-                container.innerHTML = creerBadge(
-                    regimeIcons[p.regime] || '🩺',
-                    regimeLabels[p.regime] || p.regime,
-                    statut
-                );            } else {
-                // ── CAS 2 : Pas de profil → afficher TOUS les types avec clignotement
-                const tousTypes = [
-                    { key:'diabetique', icon:'🩺', label:'Diabétique' },
-                    { key:'sportif',    icon:'💪', label:'Sportif' },
-                    { key:'vegetarien', icon:'🥦', label:'Végétarien' },
-                    { key:'normal',     icon:'🍽️', label:'Normal' },
-                ];
-                tousTypes.forEach(t => {
-                    const statut = data.profils[t.key]?.statut || 'modere';
-                    container.innerHTML += creerBadge(t.icon, t.label, statut);
-                });
-            }
-
-            // ── Analyse structurée en points ──────────────────────────────────
-            document.getElementById('analyseTexte').innerHTML =
-                data.analyse
-                    .replace(/✅ COMPATIBILITÉ AVEC VOTRE PROFIL/gi,
-                        '<div style="font-weight:800;color:#2e7d32;font-size:0.9rem;margin:12px 0 6px;">✅ Compatibilité avec votre profil</div>')
-                    .replace(/💡 CONSEILS PERSONNALISÉS/gi,
-                        '<div style="font-weight:800;color:#f57c00;font-size:0.9rem;margin:12px 0 6px;">💡 Conseils personnalisés</div>')
-                    .replace(/🔧 AMÉLIORATIONS SUGGÉRÉES/gi,
-                        '<div style="font-weight:800;color:#6c3fc5;font-size:0.9rem;margin:12px 0 6px;">🔧 Améliorations suggérées</div>')
-                    .replace(/\n• /g, '</p><p style="margin:4px 0;padding-left:12px;border-left:3px solid #e0d4ff;">• ')
-                    .replace(/^• /,   '<p style="margin:4px 0;padding-left:12px;border-left:3px solid #e0d4ff;">• ')
-                    .replace(/\n/g, '<br>') + '</p>';
+            ajouterMessage('bot', data.reponse.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'));
         }
     } catch (e) {
-        document.getElementById('iaLoading').style.display = 'none';
-        document.getElementById('iaErreur').style.display  = 'block';
-        document.getElementById('iaErreur').textContent    = '❌ Erreur de connexion. Réessayez.';
+        supprimerTyping();
+        ajouterMessage('bot', '❌ Erreur de connexion. Réessayez.');
     }
 
-    btn.disabled = false;
-    btn.innerHTML = '🤖 Analyser avec l\'IA';
+    document.getElementById('chatSendBtn').disabled = false;
+    input.focus();
+}
+
+function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 </script>

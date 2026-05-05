@@ -489,6 +489,114 @@ class AiController {
     }
 
     // =========================================================================
+    // CHATBOT RECETTE — Questions libres sur une recette (Gemini)
+    // =========================================================================
+    public function chatRecette(): void {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['error' => 'Méthode non autorisée.']); exit;
+        }
+
+        $body     = json_decode(file_get_contents('php://input'), true);
+        $question = trim($body['question'] ?? '');
+        $recette  = $body['recette']  ?? [];
+        $profil   = $body['profil']   ?? [];
+
+        if ($question === '') {
+            echo json_encode(['error' => 'Question vide.']); exit;
+        }
+
+        // Récupérer les valeurs nutritionnelles depuis la BDD
+        $recetteModel = new Recette();
+        $nutri        = $recetteModel->calculerNutriScore((int)($recette['id'] ?? 0));
+        $details      = $nutri['details'] ?? [];
+
+        // Construire le contexte de la recette
+        $ingList = implode(', ', array_slice($recette['ingredients'] ?? [], 0, 10));
+        $labelsP = [
+            'regime' => ['diabetique'=>'diabétique','vegetarien'=>'végétarien','sportif'=>'sportif','normal'=>'normal'],
+        ];
+        $profilTexte = '';
+        if (!empty($profil['regime'])) {
+            $profilTexte = "\nProfil de l'utilisateur : " . ($labelsP['regime'][$profil['regime']] ?? $profil['regime']);
+        }
+
+        $prompt  = "Tu es un nutritionniste expert. Réponds à la question de l'utilisateur sur cette recette.\n\n";
+        $prompt .= "RECETTE : " . ($recette['nom'] ?? 'Inconnue') . "\n";
+        $prompt .= "Valeurs pour 100g : protéines {$details['proteines']}g, glucides {$details['glucides']}g, ";
+        $prompt .= "lipides {$details['lipides']}g, calories {$details['calories']} kcal\n";
+        $prompt .= "Nutri-Score : " . ($nutri['lettre'] ?? '?') . " — " . ($nutri['label'] ?? '') . "\n";
+        if ($ingList) $prompt .= "Ingrédients : $ingList\n";
+        $prompt .= $profilTexte . "\n\n";
+        $prompt .= "QUESTION : $question\n\n";
+        $prompt .= "Réponds en français, de façon claire et concise (3-5 phrases max). ";
+        $prompt .= "Sois précis, donne des chiffres quand c'est pertinent, et termine par un conseil pratique.";
+
+        // Appel Gemini
+        if (self::GEMINI_API_KEY !== 'VOTRE_CLE_GEMINI_ICI' && self::GEMINI_API_KEY !== '') {
+            $payload = json_encode([
+                'contents' => [['role' => 'user', 'parts' => [['text' => $prompt]]]],
+                'generationConfig' => ['temperature' => 0.6, 'maxOutputTokens' => 300]
+            ]);
+            $ch = curl_init(self::GEMINI_URL . '?key=' . self::GEMINI_API_KEY);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $payload,
+                CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+                CURLOPT_TIMEOUT => 15, CURLOPT_SSL_VERIFYPEER => false,
+            ]);
+            $result   = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode === 200) {
+                $data = json_decode($result, true);
+                $text = trim($data['candidates'][0]['content']['parts'][0]['text'] ?? '');
+                if ($text) {
+                    echo json_encode(['reponse' => $text, 'source' => 'gemini']); exit;
+                }
+            }
+        }
+
+        // Fallback local
+        $reponse = $this->reponseLocale($question, $recette['nom'] ?? '', $details, $nutri);
+        echo json_encode(['reponse' => $reponse, 'source' => 'local']);
+        exit;
+    }
+
+    private function reponseLocale(string $question, string $nom, array $d, array $nutri): string {
+        $q    = strtolower($question);
+        $prot = (float)($d['proteines'] ?? 0);
+        $gluc = (float)($d['glucides']  ?? 0);
+        $kcal = (float)($d['calories']  ?? 0);
+        $lettre = $nutri['lettre'] ?? '?';
+
+        if (str_contains($q, 'diab')) {
+            return $gluc <= 15
+                ? "$nom est adaptée aux diabétiques car elle contient seulement {$gluc}g de glucides pour 100g. Les glucides faibles aident à contrôler la glycémie."
+                : "$nom contient {$gluc}g de glucides pour 100g. Pour les diabétiques, surveillez les portions et préférez la consommer avec des légumes verts.";
+        }
+        if (str_contains($q, 'calorie') || str_contains($q, 'portion')) {
+            return "Pour 100g, $nom apporte {$kcal} kcal. Pour une portion de 300g, cela représente " . round($kcal * 3) . " kcal. Adaptez la portion selon vos besoins caloriques journaliers.";
+        }
+        if (str_contains($q, 'poids') || str_contains($q, 'minceur') || str_contains($q, 'régime')) {
+            return $kcal <= 250
+                ? "$nom est légère en calories ({$kcal} kcal/100g), ce qui en fait un bon choix pour perdre du poids. Associez-la à des légumes pour un repas complet."
+                : "$nom apporte {$kcal} kcal/100g. Pour perdre du poids, limitez la portion à 200g et augmentez les légumes dans votre assiette.";
+        }
+        if (str_contains($q, 'sport') || str_contains($q, 'muscl') || str_contains($q, 'protéine')) {
+            return $prot >= 12
+                ? "$nom est riche en protéines ({$prot}g/100g), idéale pour les sportifs. Consommez-la après l'entraînement pour favoriser la récupération musculaire."
+                : "$nom contient {$prot}g de protéines pour 100g. Pour les sportifs, complétez avec une source de protéines supplémentaire comme des œufs ou du poulet.";
+        }
+        if (str_contains($q, 'nutri') || str_contains($q, 'score') || str_contains($q, 'qualité')) {
+            return "$nom a un Nutri-Score $lettre — " . ($nutri['label'] ?? '') . ". Ce score est calculé à partir des protéines, glucides, lipides et calories pour 100g.";
+        }
+        return "$nom est une recette avec {$kcal} kcal, {$prot}g de protéines et {$gluc}g de glucides pour 100g. Son Nutri-Score est $lettre. N'hésitez pas à me poser une question plus précise !";
+    }
+
+    // =========================================================================
     // UNSPLASH — Génération d'image pour un INGRÉDIENT
     // =========================================================================
     public function genererImageIngredient(): void {
