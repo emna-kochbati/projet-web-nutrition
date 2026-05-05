@@ -80,7 +80,7 @@ class ChatbotController {
         $sql = "
             SELECT *,
                 (6371 * ACOS(
-                    COS(RADIANS(:lat)) * COS(RADIANS(latitude)) *
+                    COS(RADIANS(:lat1)) * COS(RADIANS(latitude)) *
                     COS(RADIANS(longitude) - RADIANS(:lng)) +
                     SIN(RADIANS(:lat2)) * SIN(RADIANS(latitude))
                 )) AS distance_km
@@ -90,7 +90,7 @@ class ChatbotController {
             LIMIT :limit
         ";
         $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':lat',   $lat);
+        $stmt->bindValue(':lat1',  $lat);
         $stmt->bindValue(':lat2',  $lat);
         $stmt->bindValue(':lng',   $lng);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);

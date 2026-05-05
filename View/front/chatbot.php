@@ -260,23 +260,31 @@ function callChatbot(text) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, lat: userLat, lng: userLng })
     })
-    .then(r => r.json())
+    .then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+    })
     .then(data => {
         typing.remove();
+        if (!data || !data.type) {
+            addBotMessage("Réponse inattendue du serveur. Veuillez réessayer.");
+            return;
+        }
         if (data.type === 'map') {
-            addBotMessage(data.message, { type: 'map', restaurants: data.restaurants, userLat: data.userLat, userLng: data.userLng });
+            addBotMessage(data.message, { type: 'map', restaurants: data.restaurants || [], userLat: data.userLat, userLng: data.userLng });
         } else if (data.type === 'list') {
-            addBotMessage(data.message, { type: 'list', restaurants: data.restaurants });
+            addBotMessage(data.message, { type: 'list', restaurants: data.restaurants || [] });
         } else if (data.type === 'request_location') {
             addBotMessage(data.message);
             shareLocation();
         } else {
-            addBotMessage(data.message);
+            addBotMessage(data.message || "Je n'ai pas compris votre demande.");
         }
     })
-    .catch(() => {
+    .catch(err => {
         typing.remove();
-        addBotMessage("Une erreur s'est produite. Veuillez réessayer.");
+        addBotMessage("❌ Erreur de connexion au serveur. Vérifiez que XAMPP est bien démarré.");
+        console.error('Chatbot error:', err);
     });
 }
 
