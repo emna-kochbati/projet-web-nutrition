@@ -80,16 +80,22 @@ class ChatbotController {
     }
 
     private function getRestaurantsProches(float $lat, float $lng, int $limit = 5): array {
-        // Formule Haversine sécurisée avec LEAST pour éviter les erreurs ACOS
+        // Vérifier si les colonnes latitude/longitude existent
+        $check = $this->db->query("SHOW COLUMNS FROM restaurant LIKE 'latitude'")->fetch();
+        if (!$check) {
+            throw new \RuntimeException("Les colonnes latitude/longitude n'existent pas encore. Exécutez ce SQL dans phpMyAdmin : ALTER TABLE restaurant ADD COLUMN latitude DECIMAL(10,7) DEFAULT NULL, ADD COLUMN longitude DECIMAL(10,7) DEFAULT NULL;");
+        }
+
         $sql = "
             SELECT *,
-                (6371 * ACOS(LEAST(1, GREATEST(-1,
+                ROUND(6371 * ACOS(LEAST(1, GREATEST(-1,
                     COS(RADIANS(:lat1)) * COS(RADIANS(latitude)) *
                     COS(RADIANS(longitude) - RADIANS(:lng)) +
                     SIN(RADIANS(:lat2)) * SIN(RADIANS(latitude))
-                )))) AS distance_km
+                ))), 2) AS distance_km
             FROM restaurant
             WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+            HAVING distance_km <= 50
             ORDER BY distance_km ASC
             LIMIT :lim
         ";
