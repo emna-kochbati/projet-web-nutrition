@@ -35,11 +35,69 @@ class RestaurantController {
         $stmt->execute($params);
         $restaurants = $stmt->fetchAll();
 
+        // Classement healthy
+        $classement = $this->calculerClassement();
+
         $success = $_SESSION['success'] ?? null;
         $error   = $_SESSION['error']   ?? null;
         unset($_SESSION['success'], $_SESSION['error']);
 
         require_once 'View/back/restaurant/list.php';
+    }
+
+    // ── Logique métier : classement healthy ───────────────────────────────────
+    private function calculerClassement(): array {
+        $seuil = 500;
+        $sql = "
+            SELECT r.id, r.nom, r.type_cuisine, r.image,
+                COUNT(m.id) AS total_meals,
+                COALESCE(AVG(m.calories), 0) AS avg_calories,
+                SUM(CASE WHEN m.calories IS NOT NULL AND m.calories < :seuil THEN 1 ELSE 0 END) AS nb_healthy,
+                SUM(CASE WHEN m.calories IS NOT NULL THEN 1 ELSE 0 END) AS meals_avec_calories
+            FROM restaurant r
+            LEFT JOIN meal m ON m.restaurant_id = r.id AND m.disponible = 1
+            GROUP BY r.id, r.nom, r.type_cuisine, r.image
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':seuil', $seuil, PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+
+        $classement = [];
+        foreach ($rows as $r) {
+            $totalMeals   = (int)$r['total_meals'];
+            $avgCal       = (float)$r['avg_calories'];
+            $nbHealthy    = (int)$r['nb_healthy'];
+            $mealsAvecCal = (int)$r['meals_avec_calories'];
+            $pctHealthy   = $mealsAvecCal > 0 ? round($nbHealthy / $mealsAvecCal * 100) : 0;
+
+            if ($totalMeals === 0) {
+                $score = 50; $label = 'Non évalué'; $color = '#9e9e9e';
+            } else {
+                $score = max(0, min(200, round(100 - ($avgCal / 10) + $pctHealthy)));
+                if      ($score >= 120) { $label = '🥗 Très healthy'; $color = '#2e7d32'; }
+                elseif  ($score >= 80)  { $label = '✅ Healthy';       $color = '#558b2f'; }
+                elseif  ($score >= 50)  { $label = '⚠️ Modéré';        $color = '#f57f17'; }
+                else                    { $label = '🔴 Calorique';     $color = '#c62828'; }
+            }
+
+            $classement[] = [
+                'id'           => $r['id'],
+                'nom'          => $r['nom'],
+                'type_cuisine' => $r['type_cuisine'],
+                'image'        => $r['image'],
+                'total_meals'  => $totalMeals,
+                'avg_calories' => $avgCal > 0 ? round($avgCal) : null,
+                'nb_healthy'   => $nbHealthy,
+                'pct_healthy'  => $pctHealthy,
+                'score'        => $score,
+                'label'        => $label,
+                'color'        => $color,
+            ];
+        }
+        usort($classement, fn($a, $b) => $b['score'] <=> $a['score']);
+        foreach ($classement as $i => &$item) { $item['rang'] = $i + 1; }
+        return $classement;
     }
 
     // ── GET /Admin/restaurant/search?q=...&type=... (AJAX) ───────────────────

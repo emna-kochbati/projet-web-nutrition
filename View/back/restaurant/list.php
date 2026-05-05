@@ -194,6 +194,84 @@ document.getElementById('result-count').textContent =
     '<?= $total ?> restaurant<?= $total > 1 ? "s" : "" ?> trouvé<?= $total > 1 ? "s" : "" ?>';
 </script>
 
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<!-- ── Classement Healthy ─────────────────────────────────────────────── -->
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<div style="margin-top:40px;">
+
+<style>
+.rank-card { background:#fff; border-radius:10px; padding:18px 20px; box-shadow:0 2px 10px rgba(0,0,0,.07); margin-bottom:12px; display:flex; align-items:center; gap:18px; transition:transform .2s; }
+.rank-card:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,.1); }
+.rank-number { font-size:1.6rem; font-weight:900; min-width:44px; text-align:center; }
+.rank-img-cl { width:56px; height:56px; border-radius:8px; object-fit:cover; flex-shrink:0; }
+.rank-no-img-cl { width:56px; height:56px; border-radius:8px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; font-size:1.5rem; flex-shrink:0; }
+.rank-info-cl { flex:1; }
+.rank-name-cl { font-size:.98rem; font-weight:700; color:#1a1a1a; margin-bottom:3px; }
+.rank-cuisine-cl { font-size:.78rem; color:#888; margin-bottom:6px; }
+.rank-stats-cl { display:flex; gap:10px; flex-wrap:wrap; }
+.stat-pill-cl { font-size:.76rem; color:#555; background:#f5f5f5; padding:2px 9px; border-radius:20px; }
+.rank-progress { background:#f0f0f0; border-radius:20px; height:7px; margin-top:8px; max-width:280px; overflow:hidden; }
+.rank-progress-fill { height:100%; border-radius:20px; }
+.rank-score-cl { text-align:center; min-width:90px; }
+.rank-score-val { font-size:1.5rem; font-weight:800; }
+.rank-score-lbl { font-size:.72rem; font-weight:600; margin-top:2px; }
+.cl-legend { display:flex; flex-wrap:wrap; gap:14px; margin-bottom:16px; font-size:.82rem; }
+.cl-legend-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:5px; }
+</style>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #e8f5e9;">
+    <h3 style="font-size:1.05rem;font-weight:700;color:#2e7d32;margin:0;">🏆 Classement Healthy des Restaurants</h3>
+</div>
+
+<!-- Légende -->
+<div class="cl-legend">
+    <span><span class="cl-legend-dot" style="background:#2e7d32;"></span>Très healthy (≥120)</span>
+    <span><span class="cl-legend-dot" style="background:#558b2f;"></span>Healthy (≥80)</span>
+    <span><span class="cl-legend-dot" style="background:#f57f17;"></span>Modéré (≥50)</span>
+    <span><span class="cl-legend-dot" style="background:#c62828;"></span>Calorique (&lt;50)</span>
+    <span><span class="cl-legend-dot" style="background:#9e9e9e;"></span>Non évalué</span>
+    <span style="color:#888;font-size:.78rem;">Score = 100 − (moy.cal ÷ 10) + % plats &lt;500 kcal</span>
+</div>
+
+<?php if (empty($classement)): ?>
+    <p style="color:#aaa;text-align:center;padding:30px;">Aucun restaurant.</p>
+<?php else: ?>
+<?php foreach ($classement as $r): ?>
+<div class="rank-card">
+    <div class="rank-number">
+        <?= $r['rang'] === 1 ? '🥇' : ($r['rang'] === 2 ? '🥈' : ($r['rang'] === 3 ? '🥉' : '#'.$r['rang'])) ?>
+    </div>
+    <?php if (!empty($r['image'])): ?>
+        <img src="/2A35/assets/uploads/restaurants/<?= htmlspecialchars($r['image']) ?>" class="rank-img-cl" alt="">
+    <?php else: ?>
+        <div class="rank-no-img-cl">🍴</div>
+    <?php endif; ?>
+    <div class="rank-info-cl">
+        <div class="rank-name-cl"><?= htmlspecialchars($r['nom']) ?></div>
+        <div class="rank-cuisine-cl"><?= ucfirst(htmlspecialchars($r['type_cuisine'])) ?></div>
+        <div class="rank-stats-cl">
+            <span class="stat-pill-cl">🍽️ <?= $r['total_meals'] ?> plat<?= $r['total_meals'] > 1 ? 's' : '' ?></span>
+            <?php if ($r['avg_calories'] !== null): ?>
+            <span class="stat-pill-cl">🔥 <?= $r['avg_calories'] ?> kcal moy.</span>
+            <?php endif; ?>
+            <span class="stat-pill-cl" style="color:#2e7d32;">🥗 <?= $r['nb_healthy'] ?> healthy (<?= $r['pct_healthy'] ?>%)</span>
+        </div>
+        <?php if ($r['total_meals'] > 0): ?>
+        <div class="rank-progress">
+            <div class="rank-progress-fill" style="width:<?= $r['pct_healthy'] ?>%;background:<?= $r['color'] ?>;"></div>
+        </div>
+        <?php endif; ?>
+    </div>
+    <div class="rank-score-cl">
+        <div class="rank-score-val" style="color:<?= $r['color'] ?>;"><?= $r['total_meals'] > 0 ? $r['score'] : '—' ?></div>
+        <div class="rank-score-lbl" style="color:<?= $r['color'] ?>;"><?= $r['label'] ?></div>
+    </div>
+</div>
+<?php endforeach; ?>
+<?php endif; ?>
+
+</div>
+
 <?php
 $content = ob_get_clean();
 require_once 'View/back/layout.php';
