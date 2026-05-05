@@ -68,6 +68,7 @@
                     <a href="/2A35/Home" class="nav-item nav-link <?= $currentUrl === 'home' ? 'active' : '' ?>">Home</a>
                     <a href="/2A35/About" class="nav-item nav-link <?= $currentUrl === 'about' ? 'active' : '' ?>">About Us</a>
                     <a href="/2A35/Restaurant" class="nav-item nav-link <?= $currentUrl === 'restaurant' ? 'active' : '' ?>">Restaurants</a>
+                    <a href="/2A35/Map" class="nav-item nav-link <?= $currentUrl === 'map' ? 'active' : '' ?>">🗺️ Carte</a>
                     <a href="/2A35/Product" class="nav-item nav-link <?= $currentUrl === 'product' ? 'active' : '' ?>">Products</a>
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Pages</a>
