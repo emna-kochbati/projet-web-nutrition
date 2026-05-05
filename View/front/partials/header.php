@@ -1,8 +1,3 @@
-<?php
-if (session_status() === PHP_SESSION_NONE) session_start();
-$user = $_SESSION['user'] ?? null;
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -53,28 +48,26 @@ $user = $_SESSION['user'] ?? null;
                     Home
                 </a>
 
-                <!-- USER MENU -->
-                <?php if ($user && $user['role'] === 'user'): ?>
-                    <div class="nav-item dropdown">
+                <!-- USER -->
+                <div class="nav-item dropdown">
 
-                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
-                            <i class="fa fa-user"></i> <?= htmlspecialchars($user['nom']) ?>
+                    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                        User
+                    </a>
+
+                    <div class="dropdown-menu">
+
+                        <a href="/ProjetWeb-User/index.php?url=User/dashboard" class="dropdown-item">
+                            Dashboard
                         </a>
 
-                        <div class="dropdown-menu">
-                            <a href="/ProjetWeb-User/index.php?url=User/dashboard" class="dropdown-item">
-                                Dashboard
-                            </a>
-                            <a href="/ProjetWeb-User/index.php?url=User/profile" class="dropdown-item">
-                                Profil
-                            </a>
-                            <a href="/ProjetWeb-User/index.php?url=User/logout" class="dropdown-item text-danger">
-                                Logout
-                            </a>
-                        </div>
+                        <a href="/ProjetWeb-User/index.php?url=User/profile" class="dropdown-item">
+                            Profil
+                        </a>
 
                     </div>
-                <?php endif; ?>
+
+                </div>
 
                 <!-- MODULES -->
                 <a href="/ProjetWeb-User/index.php?url=Home/index#about" class="nav-item nav-link">About</a>
@@ -82,21 +75,12 @@ $user = $_SESSION['user'] ?? null;
                 <a href="/ProjetWeb-User/index.php?url=Home/index#event" class="nav-item nav-link">Événement</a>
                 <a href="/ProjetWeb-User/index.php?url=Home/index#sport" class="nav-item nav-link">Sport</a>
                 <a href="/ProjetWeb-User/index.php?url=Home/index#contact" class="nav-item nav-link">Contact</a>
+                <!-- ADMIN ICON -->
+<a href="/ProjetWeb-User/index.php?url=Admin/dashboard"
+   class="nav-item nav-link text-danger">
 
-                <!-- ADMIN BUTTON -->
-                <?php if ($user && $user['role'] === 'admin'): ?>
-                    <a href="/ProjetWeb-User/index.php?url=Admin/dashboard"
-                       class="nav-item nav-link text-danger">
-                        <i class="fa fa-cog"></i> Admin
-                    </a>
-                <?php endif; ?>
-
-                <!-- LOGIN -->
-                <?php if (!$user): ?>
-                    <a href="/ProjetWeb-User/index.php?url=User/auth" class="nav-item nav-link">
-                        Login
-                    </a>
-                <?php endif; ?>
+    <i class="fa fa-cog"></i> Admin
+</a>
 
             </div>
 

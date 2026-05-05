@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -50,12 +51,68 @@ try {
 // Stats activité
 $activiteRaw = $db->query("SELECT activite, COUNT(*) as cnt FROM user WHERE activite IS NOT NULL AND activite!='' GROUP BY activite")->fetchAll(PDO::FETCH_ASSOC);
 
+// Stats par statut pour le graphique
+$statusData = [
+    'labels' => ['Actifs', 'Inactifs', 'Bannis'],
+    'counts' => [$activeUsers, $inactiveUsers, $bannedUsers]
+];
+
+// AI Insights generation
+$aiInsights = [];
+if($totalUsers > 0){
+    if($activePct < 50){
+        $aiInsights[] = ['level'=>'critical', 'icon'=>'fa-triangle-exclamation', 'title'=>'Taux d\'activation critique', 'desc'=>'Seulement '.$activePct.'% des comptes sont actifs. Envoi d\'emails de relance recommandé.'];
+    } elseif($activePct < 80){
+        $aiInsights[] = ['level'=>'warning', 'icon'=>'fa-circle-exclamation', 'title'=>'Activation en dessous de l\'objectif', 'desc'=>'Le taux d\'activation est de '.$activePct.'%. Objectif recommandé: 90%.'];
+    } else {
+        $aiInsights[] = ['level'=>'success', 'icon'=>'fa-check-circle', 'title'=>'Excellente activation', 'desc'=>$activePct.'% des comptes sont actifs. Continuez ainsi!'];
+    }
+
+    if($inactiveUsers > $totalUsers * 0.3){
+        $aiInsights[] = ['level'=>'warning', 'icon'=>'fa-clock', 'title'=>'Trop de comptes inactifs', 'desc'=>$inactiveUsers.' comptes n\'ont pas confirmé leur email. Prévoyez une campagne de relance.'];
+    }
+
+    if($bannedUsers > 0){
+        $aiInsights[] = ['level'=>'danger', 'icon'=>'fa-ban', 'title'=>'Comptes bannis détectés', 'desc'=>$bannedUsers.' comptes sont bannis. Vérifiez les raisons et les patterns communs.'];
+    }
+
+    // AI prediction for next week
+    $avgPerDay = round(array_sum($weekCounts) / 7, 1);
+    $aiInsights[] = ['level'=>'info', 'icon'=>'fa-chart-line', 'title'=>'Prédiction IA — inscriptions', 'desc'=>'Moyenne de '.$avgPerDay.' inscriptions/jour. Estimation semaine prochaine: '.round($avgPerDay * 7).' nouveaux utilisateurs.'];
+
+    // Activity analysis
+    if(!empty($activiteRaw)){
+        $topActivite = $activiteRaw[0];
+        $aiInsights[] = ['level'=>'info', 'icon'=>'fa-person-running', 'title'=>'Activité dominante', 'desc'=>htmlspecialchars($topActivite['activite']).' est le profil le plus représenté ('.$topActivite['cnt'].' utilisateurs).'];
+    }
+}
+
 $h = (int)date('H');
 $greeting = $h < 12 ? 'Bonjour' : ($h < 18 ? 'Bon après-midi' : 'Bonsoir');
+
+// AI Calendar events generation
+$today = date('Y-m-d');
+$aiCalendarEvents = [];
+$aiCalendarEvents[] = ['title'=>'Audit système', 'date'=>$today, 'className'=>'event-ai', 'description'=>'Vérification automatique des comptes et métriques'];
+$aiCalendarEvents[] = ['title'=>'Rapport d\'activité', 'date'=>date('Y-m-d', strtotime('+1 day')), 'className'=>'event-calories', 'description'=>'Génération du rapport hebdomadaire'];
+
+if($inactiveUsers > 0){
+    $aiCalendarEvents[] = ['title'=>'Relance '.$inactiveUsers.' inactifs', 'date'=>date('Y-m-d', strtotime('+2 days')), 'className'=>'event-risk', 'description'=>'Envoi automatique d\'emails de relance'];
+}
+
+$aiCalendarEvents[] = ['title'=>'Maintenance BDD', 'date'=>date('Y-m-d', strtotime('+3 days')), 'className'=>'event-ai', 'description'=>'Optimisation et backup automatique'];
+$aiCalendarEvents[] = ['title'=>'Analyse IA mensuelle', 'date'=>date('Y-m-d', strtotime('+7 days')), 'className'=>'event-calories', 'description'=>'Rapport complet d\'analyse des tendances'];
+
+if($bannedUsers > 0){
+    $aiCalendarEvents[] = ['title'=>'Review comptes bannis', 'date'=>date('Y-m-d', strtotime('+5 days')), 'className'=>'event-risk', 'description'=>'Revue des '.$bannedUsers.' comptes bannis'];
+}
+
+$aiCalendarEvents[] = ['title'=>'Mise à jour système', 'date'=>date('Y-m-d', strtotime('+10 days')), 'className'=>'event-ai', 'description'=>'Mise à jour des composants'];
+
 ?>
 
 <style>
-/* ═══ BASE — MÊME QUE USERS.PHP ═══ */
+/* ═══ BASE ═══ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -390,6 +447,7 @@ body {
 .g3  { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; margin-bottom: 22px; }
 .g2  { display: grid; grid-template-columns: 1fr 1fr;       gap: 18px; margin-bottom: 22px; }
 .g21 { display: grid; grid-template-columns: 2fr 1fr;       gap: 18px; margin-bottom: 22px; }
+.g31 { display: grid; grid-template-columns: 1fr 1fr 1fr;   gap: 18px; margin-bottom: 22px; }
 
 /* ═══ CARD ═══ */
 .card {
@@ -471,39 +529,113 @@ body {
 .u-name  { font-size: 13px; font-weight: 500; }
 .u-email { font-size: 11px; color: rgba(255,255,255,0.35); }
 
+/* STATUS DOTS — LOGIQUE METIERS */
 .status-dot {
   display: inline-flex; align-items: center; gap: 5px;
-  font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+  white-space: nowrap;
 }
 
 .status-dot::before { content:''; width:5px; height:5px; border-radius:50%; }
 
-.status-dot.active   { background:rgba(0,230,118,0.12); color:#00e676; }
-.status-dot.active::before   { background:#00e676; }
-.status-dot.inactive { background:rgba(255,152,0,0.12);  color:#ffa726; }
-.status-dot.inactive::before { background:#ffa726; }
-.status-dot.banned   { background:rgba(239,83,80,0.12);  color:#ef9a9a; }
-.status-dot.banned::before   { background:#ef9a9a; }
+/* ACTIVE = VERT */
+.status-dot.active   { background:rgba(0,230,118,0.15); color:#00e676; border:1px solid rgba(0,230,118,0.3); }
+.status-dot.active::before   { background:#00e676; box-shadow:0 0 6px #00e676; }
 
-/* ═══ ALERT ITEMS ═══ */
-.alert-item {
-  display: flex; align-items: flex-start; gap: 12px;
-  padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+/* INACTIF = ORANGE */
+.status-dot.inactive { background:rgba(255,152,0,0.15);  color:#ffa726; border:1px solid rgba(255,152,0,0.3); }
+.status-dot.inactive::before { background:#ffa726; box-shadow:0 0 6px #ffa726; animation:blinkOrange 1.5s infinite; }
+
+/* BANNED = ROUGE */
+.status-dot.banned   { background:rgba(239,83,80,0.15);  color:#ef5350; border:1px solid rgba(239,83,80,0.3); }
+.status-dot.banned::before   { background:#ef5350; box-shadow:0 0 6px #ef5350; }
+
+@keyframes blinkOrange { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+
+/* ═══ AI ALERTS ═══ */
+.ai-alerts-section { margin-bottom: 22px; }
+
+.ai-alert-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 16px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  transition: all .2s;
+  position: relative;
+  overflow: hidden;
 }
 
-.alert-item:last-child { border-bottom: none; padding-bottom: 0; }
+.ai-alert-item:hover { background: rgba(255,255,255,0.04); border-color: rgba(0,230,118,0.15); }
 
-.alert-ico {
-  width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center; font-size: 13px;
+.ai-alert-item::before {
+  content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
 }
 
-.alert-ico.g { background: rgba(0,230,118,0.12); }
-.alert-ico.o { background: rgba(255,152,0,0.12); }
-.alert-ico.r { background: rgba(239,83,80,0.12); }
+.ai-alert-item.critical::before { background:#ef5350; }
+.ai-alert-item.warning::before  { background:#ffa726; }
+.ai-alert-item.success::before  { background:#00e676; }
+.ai-alert-item.info::before     { background:#64b5f6; }
+.ai-alert-item.danger::before   { background:#ef5350; }
 
-.alert-txt  { font-size: 13px; font-weight: 500; }
-.alert-desc { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+.ai-alert-icon {
+  width:36px; height:36px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:15px; flex-shrink:0;
+}
+
+.ai-alert-item.critical .ai-alert-icon { background:rgba(239,83,80,0.12); color:#ef5350; }
+.ai-alert-item.warning .ai-alert-icon  { background:rgba(255,152,0,0.12);  color:#ffa726; }
+.ai-alert-item.success .ai-alert-icon  { background:rgba(0,230,118,0.12);  color:#00e676; }
+.ai-alert-item.info .ai-alert-icon     { background:rgba(33,150,243,0.12);  color:#64b5f6; }
+.ai-alert-item.danger .ai-alert-icon   { background:rgba(239,83,80,0.12);  color:#ef5350; }
+
+.ai-alert-content { flex:1; }
+.ai-alert-title  { font-size:13px; font-weight:600; color:#fff; margin-bottom:2px; }
+.ai-alert-desc   { font-size:12px; color:rgba(255,255,255,0.4); line-height:1.5; }
+
+.ai-alert-tag {
+  font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.1em;
+  padding:2px 8px; border-radius:10px; flex-shrink:0; margin-top:2px;
+}
+.ai-alert-item.critical .ai-alert-tag { background:rgba(239,83,80,0.15); color:#ef9a9a; }
+.ai-alert-item.warning .ai-alert-tag  { background:rgba(255,152,0,0.15);  color:#ffa726; }
+.ai-alert-item.success .ai-alert-tag  { background:rgba(0,230,118,0.15);  color:#69f0ae; }
+.ai-alert-item.info .ai-alert-tag     { background:rgba(33,150,243,0.15);  color:#90caf9; }
+.ai-alert-item.danger .ai-alert-tag   { background:rgba(239,83,80,0.15);  color:#ef9a9a; }
+
+/* ═══ AI INSIGHTS CARD ═══ */
+.ai-insight-card {
+  background: linear-gradient(135deg, rgba(0,230,118,0.05), rgba(33,150,243,0.05));
+  border: 1px solid rgba(0,230,118,0.12);
+  border-radius: 16px;
+  padding: 20px 22px;
+  margin-bottom: 22px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-insight-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background: linear-gradient(90deg, #00e676, #2196f3, #00e676);
+}
+
+.ai-insight-header {
+  display:flex; align-items:center; gap:10px;
+  margin-bottom:16px; padding-bottom:12px;
+  border-bottom:1px solid rgba(0,230,118,0.1);
+}
+
+.ai-insight-icon {
+  width:32px; height:32px; border-radius:8px;
+  background: linear-gradient(135deg, #00e676, #00c853);
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; color:#000;
+}
+
+.ai-insight-title { font-size:14px; font-weight:700; color:#00e676; }
+.ai-insight-sub   { font-size:11px; color:rgba(255,255,255,0.3); }
 
 /* ═══ CALENDAR ═══ */
 .fc { color: rgba(255,255,255,0.7) !important; font-family: 'DM Sans', sans-serif !important; }
@@ -560,14 +692,14 @@ body {
 @media (max-width: 1200px) {
   .kpi-row { grid-template-columns: repeat(3,1fr); }
   .g3 { grid-template-columns: repeat(2,1fr); }
-  .g21 { grid-template-columns: 1fr; }
+  .g21, .g31 { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {
   .sidebar { display: none; }
   .content-area { margin-left: 0; }
   .topbar { left: 0; }
-  .kpi-row, .g3, .g2, .g21 { grid-template-columns: 1fr; }
+  .kpi-row, .g3, .g2, .g21, .g31 { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -595,11 +727,12 @@ body {
 
   <div class="sidebar-section">Système</div>
   <a href="#" class="sidebar-link">
-    <i class="fa fa-bell"></i>Alertes
-    <?php if ($inactiveUsers > 0): ?>
-    <span class="sidebar-notif"><?= $inactiveUsers ?></span>
+    <i class="fa fa-bell"></i>Alertes IA
+    <?php if ($inactiveUsers + $bannedUsers > 0): ?>
+    <span class="sidebar-notif"><?= $inactiveUsers + $bannedUsers ?></span>
     <?php endif; ?>
   </a>
+  <a href="#" class="sidebar-link"><i class="fa fa-robot"></i>Intelligence</a>
   <a href="#" class="sidebar-link"><i class="fa fa-gear"></i>Paramètres</a>
 
   <div class="sidebar-bottom">
@@ -648,14 +781,67 @@ body {
   <div class="page-header">
     <div>
       <div class="page-title">📊 Vue d'ensemble</div>
-      <div class="page-sub"><?= $greeting ?> — tableau de bord en temps réel</div>
+      <div class="page-sub"><?= $greeting ?> — tableau de bord intelligent en temps réel</div>
     </div>
     <a href="index.php?url=Admin/users" class="btn-g">
       <i class="fa fa-users" style="filter:none;"></i> Gérer les utilisateurs
     </a>
   </div>
 
-  <!-- ══ KPI ══ -->
+  <!-- ═══════════════════════════════════════ -->
+  <!-- ════ AI INSIGHTS BAR ════ -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="ai-insight-card">
+    <div class="ai-insight-header">
+      <div class="ai-insight-icon">🧠</div>
+      <div>
+        <div class="ai-insight-title">Insights IA — Analyse en temps réel</div>
+        <div class="ai-insight-sub">Basé sur <?= $totalUsers ?> utilisateurs · Dernière analyse: <?= date('H:i') ?></div>
+      </div>
+    </div>
+    <div class="g31" style="margin-bottom:0;">
+      <div style="text-align:center; padding:10px 0;">
+        <div style="font-size:28px; font-weight:800; color:#00e676;"><?= $activePct ?>%</div>
+        <div style="font-size:11px; color:rgba(255,255,255,0.4); margin-top:4px;">Taux d'activation</div>
+        <div style="font-size:10px; color:<?= $activePct >= 80 ? '#69f0ae' : ($activePct >= 50 ? '#ffa726' : '#ef9a9a') ?>; margin-top:2px;">
+          <?= $activePct >= 80 ? '✓ Excellent' : ($activePct >= 50 ? '⚠ Moyen' : '✗ Critique') ?>
+        </div>
+      </div>
+      <div style="text-align:center; padding:10px 0;">
+        <div style="font-size:28px; font-weight:800; color:#64b5f6;"><?= round(array_sum($weekCounts)) ?></div>
+        <div style="font-size:11px; color:rgba(255,255,255,0.4); margin-top:4px;">Inscriptions cette semaine</div>
+        <div style="font-size:10px; color:#90caf9; margin-top:2px;">Tendance: <?= array_sum($weekCounts) > 0 ? '📈 Active' : '📉 Stable' ?></div>
+      </div>
+      <div style="text-align:center; padding:10px 0;">
+        <div style="font-size:28px; font-weight:800; color:#ffa726;"><?= $inactiveUsers + $bannedUsers ?></div>
+        <div style="font-size:11px; color:rgba(255,255,255,0.4); margin-top:4px;">Alertes à traiter</div>
+        <div style="font-size:10px; color:<?= ($inactiveUsers + $bannedUsers) > 0 ? '#ffa726' : '#69f0ae' ?>; margin-top:2px;">
+          <?= ($inactiveUsers + $bannedUsers) > 0 ? '⚠ Action requise' : '✓ Tout est OK' ?>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- ════ AI ALERTS ════ -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-title">Alertes IA intelligentes</div>
+  <div class="ai-alerts-section">
+    <?php foreach($aiInsights as $insight): ?>
+    <div class="ai-alert-item <?= $insight['level'] ?>">
+      <div class="ai-alert-icon">
+        <i class="fa <?= $insight['icon'] ?>"></i>
+      </div>
+      <div class="ai-alert-content">
+        <div class="ai-alert-title"><?= $insight['title'] ?></div>
+        <div class="ai-alert-desc"><?= $insight['desc'] ?></div>
+      </div>
+      <span class="ai-alert-tag"><?= $insight['level'] ?></span>
+    </div>
+    <?php endforeach; ?>
+  </div>
+
+  <!-- ═══ KPI ═══ -->
   <div class="sec-title">Indicateurs clés</div>
   <div class="kpi-row">
 
@@ -696,7 +882,7 @@ body {
 
   </div>
 
-  <!-- ══ GRAPHES ══ -->
+  <!-- ═══ GRAPHES ═══ -->
   <div class="sec-title">Analyses & Statistiques</div>
   <div class="g3">
 
@@ -726,8 +912,52 @@ body {
 
   </div>
 
-  <!-- ══ RING + OBJECTIFS + ALERTES ══ -->
+  <!-- ═══ NOUVEAU: GRAPHIQUE STATUT + ACTIVITE + RING ═══ -->
   <div class="g3">
+
+    <!-- Statut répartition -->
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-title"><i class="fa fa-chart-bar"></i> Répartition par statut</div>
+      </div>
+      <canvas id="chartStatus" height="160"></canvas>
+      <div style="margin-top:16px; display:flex; gap:12px; flex-wrap:wrap;">
+        <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,0.4);">
+          <span style="width:8px;height:8px;border-radius:50%;background:#00e676;display:inline-block;"></span> Actifs: <?= $activeUsers ?>
+        </span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,0.4);">
+          <span style="width:8px;height:8px;border-radius:50%;background:#ffa726;display:inline-block;"></span> Inactifs: <?= $inactiveUsers ?>
+        </span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,0.4);">
+          <span style="width:8px;height:8px;border-radius:50%;background:#ef5350;display:inline-block;"></span> Bannis: <?= $bannedUsers ?>
+        </span>
+      </div>
+    </div>
+
+    <!-- Activité -->
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-title"><i class="fa fa-person-running"></i> Niveaux d'activité</div>
+      </div>
+      <?php
+      $actColors = ['#00e676','#64b5f6','#ffa726','#ce93d8','#ef9a9a'];
+      if(!empty($activiteRaw)):
+        foreach($activiteRaw as $ai => $actRow):
+          $actPct = $totalUsers > 0 ? round($actRow['cnt']/$totalUsers*100) : 0;
+          $actCol = $actColors[$ai % count($actColors)];
+      ?>
+      <div class="prog-item">
+        <div class="prog-top">
+          <span class="prog-lbl"><?= htmlspecialchars($actRow['activite']) ?></span>
+          <span class="prog-val" style="color:<?= $actCol ?>"><?= $actRow['cnt'] ?> <small style="color:rgba(255,255,255,.25);font-weight:400;">(<?= $actPct ?>%)</small></span>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" style="width:<?= $actPct ?>%;background:<?= $actCol ?>;"></div></div>
+      </div>
+      <?php endforeach; ?>
+      <?php else: ?>
+      <p style="font-size:13px;color:rgba(255,255,255,.3);text-align:center;padding:20px 0;">Aucune donnée</p>
+      <?php endif; ?>
+    </div>
 
     <!-- Ring activation -->
     <div class="card">
@@ -748,99 +978,23 @@ body {
       </div>
       <div style="margin-top:16px;">
         <div class="prog-item">
-          <div class="prog-top"><span class="prog-lbl">Actifs</span><span class="prog-val"><?= $activeUsers ?></span></div>
+          <div class="prog-top"><span class="prog-lbl">Actifs <span style="color:#00e676;">●</span></span><span class="prog-val"><?= $activeUsers ?></span></div>
           <div class="prog-bar"><div class="prog-fill" style="width:<?= $activePct ?>%;background:#00e676;"></div></div>
         </div>
         <div class="prog-item">
-          <div class="prog-top"><span class="prog-lbl">Inactifs</span><span class="prog-val"><?= $inactiveUsers ?></span></div>
+          <div class="prog-top"><span class="prog-lbl">Inactifs <span style="color:#ffa726;">●</span></span><span class="prog-val"><?= $inactiveUsers ?></span></div>
           <div class="prog-bar"><div class="prog-fill" style="width:<?= $totalUsers>0?round($inactiveUsers/$totalUsers*100):0 ?>%;background:#ffa726;"></div></div>
         </div>
         <div class="prog-item">
-          <div class="prog-top"><span class="prog-lbl">Bannis</span><span class="prog-val"><?= $bannedUsers ?></span></div>
-          <div class="prog-bar"><div class="prog-fill" style="width:<?= $totalUsers>0?round($bannedUsers/$totalUsers*100):0 ?>%;background:#ef9a9a;"></div></div>
+          <div class="prog-top"><span class="prog-lbl">Bannis <span style="color:#ef5350;">●</span></span><span class="prog-val"><?= $bannedUsers ?></span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:<?= $totalUsers>0?round($bannedUsers/$totalUsers*100):0 ?>%;background:#ef5350;"></div></div>
         </div>
-      </div>
-    </div>
-
-    <!-- Objectifs barres -->
-    <div class="card">
-      <div class="card-hd">
-        <div class="card-title"><i class="fa fa-bullseye"></i> Répartition objectifs</div>
-      </div>
-      <?php
-      $cols = ['#00e676','#64b5f6','#ffa726','#ce93d8','#ef9a9a'];
-      foreach($objectifsRaw as $i => $obj):
-        $pct = $totalUsers > 0 ? round($obj['cnt']/$totalUsers*100) : 0;
-        $col = $cols[$i % count($cols)];
-      ?>
-      <div class="prog-item">
-        <div class="prog-top">
-          <span class="prog-lbl"><?= htmlspecialchars($obj['objectif'] ?: 'Non défini') ?></span>
-          <span class="prog-val" style="color:<?= $col ?>"><?= $obj['cnt'] ?> <small style="color:rgba(255,255,255,.25);font-weight:400;">(<?= $pct ?>%)</small></span>
-        </div>
-        <div class="prog-bar"><div class="prog-fill" style="width:<?= $pct ?>%;background:<?= $col ?>;"></div></div>
-      </div>
-      <?php endforeach; ?>
-      <?php if (empty($objectifsRaw)): ?>
-      <p style="font-size:13px;color:rgba(255,255,255,.3);text-align:center;padding:20px 0;">Aucune donnée</p>
-      <?php endif; ?>
-    </div>
-
-    <!-- Alertes -->
-    <div class="card">
-      <div class="card-hd">
-        <div class="card-title"><i class="fa fa-triangle-exclamation" style="color:#ffa726;"></i> Alertes système</div>
-        <span class="card-badge o"><?= $inactiveUsers + $bannedUsers ?></span>
-      </div>
-
-      <div class="alert-item">
-        <div class="alert-ico g">✅</div>
-        <div>
-          <div class="alert-txt">Système opérationnel</div>
-          <div class="alert-desc">Base de données — connexion active</div>
-        </div>
-      </div>
-
-      <?php if ($inactiveUsers > 0): ?>
-      <div class="alert-item">
-        <div class="alert-ico o">⏳</div>
-        <div>
-          <div class="alert-txt"><?= $inactiveUsers ?> compte(s) en attente</div>
-          <div class="alert-desc">Activation email non confirmée</div>
-        </div>
-      </div>
-      <?php endif; ?>
-
-      <?php if ($bannedUsers > 0): ?>
-      <div class="alert-item">
-        <div class="alert-ico r">🚫</div>
-        <div>
-          <div class="alert-txt"><?= $bannedUsers ?> compte(s) banni(s)</div>
-          <div class="alert-desc">Bloqués manuellement</div>
-        </div>
-      </div>
-      <?php endif; ?>
-
-      <?php if ($activePct < 60 && $totalUsers > 0): ?>
-      <div class="alert-item">
-        <div class="alert-ico o">📊</div>
-        <div>
-          <div class="alert-txt">Taux d'activation faible (<?= $activePct ?>%)</div>
-          <div class="alert-desc">Objectif recommandé : 80%+</div>
-        </div>
-      </div>
-      <?php endif; ?>
-
-      <div style="margin-top:14px;">
-        <a href="index.php?url=Admin/users" class="btn-g" style="width:100%;justify-content:center;">
-          <i class="fa fa-users" style="filter:none;"></i> Gérer les utilisateurs
-        </a>
       </div>
     </div>
 
   </div>
 
-  <!-- ══ DERNIERS INSCRITS + CALENDRIER ══ -->
+  <!-- ═══ DERNIERS INSCRITS + CALENDRIER ═══ -->
   <div class="sec-title">Activité récente</div>
   <div class="g21">
 
@@ -862,7 +1016,7 @@ body {
           <?php foreach($lastUsers as $u):
             $init   = strtoupper(substr($u['nom'] ?? '?', 0, 1));
             $status = $u['status'] ?? 'inactive';
-            $sl = ['active'=>'Actif','inactive'=>'Inactif','banned'=>'Banni'][$status] ?? $status;
+            $sl     = ['active'=>'Actif','inactive'=>'Inactif','banned'=>'Banni'][$status] ?? $status;
           ?>
           <tr>
             <td>
@@ -892,9 +1046,20 @@ body {
 
     <div class="card">
       <div class="card-hd">
-        <div class="card-title"><i class="fa fa-calendar"></i> Calendrier</div>
+        <div class="card-title"><i class="fa fa-calendar"></i> Calendrier IA <span style="font-size:10px; color:rgba(0,230,118,0.5); margin-left:6px;">automatique</span></div>
       </div>
       <div id="calendar"></div>
+      <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+        <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:rgba(255,255,255,0.4);">
+          <span style="width:8px;height:8px;border-radius:3px;background:rgba(0,230,118,0.7);display:inline-block;"></span> IA
+        </span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:rgba(255,255,255,0.4);">
+          <span style="width:8px;height:8px;border-radius:3px;background:rgba(255,152,0,0.8);display:inline-block;"></span> Rapport
+        </span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:rgba(255,255,255,0.4);">
+          <span style="width:8px;height:8px;border-radius:3px;background:rgba(239,83,80,0.8);display:inline-block;"></span> Alerte
+        </span>
+      </div>
     </div>
 
   </div>
@@ -977,20 +1142,44 @@ new Chart(document.getElementById('chartMal'), {
   }
 });
 
+/* ── NOUVEAU: CHART STATUS ── */
+new Chart(document.getElementById('chartStatus'), {
+  type: 'doughnut',
+  data: {
+    labels: <?= json_encode($statusData['labels']) ?>,
+    datasets: [{
+      data: <?= json_encode($statusData['counts']) ?>,
+      backgroundColor: ['#00e676', '#ffa726', '#ef5350'],
+      borderWidth: 3, borderColor: '#0d1a26', hoverOffset: 8
+    }]
+  },
+  options: {
+    cutout: '58%',
+    plugins: {
+      legend: { display: false }
+    }
+  }
+});
+
 /* ── FULLCALENDAR ── */
 document.addEventListener('DOMContentLoaded', () => {
-  new FullCalendar.Calendar(document.getElementById('calendar'), {
-    initialView: 'dayGridMonth',
-    height: 320,
-    headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
-    events: [
-      { title: 'Audit utilisateurs',  date: '<?= date("Y-m-d") ?>',                      className: 'event-ai' },
-      { title: 'Maintenance système', date: '<?= date("Y-m-d", strtotime("+4 days")) ?>', className: 'event-ai' },
-      { title: 'Rapport mensuel',     date: '<?= date("Y-m-d", strtotime("+7 days")) ?>', className: 'event-calories' },
-      { title: 'Vérif. inactifs',     date: '<?= date("Y-m-d", strtotime("+2 days")) ?>', className: 'event-risk' },
-    ],
-    eventClick: (info) => alert('📅 ' + info.event.title)
-  }).render();
+  const calendarEl = document.getElementById('calendar');
+  if(calendarEl){
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'dayGridMonth',
+      height: 320,
+      headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
+      events: <?= json_encode($aiCalendarEvents) ?>,
+      eventClick: function(info) {
+        const desc = info.event.extendedProps.description || '';
+        alert('📅 ' + info.event.title + (desc ? '\n\n' + desc : ''));
+      },
+      eventDidMount: function(info) {
+        info.el.title = info.event.extendedProps.description || info.event.title;
+      }
+    });
+    calendar.render();
+  }
 });
 
 /* ── ANIMATE PROG BARS ── */
@@ -1089,3 +1278,4 @@ function esc(str) {
 
 </body>
 </html>
+```

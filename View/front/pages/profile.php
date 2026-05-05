@@ -27,37 +27,6 @@ $completPct=round($done/6*100);
 $h = (int)date('H');
 $period = $h < 12 ? 'Bonjour' : ($h < 18 ? 'Bon après-midi' : 'Bonsoir');
 
-$advice = [];
-if($imcState === 'underweight'){
-  $advice[] = "Votre IMC de {$imc} indique une insuffisance pondérale. Je vous recommande d'augmenter progressivement votre apport calorique avec des aliments nutritifs et denses.";
-  $advice[] = "Privilégiez les protéines maigres, les glucides complexes et les bonnes graisses. Mangez 5 à 6 petits repas par jour.";
-} elseif($imcState === 'normal'){
-  $advice[] = "Félicitations ! Votre IMC de {$imc} est dans la zone idéale. Continuez à maintenir cet équilibre avec une alimentation variée.";
-  $advice[] = "Gardez une activité physique régulière d'au moins 30 minutes par jour pour préserver votre santé cardiovasculaire.";
-} elseif($imcState === 'overweight'){
-  $advice[] = "Votre IMC de {$imc} indique un surpoids. Il est important d'ajuster votre alimentation en réduisant les sucres rapides et les graisses saturées.";
-  $advice[] = "Visez une perte de poids progressive de 0.5 à 1 kg par semaine. Ne sautez jamais de repas, cela ralentit le métabolisme.";
-} else {
-  $advice[] = "Votre IMC de {$imc} nécessite une attention particulière. Je vous conseille de consulter un professionnel de santé pour un suivi adapté.";
-  $advice[] = "Commencez par de petites activités quotidiennes comme la marche et augmentez progressivement l'intensité.";
-}
-
-if(str_contains(strtolower($user['objectif']??''), 'perte')){
-  $advice[] = "Pour votre objectif de perte de poids, concentrez-vous sur un déficit calorique modéré de 300 à 500 calories par jour.";
-  $advice[] = "Augmentez votre consommation de fibres et de protéines pour rester rassasié plus longtemps.";
-} elseif(str_contains(strtolower($user['objectif']??''), 'masse')){
-  $advice[] = "Pour votre prise de masse, visez un surplus calorique de 300 à 500 calories avec un apport protéique de 1.6 à 2g par kg de poids corporel.";
-  $advice[] = "Pratiquez la musculation 3 à 4 fois par semaine et dormez au moins 8 heures pour optimiser la récupération.";
-}
-
-if(str_contains(strtolower($user['activite']??''), 'sédent')){
-  $advice[] = "Votre activité sédentaire augmente les risques pour la santé. Essayez de vous lever toutes les heures et de marcher 10 minutes.";
-} elseif(str_contains(strtolower($user['activite']??''), 'sport')){
-  $advice[] = "Excellent niveau d'activité ! N'oubliez pas de bien vous hydrater pendant l'effort et de consommer des glucides après l'entraînement.";
-}
-
-$fullAdvice = implode(' ', $advice);
-
 include __DIR__ . '/../partials/header.php';
 ?>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -645,7 +614,7 @@ body{
 }
 </style>
 
-<!-- ═══ TOPBAR ════ -->
+<!-- ════ TOPBAR ════ -->
 <div class="tb">
   <a href="#" class="tb-logo">
     <div class="tb-logo-mark">🌿</div>
@@ -664,7 +633,7 @@ body{
   </div>
 </div>
 
-<!-- ═══ HERO BANNER ════ -->
+<!-- ════ HERO BANNER ════ -->
 <div class="hero">
   <div class="hero-pattern"></div>
   <div class="hero-overlay"></div>
@@ -782,7 +751,7 @@ body{
           <div class="profil-name"><?= htmlspecialchars($user['nom']) ?></div>
           <div class="profil-email"><?= htmlspecialchars($user['email']) ?></div>
           <?php if($user['objectif']??''): ?>
-          <div class="profil-obj"> <?= htmlspecialchars($user['objectif']) ?></div>
+          <div class="profil-obj"> 🎯 <?= htmlspecialchars($user['objectif']) ?></div>
           <?php endif; ?>
         </div>
 
@@ -955,7 +924,7 @@ body{
 
       <div class="fg" id="g-obj">
         <label>Objectif nutritionnel</label>
-        <select id="f-obj" name="objectif" data-r="select" style="background-image:url('data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'10\' height=\'6\'><path d=\'M0 0l5 6 5-6z\' fill=\'%238aa898\'/></svg>');background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;">
+        <select id="f-obj" name="objectif" data-r="select" style="background-image:url('image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'10\' height=\'6\'><path d=\'M0 0l5 6 5-6z\' fill=\'%238aa898\'/></svg>');background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;">
           <option value="">-- Choisir --</option>
           <option value="Perte de poids" <?= ($user['objectif']??'')==='Perte de poids'?'selected':'' ?>>Perte de poids</option>
           <option value="Prise de masse" <?= ($user['objectif']??'')==='Prise de masse'?'selected':'' ?>>Prise de masse</option>
@@ -990,7 +959,7 @@ const AI_ADVICE_POOL = [
   "Pour votre objectif de <?= htmlspecialchars($user['objectif'] ?: 'non défini') ?>, concentrez-vous sur <?= str_contains(strtolower($user['objectif']??''),'perte') ? 'un déficit calorique modéré et une alimentation riche en fibres' : (str_contains(strtolower($user['objectif']??''),'masse') ? 'un surplus calorique avec des protéines suffisantes' : 'un équilibre entre tous les macronutriments') ?>.",
   "N oubliez pas de boire au moins <?= $user['poids'] ? round($user['poids'] * 0.033, 1) : '2' ?> litres d eau par jour. L hydratation est essentielle pour votre métabolisme et votre énergie.",
   "Essayez de dormir entre 7 et 8 heures par nuit. Le sommeil joue un rôle crucial dans la régulation des hormones de la faim et de la satiété.",
-  "Les protéines sont essentielles pour <?= str_contains(strtolower($user['objectif']??''),'masse') ? 'la construction musculaire' : 'la satiété et la préservation musculaire' ?>. Visez <?= round(<?= $user['poids'] ?: 70 ?> * 1.6) ?> grammes par jour.",
+  "Les protéines sont essentielles pour <?= str_contains(strtolower($user['objectif']??''),'masse') ? 'la construction musculaire' : 'la satiété et la préservation musculaire' ?>. Visez <?= round(($user['poids'] ?: 70) * 1.6) ?> grammes par jour.",
   "Les fruits et légumes devraient représenter au moins 5 portions par jour. Variez les couleurs pour maximiser les apports en vitamines et antioxydants.",
   "Réduisez votre consommation de sel à moins de 5 grammes par jour pour protéger votre santé cardiovasculaire.",
   "L activité physique régulière d au moins 30 minutes par jour peut réduire de 30% le risque de maladies chroniques.",
