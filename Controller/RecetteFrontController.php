@@ -25,6 +25,13 @@ class RecetteFrontController {
         $offset     = ($page - 1) * $perPage;
 
         $recettes = $this->recetteModel->filterPaginated($search, $categorie, $difficulte, $perPage, $offset);
+
+        // Calculer le Nutri-Score pour chaque recette
+        $nutriScores = [];
+        foreach ($recettes as $r) {
+            $nutriScores[$r['id']] = $this->recetteModel->calculerNutriScore((int)$r['id']);
+        }
+
         require_once 'View/front/recette.php';
     }
 
@@ -36,6 +43,7 @@ class RecetteFrontController {
         }
         $ingredients  = $this->ingredientModel->getByRecette((int)$id);
         $valeursNutri = $this->ingredientModel->getValeursNutritionnelles((int)$id);
+        $nutriScore   = $this->recetteModel->calculerNutriScore((int)$id);
         require_once 'View/front/recette_detail.php';
     }
 

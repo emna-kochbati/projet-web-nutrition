@@ -129,6 +129,60 @@
             </div>
             <?php endif; ?>
 
+            <!-- Nutri-Score badge -->
+            <?php if (isset($nutriScore) && $nutriScore['lettre'] !== '?'): ?>
+            <?php
+            $nsConfig = [
+                'A' => ['bg' => '#1a7a1a', 'label' => 'Excellent'],
+                'B' => ['bg' => '#5aab1f', 'label' => 'Bon'],
+                'C' => ['bg' => '#f5c800', 'label' => 'Moyen'],
+                'D' => ['bg' => '#e07800', 'label' => 'Médiocre'],
+                'E' => ['bg' => '#d32f2f', 'label' => 'Mauvais'],
+            ];
+            $nsCfg = $nsConfig[$nutriScore['lettre']] ?? $nsConfig['C'];
+            ?>
+            <div class="mb-4">
+                <h5 class="fw-bold mb-3">🏅 Nutri-Score</h5>
+                <div style="display:flex;align-items:center;gap:14px;background:#f9f9f9;
+                     border-radius:12px;padding:14px 18px;border:1px solid #e0e0e0;">
+                    <!-- Lettre active avec clignotement -->
+                    <div style="width:56px;height:56px;background:<?= $nsCfg['bg'] ?>;
+                         color:#fff;border-radius:10px;display:flex;align-items:center;
+                         justify-content:center;font-size:1.8rem;font-weight:900;
+                         box-shadow:0 4px 12px rgba(0,0,0,.2);
+                         animation:ns-pulse 1.5s ease-in-out infinite;">
+                        <?= $nutriScore['lettre'] ?>
+                    </div>
+                    <!-- Barre A B C D E -->
+                    <div style="display:flex;gap:5px;align-items:center;">
+                        <?php foreach (['A'=>'#1a7a1a','B'=>'#5aab1f','C'=>'#f5c800','D'=>'#e07800','E'=>'#d32f2f'] as $l=>$c): ?>
+                        <div style="width:30px;height:30px;background:<?= $c ?>;border-radius:6px;
+                             display:flex;align-items:center;justify-content:center;
+                             color:#fff;font-size:0.85rem;font-weight:800;
+                             opacity:<?= $l === $nutriScore['lettre'] ? '1' : '0.3' ?>;">
+                            <?= $l ?>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <!-- Label -->
+                    <div>
+                        <div style="font-weight:800;font-size:1rem;color:<?= $nsCfg['bg'] ?>;">
+                            <?= $nutriScore['lettre'] ?> — <?= $nsCfg['label'] ?> pour la santé
+                        </div>
+                        <div style="font-size:0.78rem;color:#888;margin-top:2px;">
+                            <?= $nutriScore['label'] ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <style>
+            @keyframes ns-pulse {
+                0%,100% { box-shadow:0 4px 12px rgba(0,0,0,.2); }
+                50%      { box-shadow:0 4px 20px <?= $nsCfg['bg'] ?>88; }
+            }
+            </style>
+            <?php endif; ?>
+
             <div class="d-flex gap-3 mt-4 flex-wrap">
                 <a href="/2A35/RecetteFront" class="btn btn-outline-secondary">
                     <i class="fa fa-arrow-left me-2"></i>Retour aux recettes

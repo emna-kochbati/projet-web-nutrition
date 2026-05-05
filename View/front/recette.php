@@ -159,10 +159,27 @@
 
                         <!-- Contenu -->
                         <div class="p-4">
-                            <h5 class="fw-bold mb-3"><?= htmlspecialchars($r['nom']) ?></h5>
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="fw-bold mb-0"><?= htmlspecialchars($r['nom']) ?></h5>
+                                <?php
+                                $nsBg = ['A'=>'#1a7a1a','B'=>'#5aab1f','C'=>'#f5c800','D'=>'#e07800','E'=>'#d32f2f'];
+                                $nsL  = $nutriScores[$r['id']]['lettre'] ?? '?';
+                                $nsLbl= $nutriScores[$r['id']]['label']  ?? '';
+                                $nsC  = $nsBg[$nsL] ?? '#9e9e9e';
+                                if ($nsL !== '?'):
+                                ?>
+                                <div style="width:34px;height:34px;background:<?= $nsC ?>;color:#fff;
+                                     border-radius:7px;display:flex;align-items:center;justify-content:center;
+                                     font-size:1rem;font-weight:900;flex-shrink:0;
+                                     box-shadow:0 2px 6px <?= $nsC ?>66;"
+                                     title="Nutri-Score <?= $nsL ?> — <?= $nsLbl ?>">
+                                    <?= $nsL ?>
+                                </div>
+                                <?php endif; ?>
+                            </div>
 
                             <!-- Stats -->
-                            <div class="d-flex justify-content-between mb-4">
+                            <div class="d-flex justify-content-between mb-4 mt-2">
                                 <span class="text-muted small">
                                     <i class="fa fa-clock text-primary me-1"></i><?= $r['duree'] ?> min
                                 </span>
