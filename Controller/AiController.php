@@ -489,6 +489,122 @@ class AiController {
     }
 
     // =========================================================================
+    // UNSPLASH API — Recherche de photo pour une recette (gratuit, instantané)
+    // Votre app → https://api.unsplash.com → photo professionnelle
+    // =========================================================================
+    public function genererImage(): void {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['error' => 'Méthode non autorisée.']); exit;
+        }
+
+        $body = json_decode(file_get_contents('php://input'), true);
+        $nom  = trim($body['nom'] ?? '');
+
+        if ($nom === '') {
+            echo json_encode(['error' => 'Nom de la recette manquant.']); exit;
+        }
+
+        // ── Clé Unsplash (gratuite sur unsplash.com/developers) ──────────────
+        $accessKey = 'VOTRE_CLE_UNSPLASH_ICI';
+
+        // ── Appel à l'API Unsplash ────────────────────────────────────────────
+        $query = urlencode($nom . ' food recipe');
+        $page  = rand(1, 3); // Page aléatoire pour varier les résultats
+        $url   = 'https://api.unsplash.com/search/photos?query=' . $query
+               . '&per_page=10&page=' . $page . '&orientation=landscape&client_id=' . $accessKey;
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_HTTPHEADER     => ['Accept-Version: v1'],
+        ]);
+
+        $result   = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr  = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlErr) {
+            echo json_encode(['error' => 'Erreur réseau : ' . $curlErr]); exit;
+        }
+        if ($httpCode !== 200) {
+            echo json_encode(['error' => 'Unsplash indisponible (code ' . $httpCode . ').']); exit;
+        }
+
+        $data    = json_decode($result, true);
+        $results = $data['results'] ?? [];
+
+        if (empty($results)) {
+            // Fallback : chercher "food" si aucun résultat pour le nom
+            $urlFallback = 'https://api.unsplash.com/search/photos?query=food+recipe&per_page=10&page=' . rand(1,5) . '&orientation=landscape&client_id=' . $accessKey;
+            $ch3 = curl_init($urlFallback);
+            curl_setopt_array($ch3, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_HTTPHEADER => ['Accept-Version: v1']]);
+            $r2      = json_decode(curl_exec($ch3), true);
+            curl_close($ch3);
+            $results = $r2['results'] ?? [];
+        }
+
+        if (empty($results)) {
+            echo json_encode(['error' => 'Aucune photo trouvée. Réessayez avec un autre nom.']); exit;
+        }
+
+        // Prendre une photo aléatoire parmi les résultats
+        $photo    = $results[array_rand($results)];
+        $imageUrl = $photo['urls']['regular'] ?? $photo['urls']['small'] ?? '';
+        $auteur   = $photo['user']['name'] ?? 'Unsplash';
+
+        if (empty($imageUrl)) {
+            // Fallback : chercher juste "food" si aucun résultat pour le nom
+            $urlFallback = 'https://api.unsplash.com/search/photos?query=food+recipe&per_page=10&page=' . rand(1,5) . '&orientation=landscape&client_id=' . $accessKey;
+            $ch3 = curl_init($urlFallback);
+            curl_setopt_array($ch3, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10, CURLOPT_SSL_VERIFYPEER => false]);
+            $r2 = json_decode(curl_exec($ch3), true);
+            curl_close($ch3);
+            $results2 = $r2['results'] ?? [];
+            if (!empty($results2)) {
+                $photo    = $results2[array_rand($results2)];
+                $imageUrl = $photo['urls']['regular'] ?? '';
+                $auteur   = $photo['user']['name'] ?? 'Unsplash';
+            }
+        }
+
+        if (empty($imageUrl)) {
+            echo json_encode(['error' => 'Aucune photo trouvée pour "' . $nom . '".']); exit;
+        }
+
+        // ── Télécharger et sauvegarder l'image ────────────────────────────────
+        $ch2 = curl_init($imageUrl);
+        curl_setopt_array($ch2, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_FOLLOWLOCATION => true,
+        ]);
+        $imageData = curl_exec($ch2);
+        curl_close($ch2);
+
+        if (empty($imageData)) {
+            echo json_encode(['error' => 'Impossible de télécharger l\'image.']); exit;
+        }
+
+        $dir = 'assets/uploads/recettes/';
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
+        $fichier = 'unsplash_' . uniqid() . '.jpg';
+        file_put_contents($dir . $fichier, $imageData);
+
+        echo json_encode([
+            'fichier' => $fichier,
+            'auteur'  => $auteur,
+            'source'  => 'unsplash',
+        ]);
+        exit;
+    }
+
+    // =========================================================================
     // EDAMAM FOOD DATABASE API — Valeurs nutritionnelles officielles
     // Votre app → https://api.edamam.com → valeurs réelles pour 100g
     // =========================================================================

@@ -64,6 +64,10 @@ ob_start();
 }
 .form-group textarea { resize:none; min-height:120px; overflow:hidden; }
 #description { min-height:120px; width:100%; box-sizing:border-box; }
+@keyframes bounce-img {
+    0%,60%,100% { transform:translateY(0); }
+    30%          { transform:translateY(-6px); }
+}
 .is-invalid { border-color:var(--red) !important; background:var(--err-bg) !important; }
 .is-valid   { border-color:var(--green) !important; background:#f1f8e9 !important; }
 .msg-err { font-size:0.82rem; color:var(--red); font-weight:600; margin-top:2px; }
@@ -456,6 +460,58 @@ ob_start();
                         <p>Image actuelle — laisser vide pour la conserver.</p>
                     </div>
                 <?php endif; ?>
+
+                <!-- Bouton génération image IA -->
+                <div style="margin-top:10px;">
+                    <button type="button" id="btnGenImage" onclick="genererImageIA()"
+                        style="background:linear-gradient(135deg,#e65100,#ff6d00);color:#fff;border:none;
+                               border-radius:7px;padding:10px 18px;cursor:pointer;font-weight:700;
+                               font-size:0.88rem;display:inline-flex;align-items:center;gap:8px;
+                               transition:all .2s;box-shadow:0 2px 8px rgba(230,81,0,.3);">
+                        🎨 Générer une image avec l'IA
+                    </button>
+                </div>
+
+                <!-- Aperçu image générée -->
+                <div id="imageGenPreview" style="display:none;margin-top:14px;padding:14px;
+                     background:#fff8f0;border:2px solid #ffcc80;border-radius:10px;">
+                    <div style="font-size:0.82rem;font-weight:700;color:#e65100;margin-bottom:10px;">
+                        🎨 Image trouvée via Unsplash API
+                    </div>
+                    <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
+                        <img id="imageGenImg" src="" alt="Image générée"
+                             style="width:160px;height:120px;object-fit:cover;border-radius:8px;
+                                    border:2px solid #ffcc80;display:none;">
+                        <div id="imageGenLoader" style="width:160px;height:120px;background:#f5f5f5;
+                             border-radius:8px;display:flex;align-items:center;justify-content:center;
+                             flex-direction:column;gap:8px;border:2px solid #e0e0e0;">
+                            <div style="display:flex;gap:4px;">
+                                <span style="width:8px;height:8px;background:#ff6d00;border-radius:50%;animation:bounce-img .8s infinite;"></span>
+                                <span style="width:8px;height:8px;background:#ff6d00;border-radius:50%;animation:bounce-img .8s .2s infinite;"></span>
+                                <span style="width:8px;height:8px;background:#ff6d00;border-radius:50%;animation:bounce-img .8s .4s infinite;"></span>
+                            </div>
+                            <span style="font-size:0.75rem;color:#888;">Génération...</span>
+                        </div>
+                        <div style="flex:1;min-width:150px;">
+                            <div id="imageGenNom" style="font-weight:700;color:#333;font-size:0.88rem;margin-bottom:8px;"></div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <button type="button" id="btnUtiliserImage" onclick="utiliserImageGeneree()"
+                                    style="background:#2e7d32;color:#fff;border:none;border-radius:6px;
+                                           padding:8px 14px;cursor:pointer;font-weight:700;font-size:0.82rem;">
+                                    ✅ Utiliser cette image
+                                </button>
+                                <button type="button" onclick="genererImageIA()"
+                                    style="background:#e0e0e0;color:#333;border:none;border-radius:6px;
+                                           padding:8px 14px;cursor:pointer;font-weight:600;font-size:0.82rem;">
+                                    🔄 Régénérer
+                                </button>
+                            </div>
+                            <div id="imageGenStatut" style="margin-top:8px;font-size:0.78rem;color:#888;"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Champ caché pour l'image générée -->
+                <input type="hidden" id="imageGenereeNom" name="image_generee" value="">
             </div>
 
         </div><!-- /form-grid -->
@@ -1178,6 +1234,92 @@ aiInput.addEventListener('input', function() {
 document.addEventListener('DOMContentLoaded', function() {
     restaurerHistorique();
 });
+
+// ════════════════════════════════════════════════════════
+// GÉNÉRATION D'IMAGE — Pollinations.ai (API gratuite, sans clé)
+// Votre app → Pollinations.ai → image générée automatiquement
+// ════════════════════════════════════════════════════════
+let imageGenereeUrl = null;
+
+async function genererImageIA() {
+    const nom = document.getElementById('nom').value.trim();
+    if (!nom || nom.length < 2) {
+        alert('⚠️ Saisissez d\'abord le nom de la recette.');
+        return;
+    }
+
+    const btn = document.getElementById('btnGenImage');
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Génération...';
+
+    // Afficher le panneau aperçu avec loader
+    document.getElementById('imageGenPreview').style.display = 'block';
+    document.getElementById('imageGenLoader').style.display  = 'flex';
+    document.getElementById('imageGenImg').style.display     = 'none';
+    document.getElementById('imageGenNom').textContent       = '"' + nom + '"';
+    document.getElementById('imageGenStatut').textContent    = 'Recherche d\'une photo sur Unsplash...';
+    document.getElementById('btnUtiliserImage').style.display = 'none';
+
+    // Réinitialiser le bouton "Utiliser" pour permettre une nouvelle sélection
+    const btnUtiliser = document.getElementById('btnUtiliserImage');
+    btnUtiliser.textContent = '✅ Utiliser cette image';
+    btnUtiliser.style.background = '#2e7d32';
+    btnUtiliser.disabled = false;
+    btnUtiliser.style.display = 'none';
+    document.getElementById('imageGenereeNom').value = '';
+    imageGenereeUrl = null;
+
+    // Scroll vers l'aperçu
+    document.getElementById('imageGenPreview').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    try {
+        const controller = new AbortController();
+        const timeoutId  = setTimeout(() => controller.abort(), 65000); // 65s
+
+        const resp = await fetch('/2A35/Admin/Ai/genererImage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nom: nom }),
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        const data = await resp.json();
+
+        if (data.error) {
+            document.getElementById('imageGenStatut').textContent = '❌ ' + data.error;
+            document.getElementById('imageGenLoader').style.display = 'none';
+        } else {
+            // Afficher l'image
+            const img = document.getElementById('imageGenImg');
+            img.src = '/2A35/assets/uploads/recettes/' + data.fichier;
+            img.style.display = 'block';
+            document.getElementById('imageGenLoader').style.display = 'none';
+            const source = data.source === 'unsplash'
+                ? '📷 Photo Unsplash par ' + (data.auteur || 'Unsplash')
+                : '🎨 Image générée par IA';
+            document.getElementById('imageGenStatut').textContent = '✅ ' + source;
+            document.getElementById('btnUtiliserImage').style.display = 'inline-block';
+            imageGenereeUrl = data.fichier;
+        }
+    } catch (e) {
+        document.getElementById('imageGenStatut').textContent = e.name === 'AbortError'
+            ? '❌ Timeout — Pollinations.ai trop lent. Réessayez.'
+            : '❌ Erreur. Réessayez.';
+        document.getElementById('imageGenLoader').style.display = 'none';
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '🎨 Générer une image avec l\'IA';
+}
+
+function utiliserImageGeneree() {
+    if (!imageGenereeUrl) return;
+    document.getElementById('imageGenereeNom').value = imageGenereeUrl;
+    document.getElementById('imageGenStatut').textContent = '✅ Image sélectionnée pour la recette !';
+    document.getElementById('btnUtiliserImage').textContent = '✅ Image sélectionnée';
+    document.getElementById('btnUtiliserImage').style.background = '#1b5e20';
+    document.getElementById('btnUtiliserImage').disabled = true;
+}
 </script>
 
 <?php $content = ob_get_clean(); require_once 'View/back/layout.php'; ?>

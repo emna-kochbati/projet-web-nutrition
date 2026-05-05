@@ -302,11 +302,20 @@ class RecetteController {
     }
 
     private function uploadImage(): ?string {
-        if (empty($_FILES['image']['name'])) return null;
+        if (empty($_FILES['image']['name'])) {
+            // Utiliser l'image générée par IA si disponible
+            $imageGeneree = trim($_POST['image_generee'] ?? '');
+            if ($imageGeneree !== '' && file_exists('assets/uploads/recettes/' . $imageGeneree)) {
+                return $imageGeneree;
+            }
+            return null;
+        }
         $dir = 'assets/uploads/recettes/';
         if (!is_dir($dir)) mkdir($dir, 0755, true);
-        $ext  = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
-        $name = uniqid('rec_') . '.' . $ext;
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mime  = $finfo->file($_FILES['image']['tmp_name']);
+        $ext   = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+        $name  = uniqid('rec_') . '.' . $ext;
         move_uploaded_file($_FILES['image']['tmp_name'], $dir . $name);
         return $name;
     }
