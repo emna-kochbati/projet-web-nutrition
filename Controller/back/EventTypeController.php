@@ -84,7 +84,6 @@ class EventTypeController {
             $imagePath = $this->handleImageUpload($_FILES['image']);
             
             if ($imagePath) {
-                // Delete old image if new one is uploaded
                 $oldType = $this->getById($id);
                 if ($oldType && !empty($oldType['image']) && file_exists($oldType['image'])) {
                     unlink($oldType['image']);
@@ -101,7 +100,6 @@ class EventTypeController {
         try {
             $this->deleteEventType($id);
         } catch (Exception $e) {
-            // Handle foreign key error if needed, for now just redirect
         }
         header('Location: /2A35/back/EventType');
         exit;
