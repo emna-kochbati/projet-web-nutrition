@@ -210,6 +210,15 @@
 
             <div class="nav-divider"></div>
 
+            <!-- Classement -->
+            <li class="nav-item">
+                <a href="/2A35/Admin/classement" class="nav-link <?= ($active_menu ?? '') === 'classement' ? 'active' : '' ?>">
+                    <span class="nav-left">🏆 Classement Healthy</span>
+                </a>
+            </li>
+
+            <div class="nav-divider"></div>
+
             <!-- Login -->
             <li class="nav-item">
                 <a href="/2A35/Login" class="nav-link">
