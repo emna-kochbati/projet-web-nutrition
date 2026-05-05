@@ -143,39 +143,49 @@ function renderMarkers(list) {
     }
 
     list.forEach((r, i) => {
-        if (!r.latitude || !r.longitude) return;
+        const hasCoords = r.latitude && r.longitude;
 
-        // Marqueur
-        const marker = L.marker([r.latitude, r.longitude], { icon: greenIcon() })
-            .addTo(map)
-            .bindPopup(buildPopup(r));
+        // Marqueur sur la carte (seulement si coordonnées disponibles)
+        if (hasCoords) {
+            const marker = L.marker([parseFloat(r.latitude), parseFloat(r.longitude)], { icon: greenIcon() })
+                .addTo(map)
+                .bindPopup(buildPopup(r));
+            marker.on('click', () => highlightCard(i));
+            markers.push(marker);
+        }
 
-        marker.on('click', () => highlightCard(i));
-        markers.push(marker);
-
-        // Carte latérale
+        // Carte latérale (tous les restaurants)
         const card = document.createElement('div');
         card.className = 'resto-card';
         card.id = 'card-' + i;
+        card.style.opacity = hasCoords ? '1' : '0.6';
         card.innerHTML = `
-            <h6>${esc(r.nom)}</h6>
+            <h6>${esc(r.nom)} ${!hasCoords ? '<small style="color:#aaa;font-size:.7rem;">(position non disponible)</small>' : ''}</h6>
             <span class="badge-type">${esc(r.type_cuisine)}</span>
             ${r.distance_km !== undefined ? `<span class="dist-badge ms-1">📍 ${r.distance_km} km</span>` : ''}
             <div class="addr"><i class="fa fa-map-marker-alt me-1"></i>${esc(r.adresse)}</div>
             ${r.telephone ? `<div class="addr"><i class="fa fa-phone me-1"></i>${esc(r.telephone)}</div>` : ''}
         `;
-        card.onclick = () => {
-            map.setView([r.latitude, r.longitude], 16);
-            marker.openPopup();
-            highlightCard(i);
-        };
+        if (hasCoords) {
+            card.onclick = () => {
+                map.setView([parseFloat(r.latitude), parseFloat(r.longitude)], 16);
+                markers[markers.length - 1].openPopup();
+                highlightCard(i);
+            };
+        }
         document.getElementById('resto-list').appendChild(card);
     });
 
-    // Ajuster la vue
+    // Ajuster la vue sur les marqueurs existants
     if (markers.length > 0) {
         const group = L.featureGroup(markers);
         map.fitBounds(group.getBounds().pad(0.2));
+    } else {
+        // Aucune coordonnée → centrer sur Tunis
+        map.setView([36.8065, 10.1815], 12);
+        document.getElementById('resto-list').insertAdjacentHTML('afterbegin',
+            '<div style="background:#fff3e0;border-radius:8px;padding:12px;font-size:.82rem;color:#e65100;margin-bottom:8px;">⚠️ Aucune coordonnée GPS disponible. Les adresses seront géocodées au prochain chargement.</div>'
+        );
     }
 }
 
@@ -269,8 +279,69 @@ function esc(str) {
     return d.innerHTML;
 }
 
+// ── Géocodage JS via Nominatim ────────────────────────────────────────────
+async function geocodeAll(list) {
+    const toGeocode = list.filter(r => !r.latitude || !r.longitude);
+    if (toGeocode.length === 0) { renderMarkers(list); return; }
+
+    document.getElementById('map-count').innerHTML =
+        '<span style="color:#f57f17;">⏳ Géocodage des adresses en cours (' + toGeocode.length + ' restaurants)...</span>';
+
+    for (let r of toGeocode) {
+        try {
+            // Essai 1 : adresse complète + Tunisie
+            let coords = await tryGeocode(r.adresse + ', Tunisie');
+            // Essai 2 : nom du restaurant + adresse + Tunisie
+            if (!coords) coords = await tryGeocode(r.nom + ' ' + r.adresse + ', Tunisie');
+            // Essai 3 : nom du restaurant seul + Tunisie
+            if (!coords) coords = await tryGeocode(r.nom + ', Tunisie');
+            // Essai 4 : adresse comme ville tunisienne
+            if (!coords) coords = await tryGeocode(r.adresse + ', Tunisia');
+
+            if (coords) {
+                r.latitude  = coords.lat;
+                r.longitude = coords.lng;
+                await fetch('/2A35/Map/saveCoords', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: r.id, lat: r.latitude, lng: r.longitude })
+                });
+            }
+            await new Promise(res => setTimeout(res, 1200));
+        } catch(e) { /* ignorer */ }
+    }
+    renderMarkers(list);
+}
+
+async function tryGeocode(query) {
+    const q    = encodeURIComponent(query);
+    const resp = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=tn`, {
+        headers: { 'Accept-Language': 'fr', 'User-Agent': 'EcoNutri/1.0' }
+    });
+    const data = await resp.json();
+    if (data && data[0]) {
+        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    }
+    return null;
+}
+
+// Enrichir les adresses courtes avec la ville/pays
+function enrichAddress(adresse) {
+    const a = adresse.toLowerCase().trim();
+    // Si l'adresse est trop courte ou ne contient pas de numéro/rue
+    if (a.length < 10 || (!a.includes('rue') && !a.includes('avenue') && !a.includes('route') && !a.includes('boulevard'))) {
+        return adresse + ', Tunisie';
+    }
+    return adresse + ', Tunisie';
+}
+
 // ── Chargement initial ────────────────────────────────────────────────────
-renderMarkers(ALL_RESTAURANTS);
+const toGeocodeCount = ALL_RESTAURANTS.filter(r => !r.latitude || !r.longitude).length;
+if (toGeocodeCount > 0) {
+    geocodeAll([...ALL_RESTAURANTS]);
+} else {
+    renderMarkers(ALL_RESTAURANTS);
+}
 </script>
 
 <?php include 'View/front/partials/footer.php'; ?>

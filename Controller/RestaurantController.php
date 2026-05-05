@@ -153,12 +153,14 @@ class RestaurantController {
             );
 
             $stmt = $this->db->prepare(
-                "INSERT INTO restaurant (nom, description, adresse, telephone, email, type_cuisine, image)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)"
+                "INSERT INTO restaurant (nom, description, adresse, telephone, email, type_cuisine, image, latitude, longitude)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
             );
             $stmt->execute([
                 $r->getNom(), $r->getDescription(), $r->getAdresse(),
-                $r->getTelephone(), $r->getEmail(), $r->getTypeCuisine(), $r->getImage()
+                $r->getTelephone(), $r->getEmail(), $r->getTypeCuisine(), $r->getImage(),
+                !empty($_POST['latitude'])  ? (float)$_POST['latitude']  : null,
+                !empty($_POST['longitude']) ? (float)$_POST['longitude'] : null,
             ]);
             $restaurantId = (int)$this->db->lastInsertId();
 
@@ -205,13 +207,16 @@ class RestaurantController {
             );
 
             $stmt = $this->db->prepare(
-                "UPDATE restaurant SET nom=?, description=?, adresse=?, telephone=?, email=?, type_cuisine=?, image=?
+                "UPDATE restaurant SET nom=?, description=?, adresse=?, telephone=?, email=?, type_cuisine=?, image=?, latitude=?, longitude=?
                  WHERE id=?"
             );
             $stmt->execute([
                 $r->getNom(), $r->getDescription(), $r->getAdresse(),
                 $r->getTelephone(), $r->getEmail(), $r->getTypeCuisine(),
-                $r->getImage(), $r->getId()
+                $r->getImage(),
+                !empty($_POST['latitude'])  ? (float)$_POST['latitude']  : null,
+                !empty($_POST['longitude']) ? (float)$_POST['longitude'] : null,
+                $r->getId()
             ]);
 
             $this->saveMeals((int)$id, $_POST['meals'] ?? []);

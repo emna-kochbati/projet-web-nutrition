@@ -80,10 +80,12 @@ class ChatbotController {
     }
 
     private function getRestaurantsProches(float $lat, float $lng, int $limit = 5): array {
-        // Vérifier si les colonnes latitude/longitude existent
+        // Créer les colonnes si elles n'existent pas
         $check = $this->db->query("SHOW COLUMNS FROM restaurant LIKE 'latitude'")->fetch();
         if (!$check) {
-            throw new \RuntimeException("Les colonnes latitude/longitude n'existent pas encore. Exécutez ce SQL dans phpMyAdmin : ALTER TABLE restaurant ADD COLUMN latitude DECIMAL(10,7) DEFAULT NULL, ADD COLUMN longitude DECIMAL(10,7) DEFAULT NULL;");
+            $this->db->exec("ALTER TABLE restaurant ADD COLUMN latitude DECIMAL(10,7) DEFAULT NULL");
+            $this->db->exec("ALTER TABLE restaurant ADD COLUMN longitude DECIMAL(10,7) DEFAULT NULL");
+            return []; // Pas encore de données
         }
 
         $sql = "

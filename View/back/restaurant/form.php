@@ -110,6 +110,30 @@ textarea { resize:vertical; min-height:90px; }
             <?php endif; ?>
         </div>
 
+        <!-- Coordonnées GPS -->
+        <div style="background:#f1f8e9;border-radius:8px;padding:16px;margin-bottom:18px;border:1px solid #c8e6c9;">
+            <label style="font-size:.9rem;font-weight:700;color:#2e7d32;margin-bottom:10px;display:block;">
+                📍 Coordonnées GPS <small style="font-weight:400;color:#888;">(pour affichage sur la carte)</small>
+            </label>
+            <div class="form-row">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label for="latitude" style="font-size:.82rem;">Latitude</label>
+                    <input type="number" id="latitude" name="latitude" step="0.0000001"
+                           value="<?= htmlspecialchars($restaurant['latitude'] ?? '') ?>"
+                           placeholder="Ex: 36.8190">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label for="longitude" style="font-size:.82rem;">Longitude</label>
+                    <input type="number" id="longitude" name="longitude" step="0.0000001"
+                           value="<?= htmlspecialchars($restaurant['longitude'] ?? '') ?>"
+                           placeholder="Ex: 10.1658">
+                </div>
+            </div>
+            <small style="color:#888;margin-top:8px;display:block;">
+                💡 Trouvez les coordonnées sur <a href="https://www.google.com/maps" target="_blank" style="color:#2e7d32;">Google Maps</a> : clic droit sur l'adresse → "Qu'y a-t-il ici ?"
+            </small>
+        </div>
+
         <!-- ── Section Plats inline ──────────────────────────────────────── -->
         <div style="margin-top:28px;border-top:2px solid #e8f5e9;padding-top:24px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">

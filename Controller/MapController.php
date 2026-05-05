@@ -11,8 +11,44 @@ class MapController {
 
     // GET /Map — page carte
     public function index(): void {
+        // Créer les colonnes automatiquement si elles n'existent pas
+        $this->ensureGpsColumns();
         $restaurants = $this->db->query("SELECT * FROM restaurant ORDER BY nom")->fetchAll();
         require_once 'View/front/map.php';
+    }
+
+    // Crée latitude/longitude si elles n'existent pas
+    private function ensureGpsColumns(): void {
+        $lat = $this->db->query("SHOW COLUMNS FROM restaurant LIKE 'latitude'")->fetch();
+        if (!$lat) {
+            $this->db->exec("ALTER TABLE restaurant ADD COLUMN latitude DECIMAL(10,7) DEFAULT NULL");
+        }
+        $lng = $this->db->query("SHOW COLUMNS FROM restaurant LIKE 'longitude'")->fetch();
+        if (!$lng) {
+            $this->db->exec("ALTER TABLE restaurant ADD COLUMN longitude DECIMAL(10,7) DEFAULT NULL");
+        }
+    }
+
+    // POST /Map/saveCoords — sauvegarde les coordonnées géocodées
+    public function saveCoords(): void {
+        header('Content-Type: application/json');
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+        $id   = (int)($body['id']  ?? 0);
+        $lat  = (float)($body['lat'] ?? 0);
+        $lng  = (float)($body['lng'] ?? 0);
+
+        if (!$id || !$lat || !$lng) {
+            echo json_encode(['ok' => false]);
+            exit;
+        }
+
+        // Créer les colonnes si elles n'existent pas
+        $this->ensureGpsColumns();
+
+        $stmt = $this->db->prepare("UPDATE restaurant SET latitude=?, longitude=? WHERE id=?");
+        $stmt->execute([$lat, $lng, $id]);
+        echo json_encode(['ok' => true]);
+        exit;
     }
 
     // GET /Map/restaurants — API JSON pour tous les restaurants
