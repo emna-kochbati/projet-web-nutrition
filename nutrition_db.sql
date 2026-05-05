@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS `restaurant` (
     `email`        VARCHAR(150) DEFAULT NULL,
     `type_cuisine` ENUM('tunisienne','italienne','japonaise','americaine','indienne','mexicaine','française','autre') NOT NULL,
     `image`        VARCHAR(255) DEFAULT NULL,
+    `latitude`     DECIMAL(10,7) DEFAULT NULL,
+    `longitude`    DECIMAL(10,7) DEFAULT NULL,
     `created_at`   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -49,9 +51,9 @@ CREATE TABLE IF NOT EXISTS `meal` (
 -- Données de test — restaurant
 -- ------------------------------------------------------------
 INSERT INTO `restaurant` (`nom`, `description`, `adresse`, `telephone`, `email`, `type_cuisine`, `capacite`) VALUES
-('Le Jasmin',    'Restaurant tunisien traditionnel au cœur de la médina.', '12 Rue de la Médina, Tunis',     '+216 71 000 001', 'jasmin@resto.tn', 'tunisienne'),
-('Bella Italia', 'Authentique cuisine italienne, pizzas et pâtes maison.', '5 Avenue Habib Bourguiba, Tunis', '+216 71 000 002', 'bella@resto.tn',  'italienne'),
-('Tokyo Garden', 'Sushis, ramens et spécialités japonaises.',              '8 Rue de Marseille, Tunis',      '+216 71 000 003', 'tokyo@resto.tn',  'japonaise');
+('Le Jasmin',    'Restaurant tunisien traditionnel au cœur de la médina.', '12 Rue de la Médina, Tunis',     '+216 71 000 001', 'jasmin@resto.tn', 'tunisienne', 36.8190, 10.1658),
+('Bella Italia', 'Authentique cuisine italienne, pizzas et pâtes maison.', '5 Avenue Habib Bourguiba, Tunis', '+216 71 000 002', 'bella@resto.tn',  'italienne',  36.8008, 10.1800),
+('Tokyo Garden', 'Sushis, ramens et spécialités japonaises.',              '8 Rue de Marseille, Tunis',      '+216 71 000 003', 'tokyo@resto.tn',  'japonaise',  36.8065, 10.1815);
 
 -- ------------------------------------------------------------
 -- Données de test — meal
@@ -64,3 +66,7 @@ INSERT INTO `meal` (`restaurant_id`, `nom`, `description`, `prix`, `categorie`, 
 (2, 'Tiramisu',         'Dessert italien au café et mascarpone.',         6.50, 'dessert',        380, 1),
 (3, 'Sushi Mix 12 pcs', 'Assortiment de sushis variés.',                 22.00, 'plat_principal', 420, 1),
 (3, 'Ramen Tonkotsu',   'Bouillon de porc, nouilles, œuf mollet.',       16.00, 'plat_principal', 580, 1);
+
+-- Ajouter latitude/longitude si pas encore présentes
+ALTER TABLE `restaurant` ADD COLUMN IF NOT EXISTS `latitude`  DECIMAL(10,7) DEFAULT NULL;
+ALTER TABLE `restaurant` ADD COLUMN IF NOT EXISTS `longitude` DECIMAL(10,7) DEFAULT NULL;
