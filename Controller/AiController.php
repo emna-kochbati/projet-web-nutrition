@@ -489,6 +489,85 @@ class AiController {
     }
 
     // =========================================================================
+    // EDAMAM FOOD DATABASE API — Valeurs nutritionnelles officielles
+    // Votre app → https://api.edamam.com → valeurs réelles pour 100g
+    // =========================================================================
+    public function edamam(): void {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['error' => 'Méthode non autorisée.']); exit;
+        }
+
+        $body = json_decode(file_get_contents('php://input'), true);
+        $nom  = trim($body['nom'] ?? '');
+
+        if ($nom === '') {
+            echo json_encode(['error' => 'Nom de l\'ingrédient manquant.']); exit;
+        }
+
+        // ── Clés Edamam ───────────────────────────────────────────────────────
+        $appId  = 'VOTRE_EDAMAM_APP_ID';
+        $appKey = 'VOTRE_EDAMAM_APP_KEY';
+
+        // ── Appel à l'API Edamam Food Database ────────────────────────────────
+        $url = 'https://api.edamam.com/api/food-database/v2/parser?'
+             . http_build_query([
+                 'ingr'    => $nom,
+                 'app_id'  => $appId,
+                 'app_key' => $appKey,
+             ]);
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_HTTPHEADER     => ['Accept: application/json'],
+        ]);
+
+        $result   = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr  = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlErr) {
+            echo json_encode(['error' => 'Erreur réseau : ' . $curlErr]); exit;
+        }
+        if ($httpCode !== 200) {
+            echo json_encode(['error' => 'Edamam indisponible (code ' . $httpCode . '). Réessayez.']); exit;
+        }
+
+        $data  = json_decode($result, true);
+        $hints = $data['hints'] ?? [];
+
+        if (empty($hints)) {
+            echo json_encode(['error' => 'Aucun aliment trouvé pour "' . $nom . '" dans Edamam.']); exit;
+        }
+
+        // Prendre le premier résultat
+        $food    = $hints[0]['food'] ?? [];
+        $nutri   = $food['nutrients'] ?? [];
+        $label   = $food['label'] ?? $nom;
+
+        // Edamam retourne les valeurs pour 100g directement
+        $proteines = round((float)($nutri['PROCNT'] ?? 0), 2); // Protéines
+        $glucides  = round((float)($nutri['CHOCDF'] ?? 0), 2); // Glucides
+        $lipides   = round((float)($nutri['FAT']    ?? 0), 2); // Lipides
+        $calcium   = round((float)($nutri['CA']     ?? 0), 2); // Calcium en mg
+
+        echo json_encode([
+            'proteines' => $proteines,
+            'calcium'   => $calcium,
+            'glucides'  => $glucides,
+            'lipides'   => $lipides,
+            'label'     => $label,
+            'source'    => 'edamam',
+        ]);
+        exit;
+    }
+
+    // =========================================================================
     // GEMINI — Valeurs nutritionnelles d'un ingrédient (pour 100g)
     // =========================================================================
     public function nutrition(): void {

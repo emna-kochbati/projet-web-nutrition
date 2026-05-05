@@ -56,12 +56,12 @@ ob_start();
                            placeholder="Ex : Tomate, Quinoa, Lait...">
                     <?php if (isset($errors['nom'])): ?><span class="err">⚠ <?= $errors['nom'] ?></span><?php endif; ?>
                 </div>
-                <button type="button" id="btnAiNutri" onclick="remplirAvecIA()"
-                    style="background:linear-gradient(135deg,#6c3fc5,#8b5cf6);color:#fff;border:none;
+                <button type="button" id="btnAiNutri" onclick="remplirAvecEdamam()"
+                    style="background:linear-gradient(135deg,#2e7d32,#4caf50);color:#fff;border:none;
                            border-radius:7px;padding:11px 16px;cursor:pointer;font-weight:700;
                            font-size:0.85rem;white-space:nowrap;display:flex;align-items:center;
                            gap:6px;transition:opacity .2s;flex-shrink:0;">
-                    🤖 Remplir avec l'IA
+                    🥗 Valeurs nutritionnelles
                 </button>
             </div>
             <!-- Bandeau résultat IA / Open Food Facts -->
@@ -207,9 +207,10 @@ document.getElementById('formIngredient').addEventListener('submit', function(e)
 });
 
 // ════════════════════════════════════════════════════════
-// GEMINI IA — Remplissage automatique des valeurs nutritionnelles
+// EDAMAM FOOD DATABASE API — Valeurs nutritionnelles officielles
+// Votre app → Edamam API → valeurs réelles pour 100g
 // ════════════════════════════════════════════════════════
-async function remplirAvecIA() {
+async function remplirAvecEdamam() {
     const nom = document.getElementById('nom').value.trim();
     if (!nom || nom.length < 2) {
         afficherResultatIA('⚠️ Saisissez d\'abord le nom de l\'ingrédient.', 'warn');
@@ -218,11 +219,11 @@ async function remplirAvecIA() {
 
     const btn = document.getElementById('btnAiNutri');
     btn.disabled = true;
-    btn.innerHTML = '⏳ Analyse en cours...';
-    afficherResultatIA('🤖 Gemini analyse "' + nom + '"...', 'loading');
+    btn.innerHTML = '⏳ Recherche...';
+    afficherResultatIA('🥗 Recherche dans Edamam pour "' + nom + '"...', 'loading');
 
     try {
-        const resp = await fetch('/2A35/Admin/Ai/nutrition', {
+        const resp = await fetch('/2A35/Admin/Ai/edamam', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ nom: nom })
@@ -241,27 +242,25 @@ async function remplirAvecIA() {
                     el.value = data[champ];
                     el.classList.remove('is-invalid');
                     el.classList.add('is-valid');
-                    // Mettre à jour le message de validation
                     let s = el.parentNode.querySelector('.msg-dyn');
                     if (!s) { s = document.createElement('span'); s.className = 'msg-dyn'; el.parentNode.appendChild(s); }
                     s.className = 'msg-dyn msg-ok';
-                    s.textContent = '✔ Rempli par IA';
+                    s.textContent = '✔ Edamam';
                 }
             });
 
-            const source = data.source === 'gemini' ? '🤖 Gemini IA' : '⚙️ Valeurs pour 100g';
             afficherResultatIA(
-                source + ' — Valeurs nutritionnelles pour 100g de <strong>' + nom + '</strong> insérées automatiquement ! ' +
-                'Vous pouvez les modifier si nécessaire.',
+                '🥗 <strong>Edamam Food Database</strong> — Valeurs officielles pour 100g de <strong>' +
+                (data.label || nom) + '</strong> insérées automatiquement ! Vous pouvez les modifier si nécessaire.',
                 'success'
             );
         }
     } catch (e) {
-        afficherResultatIA('❌ Erreur serveur. Réessayez.', 'error');
+        afficherResultatIA('❌ Erreur de connexion à Edamam. Réessayez.', 'error');
     }
 
     btn.disabled = false;
-    btn.innerHTML = '🤖 Remplir avec l\'IA';
+    btn.innerHTML = '🥗 Valeurs nutritionnelles';
 }
 
 function afficherResultatIA(msg, type) {
@@ -271,7 +270,7 @@ function afficherResultatIA(msg, type) {
         success: 'background:#f0fdf4;border-color:#86efac;color:#166534;',
         error:   'background:#ffebee;border-color:#ef9a9a;color:#c62828;',
         warn:    'background:#fff8e1;border-color:#ffe082;color:#f57c00;',
-        loading: 'background:#f5f0ff;border-color:#d4c5f9;color:#6c3fc5;',
+        loading: 'background:#e8f5e9;border-color:#a5d6a7;color:#2e7d32;',
     };
     div.style.cssText = 'display:block;margin-top:10px;padding:10px 14px;border-radius:8px;font-size:0.85rem;font-weight:600;border:1.5px solid;' + (styles[type] || styles.loading);
     div.innerHTML = msg;
