@@ -70,3 +70,18 @@ INSERT INTO `meal` (`restaurant_id`, `nom`, `description`, `prix`, `categorie`, 
 -- Ajouter latitude/longitude si pas encore présentes
 ALTER TABLE `restaurant` ADD COLUMN IF NOT EXISTS `latitude`  DECIMAL(10,7) DEFAULT NULL;
 ALTER TABLE `restaurant` ADD COLUMN IF NOT EXISTS `longitude` DECIMAL(10,7) DEFAULT NULL;
+
+-- ------------------------------------------------------------
+-- Table : avis (notation des restaurants)
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `avis` (
+    `id`            INT(11)   NOT NULL AUTO_INCREMENT,
+    `restaurant_id` INT(11)   NOT NULL,
+    `note`          TINYINT(1) NOT NULL CHECK (`note` BETWEEN 1 AND 5),
+    `ip`            VARCHAR(45) DEFAULT NULL,
+    `created_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_avis_restaurant`
+        FOREIGN KEY (`restaurant_id`) REFERENCES `restaurant`(`id`)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

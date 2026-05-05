@@ -1,5 +1,9 @@
 <?php include 'View/front/partials/header.php'; ?>
 
+<!-- Leaflet CSS pour la carte -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <!-- Page Header Start -->
 <div class="page-header wow fadeIn" data-wow-delay="0.1s">
     <div class="container">
@@ -17,6 +21,24 @@
     </div>
 </div>
 <!-- Page Header End -->
+
+<!-- Onglets -->
+<div class="container-fluid" style="background:#fff;border-bottom:2px solid #e9ecef;">
+    <div class="container">
+        <div style="display:flex;gap:0;">
+            <button id="tab-list" onclick="switchTab('list')"
+                style="padding:14px 28px;border:none;background:none;font-weight:700;font-size:.95rem;
+                       color:#2e7d32;border-bottom:3px solid #2e7d32;cursor:pointer;">
+                🍴 Restaurants
+            </button>
+            <button id="tab-map" onclick="switchTab('map')"
+                style="padding:14px 28px;border:none;background:none;font-weight:600;font-size:.95rem;
+                       color:#888;border-bottom:3px solid transparent;cursor:pointer;">
+                🗺️ Carte
+            </button>
+        </div>
+    </div>
+</div>
 
 <!-- Filtres AJAX -->
 <div class="container-fluid py-4" style="background:#f7f8fc; border-bottom:1px solid #e9ecef;">
@@ -55,8 +77,8 @@
 </div>
 <!-- Filtres End -->
 
-<!-- Résultats -->
-<div class="container-fluid py-5">
+<!-- ── Vue Liste ─────────────────────────────────────────────────────────── -->
+<div id="view-list" class="container-fluid py-5">
     <div class="container">
         <p id="result-count" class="text-muted mb-4">
             <strong><?= $total ?? count($restaurants) ?></strong>
@@ -97,7 +119,45 @@
     </div>
 </div>
 
+<!-- ── Vue Carte ─────────────────────────────────────────────────────────── -->
+<div id="view-map" style="display:none;" class="container-fluid py-4">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div id="inline-map" style="height:520px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.12);"></div>
+            </div>
+            <div class="col-lg-4">
+                <div id="map-resto-list" style="height:520px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.map-card { background:#fff;border-radius:10px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.07);
+            cursor:pointer;border-left:4px solid #2e7d32;transition:transform .2s; }
+.map-card:hover { transform:translateX(4px); }
+.map-card h6 { font-weight:700;color:#1a1a1a;margin-bottom:4px;font-size:.9rem; }
+.map-card .mc-type { background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:600; }
+.map-card .mc-addr { font-size:.78rem;color:#888;margin-top:4px; }
+</style>
+
 <?php
+function starsHtml(float $note): string {
+    $html = '';
+    for ($i = 1; $i <= 5; $i++) {
+        if ($note >= $i) {
+            $html .= '<span style="color:#ffc107;font-size:.9rem;">★</span>';
+        } elseif ($note >= $i - 0.5) {
+            $html .= '<span style="color:#ffc107;font-size:.9rem;">½</span>';
+        } else {
+            $html .= '<span style="color:rgba(255,255,255,.4);font-size:.9rem;">★</span>';
+        }
+    }
+    return $html;
+}
+
 function renderRestaurantCard(array $r): string {
     $img = !empty($r['image'])
         ? '<img src="/2A35/assets/uploads/restaurants/'.htmlspecialchars($r['image']).'"
@@ -123,6 +183,13 @@ function renderRestaurantCard(array $r): string {
                 <span style="position:absolute;top:12px;left:12px;background:rgba(0,0,0,.55);color:#fff;padding:3px 10px;border-radius:4px;font-size:.78rem;">
                     '.htmlspecialchars($r['type_cuisine']).'
                 </span>
+                <!-- Étoiles sur l\'image -->
+                <div style="position:absolute;bottom:10px;left:12px;display:flex;align-items:center;gap:4px;">
+                    '.starsHtml($r['note_moyenne'] ?? 0).'
+                    <span style="color:#fff;font-size:.75rem;background:rgba(0,0,0,.45);padding:1px 6px;border-radius:10px;">
+                        '.($r['note_moyenne'] > 0 ? number_format($r['note_moyenne'],1).' ('.($r['note_total']).')' : 'Pas encore noté').'
+                    </span>
+                </div>
             </div>
             <div class="p-4 d-flex flex-column flex-grow-1">
                 <h5 class="fw-bold mb-1">'.htmlspecialchars($r['nom']).'</h5>
@@ -190,6 +257,7 @@ function fetchResults() {
             return;
         }
 
+        // Étoiles dans les cards AJAX
         grid.innerHTML = data.map(r => buildCard(r)).join('');
     })
     .catch(() => {
@@ -252,6 +320,84 @@ function goToPage(p) {
     if (q)    url += '&search=' + encodeURIComponent(q);
     if (type) url += '&type='   + encodeURIComponent(type);
     window.location.href = url;
+}
+
+// ── Onglets ───────────────────────────────────────────────────────────────
+let mapInitialized = false;
+let inlineMap      = null;
+
+function switchTab(tab) {
+    const isMap = tab === 'map';
+
+    document.getElementById('view-list').style.display = isMap ? 'none'  : 'block';
+    document.getElementById('view-map').style.display  = isMap ? 'block' : 'none';
+
+    document.getElementById('tab-list').style.color       = isMap ? '#888'    : '#2e7d32';
+    document.getElementById('tab-list').style.borderBottom= isMap ? '3px solid transparent' : '3px solid #2e7d32';
+    document.getElementById('tab-map').style.color        = isMap ? '#2e7d32' : '#888';
+    document.getElementById('tab-map').style.borderBottom = isMap ? '3px solid #2e7d32' : '3px solid transparent';
+
+    if (isMap && !mapInitialized) {
+        initInlineMap();
+        mapInitialized = true;
+    }
+}
+
+function initInlineMap() {
+    inlineMap = L.map('inline-map').setView([36.8065, 10.1815], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(inlineMap);
+
+    const ALL = <?= json_encode($restaurants) ?>;
+    const markers = [];
+    const list    = document.getElementById('map-resto-list');
+
+    ALL.forEach((r, i) => {
+        // Carte latérale
+        const card = document.createElement('div');
+        card.className = 'map-card';
+        card.innerHTML = `
+            <h6>${esc(r.nom)}</h6>
+            <span class="mc-type">${esc(r.type_cuisine)}</span>
+            ${!r.latitude ? '<span style="color:#aaa;font-size:.72rem;margin-left:6px;">position non disponible</span>' : ''}
+            <div class="mc-addr"><i class="fa fa-map-marker-alt me-1"></i>${esc(r.adresse)}</div>
+        `;
+
+        if (r.latitude && r.longitude) {
+            const marker = L.marker([parseFloat(r.latitude), parseFloat(r.longitude)], {
+                icon: L.divIcon({
+                    className: '',
+                    html: `<div style="background:#2e7d32;color:#fff;border-radius:50% 50% 50% 0;
+                                width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+                                transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,.3);">
+                            <span style="transform:rotate(45deg);font-size:.8rem;">🍴</span>
+                           </div>`,
+                    iconSize: [34,34], iconAnchor: [17,34], popupAnchor: [0,-34]
+                })
+            }).addTo(inlineMap);
+
+            const img = r.image
+                ? `<img src="/2A35/assets/uploads/restaurants/${esc(r.image)}" style="width:100%;height:90px;object-fit:cover;border-radius:6px;margin-bottom:6px;">`
+                : '';
+            marker.bindPopup(`<div style="min-width:160px;">${img}
+                <strong>${esc(r.nom)}</strong><br>
+                <small style="color:#666;">${esc(r.adresse)}</small><br>
+                <a href="/2A35/Restaurant/show/${r.id}" style="color:#2e7d32;font-size:.8rem;font-weight:600;">Voir le menu →</a>
+            </div>`);
+
+            card.onclick = () => {
+                inlineMap.setView([parseFloat(r.latitude), parseFloat(r.longitude)], 16);
+                marker.openPopup();
+            };
+            markers.push(marker);
+        }
+        list.appendChild(card);
+    });
+
+    if (markers.length > 0) {
+        inlineMap.fitBounds(L.featureGroup(markers).getBounds().pad(0.2));
+    }
 }
 </script>
 

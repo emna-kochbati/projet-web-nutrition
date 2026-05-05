@@ -45,6 +45,41 @@
                 <h2><?= htmlspecialchars($restaurant['nom']) ?></h2>
             </div>
 
+            <!-- Note et vote -->
+            <div class="mb-4 p-3 rounded" style="background:#f9fbe7;border:1px solid #c8e6c9;">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div style="font-size:1.5rem;letter-spacing:2px;">
+                        <?php
+                        $moy = (float)($restaurant['note_moyenne'] ?? 0);
+                        for ($i = 1; $i <= 5; $i++) {
+                            echo $moy >= $i
+                                ? '<span style="color:#ffc107;">★</span>'
+                                : '<span style="color:#ddd;">★</span>';
+                        }
+                        ?>
+                    </div>
+                    <div>
+                        <span class="fw-bold fs-5"><?= $moy > 0 ? number_format($moy,1) : '—' ?></span>
+                        <span class="text-muted small">/5 &nbsp;(<?= (int)($restaurant['note_total'] ?? 0) ?> avis)</span>
+                    </div>
+                </div>
+                <div>
+                    <small class="text-muted d-block mb-1 fw-semibold">Donnez votre note :</small>
+                    <div id="vote-stars" style="font-size:2rem;cursor:pointer;letter-spacing:4px;line-height:1;">
+                        <?php for ($i = 1; $i <= 5; $i++): ?>
+                        <span class="vote-star" data-note="<?= $i ?>"
+                              style="color:<?= ($restaurant['ma_note'] ?? 0) >= $i ? '#ffc107' : '#ddd' ?>;transition:color .15s;"
+                              onmouseover="hoverStars(<?= $i ?>)"
+                              onmouseout="resetStars()"
+                              onclick="voterRestaurant(<?= $restaurant['id'] ?>, <?= $i ?>)">★</span>
+                        <?php endfor; ?>
+                    </div>
+                    <small id="vote-msg" class="text-muted mt-1 d-block">
+                        <?= ($restaurant['ma_note'] ?? 0) > 0 ? 'Votre note : '.$restaurant['ma_note'].' ★ (cliquez pour modifier)' : 'Cliquez sur une étoile pour noter' ?>
+                    </small>
+                </div>
+            </div>
+
             <?php if (!empty($restaurant['description'])): ?>
                 <p class="text-muted mb-4"><?= nl2br(htmlspecialchars($restaurant['description'])) ?></p>
             <?php endif; ?>
@@ -190,6 +225,41 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
         });
     });
 });
+</script>
+
+<script>
+// ── Système de vote étoiles ───────────────────────────────────────────────
+let currentNote = <?= (int)($restaurant['ma_note'] ?? 0) ?>;
+
+function hoverStars(n) {
+    document.querySelectorAll('.vote-star').forEach((s, i) => {
+        s.style.color = i < n ? '#ffc107' : '#ddd';
+    });
+}
+
+function resetStars() {
+    document.querySelectorAll('.vote-star').forEach((s, i) => {
+        s.style.color = i < currentNote ? '#ffc107' : '#ddd';
+    });
+}
+
+function voterRestaurant(restaurantId, note) {
+    fetch('/2A35/Avis/noter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ restaurant_id: restaurantId, note: note })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            currentNote = note;
+            resetStars();
+            document.getElementById('vote-msg').textContent =
+                '✅ Merci ! Votre note : ' + note + ' ★';
+            document.getElementById('vote-msg').style.color = '#2e7d32';
+        }
+    });
+}
 </script>
 
 <?php include 'View/front/partials/footer.php'; ?>

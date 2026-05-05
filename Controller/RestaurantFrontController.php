@@ -35,6 +35,9 @@ class RestaurantFrontController {
         $stmt->execute($params);
         $restaurants = $stmt->fetchAll();
 
+        // Ajouter les notes
+        $restaurants = $this->attachNotes($restaurants);
+
         require_once 'View/front/restaurant.php';
     }
 
@@ -77,6 +80,49 @@ class RestaurantFrontController {
         $stmt->execute([(int)$id]);
         $meals = $stmt->fetchAll();
 
+        // Note du restaurant
+        $noteStmt = $this->db->prepare("SELECT COUNT(*) as total, ROUND(AVG(note),1) as moyenne FROM avis WHERE restaurant_id = ?");
+        $noteStmt->execute([(int)$id]);
+        $noteStats = $noteStmt->fetch();
+        $restaurant['note_moyenne'] = $noteStats['moyenne'] ?? 0;
+        $restaurant['note_total']   = $noteStats['total']   ?? 0;
+
+        // Vote de l'utilisateur actuel
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        $myVote = $this->db->prepare("SELECT note FROM avis WHERE restaurant_id = ? AND ip = ?");
+        $myVote->execute([(int)$id, $ip]);
+        $restaurant['ma_note'] = $myVote->fetchColumn() ?: 0;
+
         require_once 'View/front/restaurant_show.php';
+    }
+
+    // Attacher les notes à une liste de restaurants
+    private function attachNotes(array $restaurants): array {
+        if (empty($restaurants)) return $restaurants;
+
+        // Vérifier que la table avis existe
+        try {
+            $ids = array_column($restaurants, 'id');
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $stmt = $this->db->prepare(
+                "SELECT restaurant_id, COUNT(*) as total, ROUND(AVG(note),1) as moyenne
+                 FROM avis WHERE restaurant_id IN ($placeholders) GROUP BY restaurant_id"
+            );
+            $stmt->execute($ids);
+            $notes = [];
+            foreach ($stmt->fetchAll() as $row) {
+                $notes[$row['restaurant_id']] = $row;
+            }
+            foreach ($restaurants as &$r) {
+                $r['note_moyenne'] = isset($notes[$r['id']]) ? (float)$notes[$r['id']]['moyenne'] : 0;
+                $r['note_total']   = isset($notes[$r['id']]) ? (int)$notes[$r['id']]['total']   : 0;
+            }
+        } catch (\Exception $e) {
+            foreach ($restaurants as &$r) {
+                $r['note_moyenne'] = 0;
+                $r['note_total']   = 0;
+            }
+        }
+        return $restaurants;
     }
 }
