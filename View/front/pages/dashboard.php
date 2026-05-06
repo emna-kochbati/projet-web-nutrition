@@ -971,4 +971,3 @@ window.addEventListener('load',()=>{document.querySelectorAll('.obj-fill,.imc-ne
 </script>
 
 <?php include __DIR__ . '/../partials/footer.php'; ?>
-```

@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -161,6 +162,61 @@ body {
 .filter-select:focus { border-color: #00e676; }
 .filter-select option { background: #0b1220; }
 
+/* VOICE BUTTON */
+.voice-btn {
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(239,83,80,0.3);
+  background: rgba(239,83,80,0.08);
+  color: #ef9a9a;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all .25s;
+  white-space: nowrap;
+  position: relative;
+}
+
+.voice-btn:hover {
+  border-color: #ef5350;
+  background: rgba(239,83,80,0.15);
+  color: #fff;
+}
+
+.voice-btn.listening {
+  border-color: #ef5350;
+  background: rgba(239,83,80,0.25);
+  color: #fff;
+  animation: voicePulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(239,83,80,0.3);
+}
+
+@keyframes voicePulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(239,83,80,0.3); }
+  50% { box-shadow: 0 0 35px rgba(239,83,80,0.5); }
+}
+
+.voice-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #ef5350;
+  display: none;
+}
+
+.voice-btn.listening .voice-dot {
+  display: block;
+  animation: dotBlink 0.8s ease-in-out infinite;
+}
+
+@keyframes dotBlink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.7); }
+}
+
 .btn-add {
   padding: 10px 20px;
   background: linear-gradient(90deg, #00e676, #00c853);
@@ -266,7 +322,7 @@ body {
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: opacity .2s;
+  transition: opacity .2s, transform .3s, background .3s, color .3s;
   user-select: none;
 }
 
@@ -285,6 +341,39 @@ body {
 
 .status-badge.banned   { background: rgba(239,83,80,0.15); color: #ef5350; }
 .status-badge.banned .dot { background: #ef5350; }
+
+/* Animation on status change */
+.status-badge.just-changed {
+  animation: statusFlash 0.8s ease;
+  transform: scale(1.15);
+}
+
+@keyframes statusFlash {
+  0%   { transform: scale(1); opacity: 1; }
+  25%  { transform: scale(1.2); opacity: 0.6; }
+  50%  { transform: scale(0.95); opacity: 1; }
+  75%  { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Row highlight on change */
+tr.just-updated {
+  animation: rowHighlight 1.5s ease;
+}
+
+@keyframes rowHighlight {
+  0%   { background: rgba(255,152,0,0.15); }
+  100% { background: transparent; }
+}
+
+tr.just-banned {
+  animation: rowBanned 1.5s ease;
+}
+
+@keyframes rowBanned {
+  0%   { background: rgba(239,83,80,0.2); }
+  100% { background: transparent; }
+}
 
 /* ACTION BUTTONS */
 .btn-action {
@@ -374,6 +463,42 @@ body {
   font-size: 13px;
   color: rgba(255,255,255,0.35);
 }
+
+/* ===== VOICE STATUS BAR ===== */
+.voice-status-bar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  animation: fadeIn .3s ease;
+}
+
+.voice-status-bar.active {
+  display: flex;
+}
+
+.voice-status-bar.listening {
+  background: rgba(239,83,80,0.1);
+  border: 1px solid rgba(239,83,80,0.25);
+  color: #ef9a9a;
+}
+
+.voice-status-bar.success {
+  background: rgba(0,230,118,0.1);
+  border: 1px solid rgba(0,230,118,0.25);
+  color: #a5d6a7;
+}
+
+.voice-status-bar.error {
+  background: rgba(255,152,0,0.1);
+  border: 1px solid rgba(255,152,0,0.25);
+  color: #ffa726;
+}
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ===== MODAL ADD ===== */
 .modal-overlay {
@@ -583,7 +708,7 @@ body {
     </div>
   </div>
 
-  <!-- TOOLBAR : SEARCH + FILTERS -->
+  <!-- TOOLBAR : SEARCH + FILTERS + VOICE -->
   <div class="toolbar">
     <div class="search-wrap">
       <i class="fa fa-search"></i>
@@ -606,6 +731,18 @@ body {
       <option value="Équilibre alimentaire" <?= ($_GET['objectif'] ?? '') === 'Équilibre alimentaire' ? 'selected' : '' ?>>Équilibre</option>
       <option value="Végétarien"          <?= ($_GET['objectif'] ?? '') === 'Végétarien'          ? 'selected' : '' ?>>Végétarien</option>
     </select>
+
+    <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">
+      <div class="voice-dot"></div>
+      <i class="fa fa-microphone"></i>
+      <span id="voiceLabel">Voix IA</span>
+    </button>
+  </div>
+
+  <!-- VOICE STATUS BAR -->
+  <div class="voice-status-bar" id="voiceStatusBar">
+    <i class="fa fa-microphone"></i>
+    <span id="voiceStatusText">En écoute... Dites "banned [nom]" ou "unbanned [nom]"</span>
   </div>
 
   <!-- RESULT INFO -->
@@ -641,13 +778,13 @@ body {
           ];
           $s = $statusMap[$u['status']] ?? ['label' => $u['status'], 'cls' => 'inactive'];
         ?>
-          <tr>
+          <tr id="user-row-<?= $u['id'] ?>">
             <td style="color:rgba(255,255,255,0.3);font-size:12px;"><?= $u['id'] ?></td>
             <td>
               <div class="user-badge">
                 <div class="avatar"><?= $initials ?></div>
                 <div>
-                  <div class="user-name"><?= htmlspecialchars($u['nom']) ?></div>
+                  <div class="user-name" id="user-name-<?= $u['id'] ?>"><?= htmlspecialchars($u['nom']) ?></div>
                   <div class="user-email"><?= htmlspecialchars($u['email']) ?></div>
                 </div>
               </div>
@@ -656,7 +793,7 @@ body {
             <td style="font-size:13px;"><?= $u['poids']  ? $u['poids']  . ' kg' : '—' ?></td>
             <td style="font-size:13px;"><?= $u['taille'] ? $u['taille'] . ' cm' : '—' ?></td>
             <td>
-              <span class="status-badge <?= $s['cls'] ?>"
+              <span class="status-badge <?= $s['cls'] ?>" id="status-<?= $u['id'] ?>"
                     onclick="cycleStatus(<?= $u['id'] ?>, '<?= $u['status'] ?>', this)">
                 <span class="dot"></span><?= $s['label'] ?>
               </span>
@@ -787,7 +924,6 @@ const searchInput    = document.getElementById('searchInput');
 const filterStatus   = document.getElementById('filterStatus');
 const filterObjectif = document.getElementById('filterObjectif');
 
-/* Déclencheurs */
 searchInput.addEventListener('input', () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => { currentPage = 1; fetchUsers(); }, 320);
@@ -798,7 +934,6 @@ filterObjectif.addEventListener('change', () => { currentPage = 1; fetchUsers();
 
 function goPage(p) { currentPage = p; fetchUsers(); }
 
-/* Appel AJAX */
 function fetchUsers() {
   const search   = searchInput.value.trim();
   const status   = filterStatus.value;
@@ -822,7 +957,6 @@ function fetchUsers() {
     });
 }
 
-/* Rendu du tableau */
 function renderTable(users) {
   const tbody = document.getElementById('usersBody');
   const table = document.getElementById('usersTable');
@@ -847,13 +981,13 @@ function renderTable(users) {
     const s = statusMap[u.status] || { label: u.status, cls: 'inactive' };
 
     return `
-      <tr>
+      <tr id="user-row-${u.id}">
         <td style="color:rgba(255,255,255,0.3);font-size:12px;">${u.id}</td>
         <td>
           <div class="user-badge">
             <div class="avatar">${initials}</div>
             <div>
-              <div class="user-name">${esc(u.nom)}</div>
+              <div class="user-name" id="user-name-${u.id}">${esc(u.nom)}</div>
               <div class="user-email">${esc(u.email)}</div>
             </div>
           </div>
@@ -862,7 +996,7 @@ function renderTable(users) {
         <td style="font-size:13px;">${u.poids ? u.poids + ' kg' : '—'}</td>
         <td style="font-size:13px;">${u.taille ? u.taille + ' cm' : '—'}</td>
         <td>
-          <span class="status-badge ${s.cls}" onclick="cycleStatus(${u.id}, '${u.status}', this)">
+          <span class="status-badge ${s.cls}" id="status-${u.id}" onclick="cycleStatus(${u.id}, '${u.status}', this)">
             <span class="dot"></span>${s.label}
           </span>
         </td>
@@ -875,7 +1009,6 @@ function renderTable(users) {
   }).join('');
 }
 
-/* Rendu pagination */
 function renderPagination(page, totalPages, total) {
   document.getElementById('resultCount').textContent = total;
   document.getElementById('pageInfo').innerHTML = `Page <strong>${page}</strong> / ${totalPages}`;
@@ -892,12 +1025,10 @@ function renderPagination(page, totalPages, total) {
   }
 }
 
-/* Escape HTML */
 function esc(str) {
   if (!str) return '';
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
 
 /* ================================================================
    TOGGLE STATUS (clic sur badge)
@@ -907,22 +1038,35 @@ const statusLabels = { active: 'Actif', inactive: 'Inactif', banned: 'Banni' };
 
 function cycleStatus(id, current, el) {
   const next = statusCycle[current] || 'inactive';
+  updateStatus(id, next, el);
+}
 
+function updateStatus(id, newStatus, el) {
   fetch('/ProjetWeb-User/index.php?url=Admin/toggleStatus', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `id=${id}&status=${next}`
+    body: `id=${id}&status=${newStatus}`
   })
   .then(r => r.json())
   .then(data => {
     if (data.success) {
-      el.className = `status-badge ${next}`;
-      el.innerHTML = `<span class="dot"></span>${statusLabels[next]}`;
-      el.setAttribute('onclick', `cycleStatus(${id}, '${next}', this)`);
+      if (el) {
+        el.className = `status-badge ${newStatus} just-changed`;
+        el.innerHTML = `<span class="dot"></span>${statusLabels[newStatus]}`;
+        el.setAttribute('onclick', `cycleStatus(${id}, '${newStatus}', this)`);
+        setTimeout(() => el.classList.remove('just-changed'), 1000);
+      }
+      const row = document.getElementById('user-row-' + id);
+      if (row) {
+        row.classList.add(newStatus === 'banned' ? 'just-banned' : 'just-updated');
+        setTimeout(() => {
+          row.classList.remove('just-banned', 'just-updated');
+        }, 1500);
+      }
+      showVoiceStatus(`✓ Utilisateur ${data.nom || 'mis à jour'} → ${statusLabels[newStatus]}`, 'success');
     }
   });
 }
-
 
 /* ================================================================
    DELETE CONFIRMATION
@@ -931,7 +1075,6 @@ function confirmDelete(id) {
   if (!confirm('Supprimer cet utilisateur ?')) return;
   window.location = `/ProjetWeb-User/index.php?url=Admin/deleteUser/${id}`;
 }
-
 
 /* ================================================================
    MODAL ADD / EDIT / VIEW
@@ -947,7 +1090,6 @@ function openModal(mode, user = null) {
   const saveBtn = document.getElementById('saveBtn');
   const pwdOpt  = document.getElementById('pwdOptional');
 
-  // Reset validation
   form.querySelectorAll('[data-v]').forEach(el => {
     el.classList.remove('v-ok', 'v-err');
   });
@@ -973,7 +1115,7 @@ function openModal(mode, user = null) {
     saveBtn.style.display = 'block';
     form.querySelectorAll('input, select').forEach(el => el.disabled = false);
 
-  } else { // view
+  } else {
     document.getElementById('modalTitle').textContent = '👁 Détails utilisateur';
     document.getElementById('modalSub').textContent   = user.nom;
     fillModal(user);
@@ -989,12 +1131,8 @@ function fillModal(u) {
   document.getElementById('mPoids').value   = u.poids   || '';
   document.getElementById('mTaille').value  = u.taille  || '';
   document.getElementById('mPwd').value     = '';
-
-  const selObj = document.getElementById('mObjectif');
-  selObj.value = u.objectif || '';
-
-  const selSta = document.getElementById('mStatus');
-  selSta.value = u.status   || 'inactive';
+  document.getElementById('mObjectif').value = u.objectif || '';
+  document.getElementById('mStatus').value   = u.status   || 'inactive';
 }
 
 function closeModal() {
@@ -1005,9 +1143,8 @@ document.getElementById('modalOverlay').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
 
-
 /* ================================================================
-   VALIDATION MODALE (JS)
+   VALIDATION MODALE
 ================================================================ */
 document.getElementById('modalForm').addEventListener('submit', function(e) {
   if (modalMode === 'view') return;
@@ -1045,7 +1182,6 @@ document.getElementById('modalForm').addEventListener('submit', function(e) {
   if (!valid) e.preventDefault();
 });
 
-/* Validation temps réel */
 document.getElementById('modalForm').querySelectorAll('[data-v]').forEach(el => {
   el.addEventListener('input', () => {
     el.classList.remove('v-err', 'v-ok');
@@ -1054,7 +1190,138 @@ document.getElementById('modalForm').querySelectorAll('[data-v]').forEach(el => 
     if (el.value.trim()) el.classList.add('v-ok');
   });
 });
+
+/* ================================================================
+   VOICE IA — RECONNAISSANCE VOCALE
+================================================================ */
+let recognition = null;
+let isListening = false;
+const voiceBtn       = document.getElementById('voiceBtn');
+const voiceLabel     = document.getElementById('voiceLabel');
+const voiceStatusBar = document.getElementById('voiceStatusBar');
+const voiceStatusTxt = document.getElementById('voiceStatusText');
+
+function toggleVoice() {
+  if (isListening) {
+    stopVoice();
+  } else {
+    startVoice();
+  }
+}
+
+function startVoice() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showVoiceStatus('❌ Votre navigateur ne supporte pas la reconnaissance vocale.', 'error');
+    return;
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.lang = 'fr-FR';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onstart = function() {
+    isListening = true;
+    voiceBtn.classList.add('listening');
+    voiceLabel.textContent = 'Écoute...';
+    voiceStatusBar.className = 'voice-status-bar active listening';
+    voiceStatusTxt.textContent = '🎤 En écoute... Dites "banned [nom]" ou "unbanned [nom]"';
+  };
+
+  recognition.onresult = function(event) {
+    let transcript = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      transcript += event.results[i][0].transcript;
+    }
+
+    const lower = transcript.toLowerCase().trim();
+    voiceStatusTxt.textContent = '🎤 ' + transcript;
+
+    /* Détecter "banned [nom]" ou "unbanned [nom]" */
+    const bannedMatch   = lower.match(/(?:banned|ban)\s+(\w+)/);
+    const unbannedMatch = lower.match(/(?:unbanned|unban|dés?ban)\s+(\w+)/);
+
+    if (bannedMatch) {
+      const nom = bannedMatch[1];
+      findAndBanUser(nom, 'banned');
+    } else if (unbannedMatch) {
+      const nom = unbannedMatch[1];
+      findAndBanUser(nom, 'active');
+    }
+  };
+
+  recognition.onerror = function(event) {
+    if (event.error !== 'no-speech') {
+      showVoiceStatus('❌ Erreur vocale : ' + event.error, 'error');
+    }
+  };
+
+  recognition.onend = function() {
+    if (isListening) {
+      /* Redémarrer si toujours actif */
+      try { recognition.start(); } catch(e) {}
+    }
+  };
+
+  try {
+    recognition.start();
+  } catch(e) {
+    showVoiceStatus('❌ Impossible de démarrer la reconnaissance vocale.', 'error');
+  }
+}
+
+function stopVoice() {
+  isListening = false;
+  if (recognition) {
+    recognition.stop();
+  }
+  voiceBtn.classList.remove('listening');
+  voiceLabel.textContent = 'Voix IA';
+  voiceStatusBar.className = 'voice-status-bar active';
+  voiceStatusBar.style.display = 'none';
+}
+
+function findAndBanUser(nom, targetStatus) {
+  /* Chercher l'utilisateur par nom dans le tableau actuel */
+  const rows = document.querySelectorAll('#usersBody tr');
+  let found = false;
+
+  rows.forEach(row => {
+    const nameEl = row.querySelector('.user-name');
+    if (nameEl) {
+      const name = nameEl.textContent.toLowerCase();
+      if (name.includes(nom.toLowerCase()) || nom.toLowerCase().includes(name.substring(0, 3))) {
+        const tr = row.closest('tr');
+        const id = tr ? tr.id.replace('user-row-', '') : null;
+        if (id) {
+          found = true;
+          const statusEl = document.getElementById('status-' + id);
+          showVoiceStatus(`🎯 Utilisateur trouvé : ${nameEl.textContent} → ${targetStatus === 'banned' ? 'Banni' : 'Actif'}`, 'listening');
+          updateStatus(parseInt(id), targetStatus, statusEl);
+        }
+      }
+    }
+  });
+
+  if (!found) {
+    showVoiceStatus(`⚠ Utilisateur "${nom}" non trouvé dans la liste actuelle.`, 'error');
+  }
+}
+
+function showVoiceStatus(text, type) {
+  voiceStatusBar.className = 'voice-status-bar active ' + type;
+  voiceStatusTxt.textContent = text;
+  voiceStatusBar.style.display = 'flex';
+
+  setTimeout(() => {
+    if (voiceStatusBar.className.includes(type)) {
+      voiceStatusBar.style.display = 'none';
+    }
+  }, 4000);
+}
 </script>
 
 </body>
 </html>
+```
