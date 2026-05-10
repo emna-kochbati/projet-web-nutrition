@@ -614,24 +614,7 @@ body{
 }
 </style>
 
-<!-- ════ TOPBAR ════ -->
-<div class="tb">
-  <a href="#" class="tb-logo">
-    <div class="tb-logo-mark">🌿</div>
-    <div class="tb-logo-name">Eco<em>Nutri</em></div>
-  </a>
-  <nav class="tb-nav">
-    <a href="index.php?url=User/dashboard" class="tb-link"><i class="fa fa-gauge"></i> Dashboard</a>
-    <a href="index.php?url=User/profile"   class="tb-link on"><i class="fa fa-user"></i> Profil</a>
-  </nav>
-  <div class="tb-right">
-    <div class="tb-chip">
-      <div class="tb-av"><?= strtoupper(substr($user['nom'],0,1)) ?></div>
-      <div class="tb-name"><?= htmlspecialchars($user['nom']) ?></div>
-    </div>
-    <a href="index.php?url=User/logout" class="tb-logout"><i class="fa fa-right-from-bracket"></i> Sortir</a>
-  </div>
-</div>
+
 
 <!-- ════ HERO BANNER ════ -->
 <div class="hero">
@@ -938,8 +921,12 @@ body{
   </div>
 
   <div class="dw-ft">
-    <button class="dw-cancel" onclick="closeDrawer()">Annuler</button>
-    <button class="dw-save" onclick="submitPf()">💾 Enregistrer les modifications</button>
+    <button type="button" class="dw-cancel" onclick="closeDrawer()">
+  Annuler
+</button>
+    <button type="button" class="dw-save" onclick="submitPf()">
+  💾 Enregistrer les modifications
+</button>
   </div>
 </div>
 

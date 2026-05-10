@@ -1,92 +1,293 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8">
     <title>EcoNutri</title>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
-
-    <!-- Favicon -->
-    <link href="/ProjetWeb-User/assets/img/favicon.ico" rel="icon">
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500&family=Lora:wght@600;700&display=swap" rel="stylesheet">
-
-    <!-- Icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Bootstrap -->
     <link href="/ProjetWeb-User/assets/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/ProjetWeb-User/assets/css/style.css" rel="stylesheet">
+
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        .navbar-wow {
+            backdrop-filter: blur(10px);
+            background: rgba(255,255,255,0.9);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+        }
+
+        .nav-link {
+            font-weight: 500;
+            transition: 0.3s;
+        }
+
+        .nav-link:hover {
+            transform: translateY(-2px);
+            color: #00c853 !important;
+        }
+
+        .admin-badge {
+            background: linear-gradient(45deg, #ff1744, #d50000);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .user-badge {
+            background: linear-gradient(45deg, #00c853, #64dd17);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-light navbar-wow fixed-top px-4">
+
+    <!-- LOGO -->
+    <a class="navbar-brand fw-bold text-success"
+       href="/ProjetWeb-User/index.php?url=Home/index">
+        🌿 EcoNutri
+    </a>
+
+    <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="nav">
+
+        <ul class="navbar-nav ms-auto align-items-center gap-2">
+
+            <li class="nav-item">
+                <a class="nav-link" href="/ProjetWeb-User/index.php?url=Home/index">Home</a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="#">About</a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="#">Recette</a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="#">Sport</a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="#">Contact</a>
+            </li>
+
+            <!-- ================= USER SESSION ================= -->
+            <?php if (isset($_SESSION['user'])): ?>
+
+                <?php if ($_SESSION['user']['role'] === 'admin'): ?>
+
+                    <!-- ADMIN -->
+                    <li class="nav-item">
+                        <a class="nav-link text-danger fw-bold"
+                           href="/ProjetWeb-User/index.php?url=Admin/dashboard">
+                            <i class="fa fa-cog"></i> Admin Panel
+                        </a>
+                    </li>
+
+                <?php endif; ?>
+
+                <!-- USER NAME (TOUS LES USERS) -->
+                <li class="nav-item">
+                    <a class="user-badge"
+                       href="/ProjetWeb-User/index.php?url=User/dashboard">
+                        👤 <?= htmlspecialchars($_SESSION['user']['nom']) ?>
+                    </a>
+                </li>
+
+                <!-- PROFIL -->
+                <li class="nav-item">
+                    <a class="nav-link text-dark"
+                       href="/ProjetWeb-User/index.php?url=User/profile">
+                        Profil
+                    </a>
+                </li>
+
+                <!-- LOGOUT -->
+                <li class="nav-item">
+                    <a class="nav-link text-dark"
+                       href="/ProjetWeb-User/index.php?url=User/logout">
+                        Logout
+                    </a>
+                </li>
+
+            <?php else: ?>
+
+                <!-- LOGIN -->
+                <li class="nav-item">
+                    <a class="nav-link text-primary"
+                       href="/ProjetWeb-User/index.php?url=User/login">
+                        Login
+                    </a>
+                </li>
+
+            <?php endif; ?>
+
+        </ul>
+    </div>
+</nav>
+
+<!-- SPACE -->
+<div style="height:80px;"></div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>EcoNutri</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Bootstrap -->
+    <link href="/ProjetWeb-User/assets/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        .navbar-wow {
+            backdrop-filter: blur(10px);
+            background: rgba(255,255,255,0.9);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+        }
+
+        .nav-link {
+            font-weight: 500;
+            transition: 0.3s;
+        }
+
+        .nav-link:hover {
+            transform: translateY(-2px);
+            color: #00c853 !important;
+        }
+
+        .admin-badge {
+            background: linear-gradient(45deg, #ff1744, #d50000);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .user-badge {
+            background: linear-gradient(45deg, #00c853, #64dd17);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+    </style>
 </head>
 
 <body>
 
 <!-- NAVBAR -->
-<div class="container-fluid fixed-top px-0">
+<nav class="navbar navbar-expand-lg navbar-light navbar-wow fixed-top px-4">
 
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4">
+    <!-- LOGO -->
+    <a class="navbar-brand fw-bold text-success"
+       href="/ProjetWeb-User/index.php?url=Home/index">
+        🌿 EcoNutri
+    </a>
 
-        <!-- LOGO -->
-        <a href="/ProjetWeb-User/index.php?url=Home/index" class="navbar-brand">
-            <img src="/ProjetWeb-User/assets/img/logo.png" style="height:50px;">
-        </a>
+    <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+    </button>
 
-        <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+    <div class="collapse navbar-collapse" id="nav">
 
-        <div class="collapse navbar-collapse" id="navbarCollapse">
+        <!-- LINKS -->
+        <ul class="navbar-nav ms-auto align-items-center gap-2">
 
-            <div class="navbar-nav ms-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="/ProjetWeb-User/index.php?url=Home/index">Home</a>
+            </li>
 
-                <!-- HOME -->
-                <a href="/ProjetWeb-User/index.php?url=Home/index" class="nav-item nav-link">
-                    Home
-                </a>
+            <li class="nav-item">
+                <a class="nav-link" href="#">About</a>
+            </li>
 
-                <!-- USER -->
-                <div class="nav-item dropdown">
+            <li class="nav-item">
+                <a class="nav-link" href="#">Recette</a>
+            </li>
 
-                    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
-                        User
+            <li class="nav-item">
+                <a class="nav-link" href="#">Sport</a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="#">Contact</a>
+            </li>
+
+            <!-- ================= USER SESSION ================= -->
+            <?php if (isset($_SESSION['user'])): ?>
+
+                <?php if ($_SESSION['user']['role'] === 'admin'): ?>
+
+                    <!-- ADMIN -->
+                    <li class="nav-item">
+                        <a class="nav-link text-danger fw-bold"
+                           href="/ProjetWeb-User/index.php?url=Admin/dashboard">
+                            <i class="fa fa-cog"></i> Admin Panel
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <span class="admin-badge">
+                            👑 ADMIN
+                        </span>
+                    </li>
+
+                <?php else: ?>
+
+                    <!-- USER -->
+                    <li class="nav-item">
+                        <span class="user-badge">
+                            👤 <?= htmlspecialchars($_SESSION['user']['nom']) ?>
+                        </span>
+                    </li>
+
+                <?php endif; ?>
+
+                <!-- LOGOUT -->
+                <li class="nav-item">
+                    <a class="nav-link text-dark"
+                       href="/ProjetWeb-User/index.php?url=User/logout">
+                        Logout
                     </a>
+                </li>
 
-                    <div class="dropdown-menu">
+            <?php else: ?>
 
-                        <a href="/ProjetWeb-User/index.php?url=User/dashboard" class="dropdown-item">
-                            Dashboard
-                        </a>
+                <!-- LOGIN -->
+                <li class="nav-item">
+                    <a class="nav-link text-primary"
+                       href="/ProjetWeb-User/index.php?url=User/login">
+                        Login
+                    </a>
+                </li>
 
-                        <a href="/ProjetWeb-User/index.php?url=User/profile" class="dropdown-item">
-                            Profil
-                        </a>
+            <?php endif; ?>
 
-                    </div>
+        </ul>
+    </div>
+</nav>
 
-                </div>
-
-                <!-- MODULES -->
-                <a href="/ProjetWeb-User/index.php?url=Home/index#about" class="nav-item nav-link">About</a>
-                <a href="/ProjetWeb-User/index.php?url=Home/index#recette" class="nav-item nav-link">Recette</a>
-                <a href="/ProjetWeb-User/index.php?url=Home/index#event" class="nav-item nav-link">Événement</a>
-                <a href="/ProjetWeb-User/index.php?url=Home/index#sport" class="nav-item nav-link">Sport</a>
-                <a href="/ProjetWeb-User/index.php?url=Home/index#contact" class="nav-item nav-link">Contact</a>
-                <!-- ADMIN ICON -->
-<a href="/ProjetWeb-User/index.php?url=Admin/dashboard"
-   class="nav-item nav-link text-danger">
-
-    <i class="fa fa-cog"></i> Admin
-</a>
-
-            </div>
-
-        </div>
-
-    </nav>
-
-</div>
-<!-- END NAVBAR -->
+<!-- SPACE -->
+<div style="height:80px;"></div>

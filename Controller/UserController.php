@@ -18,53 +18,47 @@ class UserController
        LOGIN
     ========================== */
     public function login()
-    {
-        $db = Database::getConnection();
+{
+    $db = Database::getConnection();
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-            $email = trim($_POST['email'] ?? '');
-            $password = trim($_POST['password'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $password = trim($_POST['password'] ?? '');
 
-            if (empty($email) || empty($password)) {
-                $_SESSION['error'] = "Veuillez remplir tous les champs.";
-                header("Location: index.php?url=User/auth");
-                exit;
-            }
-
-            $stmt = $db->prepare("SELECT * FROM user WHERE email = ?");
-            $stmt->execute([$email]);
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($user) {
-
-                // ❗ sécurité status
-                if (!isset($user['status']) || $user['status'] !== 'active') {
-                    $_SESSION['error'] = "Compte non activé.";
-                    header("Location: index.php?url=User/auth");
-                    exit;
-                }
-
-                // ✔ password sécurisé uniquement
-                if (password_verify($password, $user['password'])) {
-
-                    $_SESSION['user'] = $user;
-
-                    if (strtolower($user['role']) === 'admin') {
-                        header("Location: index.php?url=Admin/dashboard");
-                    } else {
-                        header("Location: index.php?url=User/home");
-                    }
-                    exit;
-                }
-            }
-
-            $_SESSION['error'] = "Email ou mot de passe incorrect.";
+        if (empty($email) || empty($password)) {
+            $_SESSION['error'] = "Veuillez remplir tous les champs.";
             header("Location: index.php?url=User/auth");
             exit;
         }
-    }
 
+        $stmt = $db->prepare("SELECT * FROM user WHERE email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$user) {
+            $_SESSION['error'] = "Utilisateur introuvable.";
+            header("Location: index.php?url=User/auth");
+            exit;
+        }
+
+        if (password_verify($password, $user['password'])) {
+
+            $_SESSION['user'] = $user;
+
+            if ($user['role'] === 'admin') {
+                header("Location: index.php?url=Admin/dashboard");
+            } else {
+                header("Location: index.php?url=User/dashboard");
+            }
+            exit;
+        }
+
+        $_SESSION['error'] = "Mot de passe incorrect.";
+        header("Location: index.php?url=User/auth");
+        exit;
+    }
+}
     /* =========================
        REGISTER + EMAIL
     ========================== */
@@ -188,86 +182,97 @@ class UserController
     }
 
     public function requestReset()
-    {
-        $db = Database::getConnection();
+{
+    $db = Database::getConnection();
 
-        $phone = trim($_POST['phone'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
 
-        $phoneClean = preg_replace('/[^0-9]/', '', $phone);
-        $phoneClean = preg_replace('/^216/', '', $phoneClean);
+    $phoneClean = preg_replace('/[^0-9]/', '', $phone);
+    $phoneClean = preg_replace('/^216/', '', $phoneClean);
 
-        $stmt = $db->prepare("SELECT id FROM user WHERE phone LIKE ?");
-        $stmt->execute(["%$phoneClean%"]);
-        $user = $stmt->fetch();
+    // ✅ STRICT MATCH
+    $stmt = $db->prepare("SELECT id FROM user WHERE phone = ?");
+    $stmt->execute([$phoneClean]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$user) {
-            $_SESSION['reset_error'] = "Numéro non trouvé.";
-            header("Location: index.php?url=User/resetPassword");
-            exit;
-        }
+    if (!$user) {
+        $_SESSION['reset_error'] = "Numéro non trouvé.";
+        header("Location: index.php?url=User/resetPassword");
+        exit;
+    }
 
-        $code = rand(100000, 999999);
+    $code = rand(100000, 999999);
 
-        $db->prepare("
-            UPDATE user 
-            SET reset_code=?, reset_expire=DATE_ADD(NOW(),INTERVAL 10 MINUTE) 
-            WHERE id=?
-        ")->execute([$code, $user['id']]);
+    $db->prepare("
+        UPDATE user 
+        SET reset_code=?, reset_expire=DATE_ADD(NOW(),INTERVAL 10 MINUTE) 
+        WHERE id=?
+    ")->execute([$code, $user['id']]);
 
-        SMS::send("+216".$phoneClean, "Code: ".$code);
+    SMS::send("+216".$phoneClean, "Code: ".$code);
 
-        $_SESSION['reset_step'] = 'verify';
+    $_SESSION['reset_step'] = 'verify';
+    $_SESSION['reset_user_id'] = $user['id']; // 🔥 CRUCIAL
 
+    header("Location: index.php?url=User/resetPassword&continue=1");
+    exit;
+}
+   public function verifyReset()
+{
+    $db = Database::getConnection();
+
+    $code = $_POST['code'] ?? '';
+
+    $stmt = $db->prepare("
+        SELECT id 
+        FROM user 
+        WHERE reset_code=? 
+        AND reset_expire > NOW()
+    ");
+    $stmt->execute([$code]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($user) {
+        $_SESSION['reset_user_id'] = $user['id'];
+        $_SESSION['reset_step'] = 'newpwd';
+    } else {
+        $_SESSION['reset_error'] = "Code invalide";
+    }
+
+    header("Location: index.php?url=User/resetPassword&continue=1");
+    exit;
+}
+
+   public function changePassword()
+{
+    $db = Database::getConnection();
+
+    $id = $_SESSION['reset_user_id'] ?? null;
+    $pass = $_POST['password'] ?? '';
+    $conf = $_POST['confirm'] ?? '';
+
+    if (!$id) {
+        $_SESSION['reset_error'] = "Session expirée.";
+        header("Location: index.php?url=User/resetPassword");
+        exit;
+    }
+
+    if ($pass !== $conf || strlen($pass) < 8) {
+        $_SESSION['reset_error'] = "Mot de passe invalide.";
         header("Location: index.php?url=User/resetPassword&continue=1");
         exit;
     }
 
-    public function verifyReset()
-    {
-        $db = Database::getConnection();
+    $hashed = password_hash($pass, PASSWORD_DEFAULT);
 
-        $code = $_POST['code'] ?? '';
+    $db->prepare("UPDATE user SET password=?, reset_code=NULL WHERE id=?")
+       ->execute([$hashed, $id]);
 
-        $stmt = $db->prepare("SELECT id FROM user WHERE reset_code=? AND reset_expire>NOW()");
-        $stmt->execute([$code]);
-        $user = $stmt->fetch();
+    unset($_SESSION['reset_user_id']);
 
-        if ($user) {
-            $_SESSION['reset_user_id'] = $user['id'];
-            $_SESSION['reset_step'] = 'newpwd';
-        } else {
-            $_SESSION['reset_error'] = "Code invalide";
-        }
-
-        header("Location: index.php?url=User/resetPassword&continue=1");
-        exit;
-    }
-
-    public function changePassword()
-    {
-        $db = Database::getConnection();
-
-        $id = $_SESSION['reset_user_id'] ?? null;
-        $pass = $_POST['password'] ?? '';
-        $conf = $_POST['confirm'] ?? '';
-
-        if (!$id || $pass !== $conf) {
-            $_SESSION['reset_error'] = "Erreur";
-            header("Location: index.php?url=User/resetPassword");
-            exit;
-        }
-
-        $hashed = password_hash($pass, PASSWORD_DEFAULT);
-
-        $db->prepare("UPDATE user SET password=?, reset_code=NULL WHERE id=?")
-           ->execute([$hashed, $id]);
-
-        session_destroy();
-
-        header("Location: index.php?url=User/auth");
-        exit;
-    }
-
+    header("Location: index.php?url=User/auth");
+    exit;
+}
     /* =========================
        PAGES
     ========================== */
@@ -277,14 +282,106 @@ class UserController
     }
 
     public function dashboard()
-    {
-        require_once __DIR__ . '/../View/front/pages/dashboard.php';
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
     }
 
+    if (!isset($_SESSION['user'])) {
+        header("Location: index.php?url=User/auth");
+        exit;
+    }
+
+    if ($_SESSION['user']['role'] === 'admin') {
+        header("Location: index.php?url=Admin/dashboard");
+        exit;
+    }
+
+    require_once __DIR__ . '/../View/front/pages/dashboard.php';
+}
     public function profile()
     {
         require_once __DIR__ . '/../View/front/pages/profile.php';
     }
+
+    public function update()
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    if (!isset($_SESSION['user'])) {
+        header("Location: index.php?url=User/auth");
+        exit;
+    }
+
+    $db = Database::getConnection();
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+        $id = $_SESSION['user']['id'];
+
+        $nom      = trim($_POST['nom'] ?? '');
+        $email    = trim($_POST['email'] ?? '');
+        $password = trim($_POST['password'] ?? '');
+        $age      = trim($_POST['age'] ?? '');
+        $poids    = trim($_POST['poids'] ?? '');
+        $taille   = trim($_POST['taille'] ?? '');
+        $objectif = trim($_POST['objectif'] ?? '');
+
+        // update sans password
+        if (empty($password)) {
+
+            $stmt = $db->prepare("
+                UPDATE user 
+                SET nom=?, email=?, age=?, poids=?, taille=?, objectif=?
+                WHERE id=?
+            ");
+
+            $stmt->execute([
+                $nom,
+                $email,
+                $age,
+                $poids,
+                $taille,
+                $objectif,
+                $id
+            ]);
+
+        } else {
+
+            $hashed = password_hash($password, PASSWORD_DEFAULT);
+
+            $stmt = $db->prepare("
+                UPDATE user 
+                SET nom=?, email=?, password=?, age=?, poids=?, taille=?, objectif=?
+                WHERE id=?
+            ");
+
+            $stmt->execute([
+                $nom,
+                $email,
+                $hashed,
+                $age,
+                $poids,
+                $taille,
+                $objectif,
+                $id
+            ]);
+        }
+
+        // refresh session
+        $stmt = $db->prepare("SELECT * FROM user WHERE id=?");
+        $stmt->execute([$id]);
+
+        $_SESSION['user'] = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $_SESSION['profile_success'] = "Profil mis à jour avec succès.";
+
+        header("Location: index.php?url=User/profile");
+        exit;
+    }
+}
 
     public function logout()
     {

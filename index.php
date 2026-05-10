@@ -1,44 +1,42 @@
 <?php
 session_start();
 
-$url = $_GET['url'] ?? 'User/auth';
+$url = $_GET['url'] ?? 'Home/index';
 $url = explode('/', trim($url, '/'));
 
-$controllerPart = $url[0] ?? 'User';
-$method = $url[1] ?? 'auth';
-$params = array_slice($url, 2);
+$controllerName = ucfirst($url[0]) . 'Controller';
+$method         = $url[1] ?? 'index';
+$params         = array_slice($url, 2);
 
-/* NORMALISATION */
-$controllerName = ucfirst($controllerPart) . 'Controller';
+$paths = [
+    __DIR__ . "/Controller/$controllerName.php",
+    __DIR__ . "/Controllers/$controllerName.php"
+];
 
-/* IMPORTANT : dossier correct */
-$controllerFile = __DIR__ . "/Controller/$controllerName.php";
+$controllerFile = null;
+foreach ($paths as $path) {
+    if (file_exists($path)) {
+        $controllerFile = $path;
+        break;
+    }
+}
 
-/* DEBUG PROPRE */
-if (!file_exists($controllerFile)) {
+if (!$controllerFile) {
     http_response_code(404);
-    die(json_encode([
-        "success" => false,
-        "message" => "Controller introuvable",
-        "debug" => $controllerName
-    ]));
+    die("Controller introuvable");
 }
 
 require_once $controllerFile;
 
 if (!class_exists($controllerName)) {
-    http_response_code(500);
-    die(json_encode([
-        "success" => false,
-        "message" => "Classe introuvable",
-        "debug" => $controllerName
-    ]));
+    die("Classe introuvable");
 }
 
 $controller = new $controllerName();
 
 if (!method_exists($controller, $method)) {
-    $method = 'auth';
+    http_response_code(404);
+    die("Méthode introuvable");
 }
 
 call_user_func_array([$controller, $method], $params);

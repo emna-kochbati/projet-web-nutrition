@@ -1,5 +1,6 @@
+```html
 <style>
-/* ====== TON CSS RESTE 100% INCHANGÉ ====== */
+/* ====== SIDEBAR CSS INCHANGÉ ====== */
 .sidebar {
     position: fixed;
     left: 0;
@@ -77,6 +78,40 @@
     color: white;
 }
 
+/* ═══ BOUTON DÉCONNEXION ═══ */
+.nav-logout {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #ffcdd2 !important;
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    justify-content: flex-start;
+    margin: 2px 8px;
+}
+
+.nav-logout:hover {
+    background: rgba(255, 255, 255, 0.18) !important;
+    color: white !important;
+}
+
+.nav-logout i {
+    transition: transform 0.25s ease;
+}
+
+.nav-logout:hover i {
+    transform: translateX(3px);
+}
+
 .nav-left {
     display: flex;
     align-items: center;
@@ -133,6 +168,12 @@
 .content-area {
     margin-left: 220px;
 }
+
+/* Active state indicator */
+.nav-link.active {
+    background: rgba(255,255,255,0.22);
+    border-left: 3px solid #ffffff;
+}
 </style>
 
 <aside class="sidebar">
@@ -147,33 +188,32 @@
 
             <!-- DASHBOARD GLOBAL -->
             <li class="nav-item">
-                <a href="/ProjetWeb-User/Admin/dashboard" class="nav-link">
+                <a href="/ProjetWeb-User/Admin/dashboard" class="nav-link <?= ($_GET['url'] ?? '') === 'Admin/dashboard' ? 'active' : '' ?>">
                     <span class="nav-left">📊 Dashboard</span>
                 </a>
             </li>
 
             <div class="nav-divider"></div>
 
-            <!-- ================= USER MODIFIÉ ================= -->
+            <!-- ================= USER ================= -->
             <li class="nav-item">
-                <div class="nav-link" onclick="toggleMenu('user')">
+                <div class="nav-link <?= ($_GET['url'] ?? '') === 'Admin/users' || ($_GET['url'] ?? '') === 'Admin/dashboard' ? 'active' : '' ?>" onclick="toggleMenu('user')">
                     <span class="nav-left">👤 Utilisateur</span>
                     <span class="nav-arrow" id="arrow-user">▶</span>
                 </div>
 
-                <ul class="sub-menu" id="sub-user">
+                <ul class="sub-menu <?= ($_GET['url'] ?? '') === 'Admin/users' || ($_GET['url'] ?? '') === 'Admin/dashboard' ? 'open' : '' ?>" id="sub-user">
 
                     <!-- DASHBOARD USER -->
                     <li>
-                        
-    <a href="/ProjetWeb-User/Admin/dashboard">
+                        <a href="/ProjetWeb-User/Admin/dashboard">
                             📊 Dashboard
                         </a>
                     </li>
 
                     <!-- GESTION USER -->
                     <li>
-    <a href="/ProjetWeb-User/Admin/users">
+                        <a href="/ProjetWeb-User/Admin/users">
                             👥 Gestion Utilisateur
                         </a>
                     </li>
@@ -183,7 +223,7 @@
 
             <div class="nav-divider"></div>
 
-            <!-- ====== MODULES INCHANGÉS ====== -->
+            <!-- ====== MODULES ====== -->
             <?php
             $sections = [
                 'partenaire' => ['🤝 Partenaire', [
@@ -205,14 +245,15 @@
             ];
 
             foreach ($sections as $key => [$label, $items]):
+                $isActive = isset($_GET['url']) && stripos($_GET['url'], 'Admin/' . $key) !== false;
             ?>
             <li class="nav-item">
-                <div class="nav-link" onclick="toggleMenu('<?= $key ?>')">
+                <div class="nav-link <?= $isActive ? 'active' : '' ?>" onclick="toggleMenu('<?= $key ?>')">
                     <span class="nav-left"><?= $label ?></span>
                     <span class="nav-arrow" id="arrow-<?= $key ?>">▶</span>
                 </div>
 
-                <ul class="sub-menu" id="sub-<?= $key ?>">
+                <ul class="sub-menu <?= $isActive ? 'open' : '' ?>" id="sub-<?= $key ?>">
                     <?php foreach ($items as $item): ?>
                     <li><a href="<?= $item['url'] ?>"><?= $item['label'] ?></a></li>
                     <?php endforeach; ?>
@@ -222,9 +263,10 @@
 
             <div class="nav-divider"></div>
 
+            <!-- ═══ DÉCONNEXION DIRECTE ═══ -->
             <li class="nav-item">
-                <a href="/2A35/Login" class="nav-link">
-                    <span class="nav-left">🔐 Connexion</span>
+                <a href="/ProjetWeb-User/index.php?url=User/logout" class="nav-logout">
+                    <span class="nav-left"><i class="fa fa-right-from-bracket"></i> Déconnexion</span>
                 </a>
             </li>
 
@@ -236,19 +278,24 @@
     </div>
 </aside>
 
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
 <script>
-function toggleMenu(key){
-    const sub = document.getElementById("sub-" + key);
+/* ═══ TOGGLE MENU ═══ */
+function toggleMenu(key) {
+    const sub   = document.getElementById("sub-" + key);
     const arrow = document.getElementById("arrow-" + key);
+    if (!sub || !arrow) return;
 
     const isOpen = sub.classList.contains("open");
 
     document.querySelectorAll(".sub-menu").forEach(s => s.classList.remove("open"));
     document.querySelectorAll(".nav-arrow").forEach(a => a.style.transform = "");
 
-    if(!isOpen){
+    if (!isOpen) {
         sub.classList.add("open");
         arrow.style.transform = "rotate(90deg)";
     }
 }
 </script>
+```
