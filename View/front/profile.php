@@ -1,7 +1,7 @@
 ```php
 <?php
 session_start();
-if (!isset($_SESSION['user'])) { header("Location: /ProjetWeb-User/index.php?url=User/auth"); exit; }
+if (!isset($_SESSION['user'])) { header("Location: /2A35/index.php?url=User/auth"); exit; }
 
 $user = $_SESSION['user'];
 

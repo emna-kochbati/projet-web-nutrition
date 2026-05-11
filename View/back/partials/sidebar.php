@@ -1,4 +1,4 @@
-```html
+
 <style>
 /* ====== SIDEBAR CSS INCHANGÉ ====== */
 .sidebar {
@@ -188,7 +188,7 @@
 
             <!-- DASHBOARD GLOBAL -->
             <li class="nav-item">
-                <a href="/ProjetWeb-User/Admin/dashboard" class="nav-link <?= ($_GET['url'] ?? '') === 'Admin/dashboard' ? 'active' : '' ?>">
+                <a href="/2A35/Admin/dashboard" class="nav-link <?= ($_GET['url'] ?? '') === 'Admin/dashboard' ? 'active' : '' ?>">
                     <span class="nav-left">📊 Dashboard</span>
                 </a>
             </li>
@@ -206,14 +206,14 @@
 
                     <!-- DASHBOARD USER -->
                     <li>
-                        <a href="/ProjetWeb-User/Admin/dashboard">
+                        <a href="/2A35/Admin/dashboard">
                             📊 Dashboard
                         </a>
                     </li>
 
                     <!-- GESTION USER -->
                     <li>
-                        <a href="/ProjetWeb-User/Admin/users">
+                        <a href="/2A35/Admin/users">
                             👥 Gestion Utilisateur
                         </a>
                     </li>
@@ -227,12 +227,19 @@
             <?php
             $sections = [
                 'partenaire' => ['🤝 Partenaire', [
-                    ['label' => '📋 Liste',    'url' => '/2A35/Admin/partenaire'],
-                    ['label' => '➕ Nouveau',  'url' => '/2A35/Admin/partenaire/create'],
+                    ['label' => '🍴 Restaurants',       'url' => '/2A35/Admin/restaurant'],
+                    ['label' => '➕ Ajouter Restaurant', 'url' => '/2A35/Admin/restaurant/create'],
+                    ['label' => '🥘 Plats (Meals)',     'url' => '/2A35/Admin/meal'],
+                    ['label' => '➕ Ajouter Plat',       'url' => '/2A35/Admin/meal/create'],
                 ]],
                 'recette' => ['🍽️ Recette', [
-                    ['label' => '📋 Liste des recettes',  'url' => '/2A35/Admin/recette'],
-                    ['label' => '➕ Nouvelle recette',    'url' => '/2A35/Admin/recette/create'],
+                    ['label' => '📋 Liste',          'url' => '/2A35/Admin/recette'],
+                    ['label' => '➕ Nouveau',        'url' => '/2A35/Admin/recette/create'],
+                ]],
+                'ingredient' => ['🥕 Ingrédients', [
+                    ['label' => '📋 Liste',          'url' => '/2A35/Admin/ingredient'],
+                    ['label' => '➕ Nouveau',        'url' => '/2A35/Admin/ingredient/create'],
+                    ['label' => '📊 Stats',           'url' => '/2A35/Admin/ingredient/stats'],
                 ]],
                 'programme' => ['🏋️ Programme', [
                     ['label' => '📋 Liste',    'url' => '/2A35/Admin/programme'],
@@ -243,10 +250,6 @@
                     ['label' => '➕ Nouveau',        'url' => '/2A35/Admin/evenement/create'],
                     ['label' => '🏷️ Types',          'url' => '/2A35/Admin/evenement_type'],
                     ['label' => '➕ Nouveau Type',   'url' => '/2A35/Admin/evenement_type/create'],
-                ]],
-                'restaurant' => ['🍴 Restaurant', [
-                    ['label' => '📋 Liste',    'url' => '/2A35/Admin/restaurant'],
-                    ['label' => '➕ Nouveau',  'url' => '/2A35/Admin/restaurant/create'],
                 ]],
             ];
 
@@ -271,7 +274,7 @@
 
             <!-- ═══ DÉCONNEXION DIRECTE ═══ -->
             <li class="nav-item">
-                <a href="/ProjetWeb-User/index.php?url=User/logout" class="nav-logout">
+                <a href="/2A35/index.php?url=User/logout" class="nav-logout">
                     <span class="nav-left"><i class="fa fa-right-from-bracket"></i> Déconnexion</span>
                 </a>
             </li>
@@ -304,4 +307,4 @@ function toggleMenu(key) {
     }
 }
 </script>
-```
+

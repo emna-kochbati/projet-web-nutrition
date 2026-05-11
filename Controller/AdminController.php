@@ -375,4 +375,93 @@ class AdminController
             default:       $ctrl->index(); break;
         }
     }
+
+    /* ===================================================== */
+    /* 🍽️ RECIPE MANAGEMENT (BRIDGE) */
+    /* ===================================================== */
+
+    public function recette($action = 'index', $id = null)
+    {
+        require_once 'Controller/back/RecetteController.php';
+        $ctrl = new RecetteController();
+
+        switch ($action) {
+            case 'index':  $ctrl->index(); break;
+            case 'create': $ctrl->create(); break;
+            case 'store':  $ctrl->store(); break;
+            case 'edit':   $ctrl->edit($id); break;
+            case 'update': $ctrl->update($id); break;
+            case 'delete': $ctrl->delete($id); break;
+            case 'search': $ctrl->search(); break;
+            case 'ajax':   $ctrl->ajax(); break;
+            default:       $ctrl->index(); break;
+        }
+    }
+
+    /* ===================================================== */
+    /* 🥕 INGREDIENT MANAGEMENT (BRIDGE) */
+    /* ===================================================== */
+
+    public function ingredient($action = 'index', $id = null)
+    {
+        require_once 'Controller/back/IngredientController.php';
+        $ctrl = new IngredientController();
+
+        switch ($action) {
+            case 'index':  $ctrl->index(); break;
+            case 'create': $ctrl->create(); break;
+            case 'store':  $ctrl->store(); break;
+            case 'edit':   $ctrl->edit($id); break;
+            case 'update': $ctrl->update($id); break;
+            case 'show':   $ctrl->show($id); break;
+            case 'delete': $ctrl->delete($id); break;
+            case 'stats':  $ctrl->stats(); break;
+            case 'ajax':   $ctrl->ajax(); break;
+            default:       $ctrl->index(); break;
+        }
+    }
+
+    /* ===================================================== */
+    /* 🍱 MEAL MANAGEMENT (BRIDGE) */
+    /* ===================================================== */
+
+    public function meal($action = 'index', $id = null)
+    {
+        require_once 'Controller/back/MealController.php';
+        $ctrl = new MealController();
+
+        switch ($action) {
+            case 'index':  $ctrl->index(); break;
+            case 'create': $ctrl->create(); break;
+            case 'store':  $ctrl->store(); break;
+            case 'edit':   $ctrl->edit($id); break;
+            case 'update': $ctrl->update($id); break;
+            case 'show':   $ctrl->show($id); break;
+            case 'delete': $ctrl->delete($id); break;
+            default:       $ctrl->index(); break;
+        }
+    }
+
+    /* ===================================================== */
+    /* 🤖 AI ASSISTANT (BRIDGE) */
+    /* ===================================================== */
+
+    public function ai($action = 'chat')
+    {
+        require_once 'Controller/AiController.php';
+        $ctrl = new AiController();
+
+        switch ($action) {
+            case 'chat':                    $ctrl->chat();                    break;
+            case 'chatRecette':             $ctrl->chatRecette();             break;
+            case 'analyser':                $ctrl->analyser();                break;
+            case 'recommander':             $ctrl->recommander();             break;
+            case 'nutrition':               $ctrl->nutrition();               break;
+            case 'edamam':                  $ctrl->edamam();                  break;
+            case 'image':
+            case 'genererImage':            $ctrl->genererImage();            break;
+            case 'genererImageIngredient':  $ctrl->genererImageIngredient();  break;
+            default:                        $ctrl->chat();                    break;
+        }
+    }
 }

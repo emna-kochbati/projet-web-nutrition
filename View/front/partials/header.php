@@ -79,7 +79,7 @@ if (session_status() === PHP_SESSION_NONE) {
             </li>
 
             <li class="nav-item">
-                <a class="nav-link" href="#">Recette</a>
+                <a class="nav-link" href="recettefront">Recette</a>
             </li>
 
             <li class="nav-item">
@@ -97,11 +97,14 @@ if (session_status() === PHP_SESSION_NONE) {
             <!-- ================= USER SESSION ================= -->
             <?php if (isset($_SESSION['user'])): ?>
 
-                <?php if ($_SESSION['user']['role'] === 'admin'): ?>
+                <?php 
+                $userRole = strtolower(trim($_SESSION['user']['role'] ?? ''));
+                if ($userRole === 'admin'): ?>
 
                     <!-- ADMIN -->
                     <li class="nav-item">
-                        <a class="nav-link text-danger fw-bold"
+                        <a class="nav-link text-white fw-bold px-3"
+                           style="background: #dc3545; border-radius: 20px; margin-right: 10px;"
                            href="/2A35/index.php?url=Admin/dashboard">
                             <i class="fa fa-cog"></i> Admin Panel
                         </a>

@@ -171,173 +171,6 @@ $calendarSummary = [
 ?>
 
 <style>
-/* ═══════════════════════════════════════ */
-/*  SIDEBAR — DESIGN ORIGINAL CONSERVÉ    */
-/* ═══════════════════════════════════════ */
-.sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 220px;
-    height: 100vh;
-    background: #2e7d32;
-    color: white;
-    font-family: Arial, sans-serif;
-    padding: 0;
-    box-shadow: 3px 0 10px rgba(0,0,0,0.2);
-    z-index: 1000;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-}
-
-.sidebar-header {
-    padding: 20px 15px;
-    text-align: center;
-    border-bottom: 1px solid rgba(255,255,255,0.15);
-    background: #1b5e20;
-}
-
-.sidebar-header .site-name {
-    color: white;
-    font-size: 1rem;
-    font-weight: 700;
-    margin-top: 8px;
-    letter-spacing: 0.05em;
-}
-
-.sidebar nav {
-    flex: 1;
-    padding: 12px 0;
-}
-
-.sidebar nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.nav-item {
-    margin: 2px 8px;
-}
-
-.nav-link {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 11px 14px;
-    border-radius: 6px;
-    text-decoration: none;
-    color: rgba(255,255,255,0.9);
-    font-size: 0.92rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-    border: none;
-    background: transparent;
-    width: 100%;
-    text-align: left;
-    justify-content: space-between;
-}
-
-.nav-link:hover,
-.nav-link.active {
-    background: rgba(255,255,255,0.18);
-    color: white;
-}
-
-.nav-link.active {
-    background: rgba(255,255,255,0.22);
-    border-left: 3px solid #ffffff;
-}
-
-.nav-logout {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 11px 14px;
-    border-radius: 6px;
-    text-decoration: none;
-    color: #ffcdd2 !important;
-    font-size: 0.92rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    border: none;
-    background: transparent;
-    width: 100%;
-    text-align: left;
-    justify-content: flex-start;
-    margin: 2px 8px;
-}
-
-.nav-logout:hover {
-    background: rgba(255, 255, 255, 0.18) !important;
-    color: white !important;
-}
-
-.nav-logout i {
-    transition: transform 0.25s ease;
-}
-
-.nav-logout:hover i {
-    transform: translateX(3px);
-}
-
-.nav-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.nav-arrow {
-    font-size: 0.7rem;
-    transition: transform 0.2s;
-}
-
-.sub-menu {
-    list-style: none;
-    padding: 0 0 0 10px;
-    margin: 0;
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease;
-}
-
-.sub-menu.open {
-    max-height: 300px;
-}
-
-.sub-menu li a {
-    display: block;
-    padding: 8px 14px;
-    border-radius: 5px;
-    text-decoration: none;
-    color: rgba(255,255,255,0.8);
-    font-size: 0.85rem;
-    margin: 2px 0;
-    transition: all 0.2s ease;
-}
-
-.sub-menu li a:hover {
-    background: rgba(255,255,255,0.15);
-    color: white;
-}
-
-.nav-divider {
-    height: 1px;
-    background: rgba(255,255,255,0.12);
-    margin: 8px 14px;
-}
-
-.sidebar-footer {
-    padding: 12px 15px;
-    border-top: 1px solid rgba(255,255,255,0.15);
-    font-size: 0.75rem;
-    color: rgba(255,255,255,0.5);
-    text-align: center;
-}
-
 /* ═══ BASE & LAYOUT ═══ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1641,86 +1474,9 @@ body {
 <body>
 
 <!-- ═══════════════════════════════════════ -->
-<!--  SIDEBAR — DESIGN ORIGINAL CONSERVÉ    -->
+<!--  SIDEBAR — UTILISATION DU PARTIAL UNIFIÉ -->
 <!-- ═══════════════════════════════════════ -->
-<aside class="sidebar">
-    <div class="sidebar-header">
-        <div class="site-name">🥗 EcoNutri</div>
-    </div>
-
-    <nav>
-        <ul>
-            <li class="nav-item">
-                <a href="index.php?url=Admin/dashboard" class="nav-link <?= ($_GET['url'] ?? '') === 'Admin/dashboard' ? 'active' : '' ?>">
-                    <span class="nav-left">📊 Dashboard</span>
-                </a>
-            </li>
-
-            <div class="nav-divider"></div>
-
-            <li class="nav-item">
-                <div class="nav-link <?= stripos($_GET['url'] ?? '', 'Admin/users') !== false ? 'active' : '' ?>" onclick="toggleMenu('user')">
-                    <span class="nav-left">👤 Utilisateur</span>
-                    <span class="nav-arrow" id="arrow-user">▶</span>
-                </div>
-                <ul class="sub-menu <?= stripos($_GET['url'] ?? '', 'Admin/users') !== false ? 'open' : '' ?>" id="sub-user">
-                    <li><a href="index.php?url=Admin/dashboard">📊 Dashboard</a></li>
-                    <li><a href="index.php?url=Admin/users">👥 Gestion Utilisateur</a></li>
-                </ul>
-            </li>
-
-            <div class="nav-divider"></div>
-
-            <?php
-            $sections = [
-                'partenaire' => ['🤝 Partenaire', [
-                    ['label' => '📋 Liste',    'url' => '/ProjetWeb-User/Admin/partenaire'],
-                    ['label' => '➕ Nouveau',  'url' => '/ProjetWeb-User/Admin/partenaire/create'],
-                ]],
-                'recette' => ['🍽️ Recette', [
-                    ['label' => '📋 Liste des recettes',  'url' => '/ProjetWeb-User/Admin/recette'],
-                    ['label' => '➕ Nouvelle recette',    'url' => '/ProjetWeb-User/Admin/recette/create'],
-                ]],
-                'programme' => ['🏋️ Programme', [
-                    ['label' => '📋 Liste',    'url' => '/ProjetWeb-User/Admin/programme'],
-                    ['label' => '➕ Nouveau',  'url' => '/ProjetWeb-User/Admin/programme/create'],
-                ]],
-                'evenement' => ['📅 Événement', [
-                    ['label' => '📋 Liste',    'url' => '/ProjetWeb-User/Admin/evenement'],
-                    ['label' => '➕ Nouveau',  'url' => '/ProjetWeb-User/Admin/evenement/create'],
-                ]],
-            ];
-
-            foreach ($sections as $key => [$label, $items]):
-                $isActive = isset($_GET['url']) && stripos($_GET['url'], 'Admin/' . $key) !== false;
-            ?>
-            <li class="nav-item">
-                <div class="nav-link <?= $isActive ? 'active' : '' ?>" onclick="toggleMenu('<?= $key ?>')">
-                    <span class="nav-left"><?= $label ?></span>
-                    <span class="nav-arrow" id="arrow-<?= $key ?>">▶</span>
-                </div>
-                <ul class="sub-menu <?= $isActive ? 'open' : '' ?>" id="sub-<?= $key ?>">
-                    <?php foreach ($items as $item): ?>
-                    <li><a href="<?= $item['url'] ?>"><?= $item['label'] ?></a></li>
-                    <?php endforeach; ?>
-                </ul>
-            </li>
-            <?php endforeach; ?>
-
-            <div class="nav-divider"></div>
-
-            <li class="nav-item">
-                <a href="index.php?url=User/logout" class="nav-logout">
-                    <span class="nav-left"><i class="fa fa-right-from-bracket"></i> Déconnexion</span>
-                </a>
-            </li>
-        </ul>
-    </nav>
-
-    <div class="sidebar-footer">
-        NutriSmart Admin © 2026
-    </div>
-</aside>
+<?php include 'View/back/partials/sidebar.php'; ?>
 
 <!-- ══ TOPBAR ══ -->
 <div class="topbar">
@@ -2161,10 +1917,10 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ═══════════════════════════════════════════════ */
 async function executeAction(action, count, event) {
 
-  let endpoint = '/ProjetWeb-User/index.php?url=Admin/executeAction';
+  let endpoint = '/2A35/index.php?url=Admin/executeAction';
 
   if (action === 'generate_report') {
-    endpoint = '/ProjetWeb-User/index.php?url=Admin/generateReport';
+    endpoint = '/2A35/index.php?url=Admin/generateReport';
   }
 
   Swal.fire({
@@ -2300,7 +2056,7 @@ searchInput.addEventListener('input', () => {
   searchResults.innerHTML = '<div class="sr-loading"><i class="fa fa-circle-notch spin" style="color:#00c853;margin-right:6px;"></i>Recherche...</div>';
   searchResults.classList.add('show');
   searchTimer = setTimeout(() => {
-    fetch('/ProjetWeb-User/index.php?url=Admin/searchUsers&search=' + encodeURIComponent(q) + '&page=1')
+    fetch('/2A35/index.php?url=Admin/searchUsers&search=' + encodeURIComponent(q) + '&page=1')
       .then(r => r.json())
       .then(data => {
         if (!data.users || data.users.length === 0) {
@@ -2312,18 +2068,18 @@ searchInput.addEventListener('input', () => {
           const sl = { active: 'Actif', inactive: 'Inactif', banned: 'Banni' }[status] || status;
           return `<div class="sr-item" onclick="goToUser(${u.id})"><div class="sr-av">${init}</div><div><div class="sr-name">${esc(u.nom)}</div><div class="sr-email">${esc(u.email)}</div></div><span class="sr-badge ${status}">${sl}</span></div>`;
         }).join('');
-        if (data.total > 6) searchResults.innerHTML += `<div style="padding:12px 16px;text-align:center;border-top:1px solid #f1f5f9;"><a href="/ProjetWeb-User/index.php?url=Admin/users&search=${encodeURIComponent(q)}" style="font-size:12px;color:#00c853;text-decoration:none;font-weight:600;">Voir les ${data.total} résultats →</a></div>`;
+        if (data.total > 6) searchResults.innerHTML += `<div style="padding:12px 16px;text-align:center;border-top:1px solid #f1f5f9;"><a href="/2A35/index.php?url=Admin/users&search=${encodeURIComponent(q)}" style="font-size:12px;color:#00c853;text-decoration:none;font-weight:600;">Voir les ${data.total} résultats →</a></div>`;
       })
       .catch(() => { searchResults.innerHTML = '<div class="sr-empty">Erreur de connexion</div>'; });
   }, 300);
 });
 
-function goToUser(id) { window.location = '/ProjetWeb-User/index.php?url=Admin/users'; }
+function goToUser(id) { window.location = '/2A35/index.php?url=Admin/users'; }
 function hideResults() { searchResults.classList.remove('show'); searchResults.innerHTML = ''; }
 document.addEventListener('click', (e) => { if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) hideResults(); });
 searchInput.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { hideResults(); searchInput.blur(); }
-  if (e.key === 'Enter' && searchInput.value.trim()) window.location = '/ProjetWeb-User/index.php?url=Admin/users&search=' + encodeURIComponent(searchInput.value.trim());
+  if (e.key === 'Enter' && searchInput.value.trim()) window.location = '/2A35/index.php?url=Admin/users&search=' + encodeURIComponent(searchInput.value.trim());
 });
 function esc(str) { if (!str) return ''; return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 </script>

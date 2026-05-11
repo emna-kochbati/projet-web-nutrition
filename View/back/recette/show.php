@@ -83,6 +83,111 @@ ob_start();
             <p style="color:#999;font-style:italic;margin-bottom:20px;">Aucun ingrédient enregistré.</p>
         <?php endif; ?>
 
+        <!-- Valeurs nutritionnelles calculées par jointure -->
+        <?php if (!empty($valeursNutri) && ($valeursNutri['proteines'] + $valeursNutri['calcium'] + $valeursNutri['glucides'] + $valeursNutri['lipides']) > 0): ?>
+        <div class="section-title">🧪 Valeurs nutritionnelles</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:20px;">
+            <div style="background:#e8f5e9;border-radius:8px;padding:14px;text-align:center;border:1px solid #c8e6c9;">
+                <div style="font-size:1.4rem;">💪</div>
+                <div style="font-size:1.1rem;font-weight:700;color:#2e7d32;"><?= $valeursNutri['proteines'] ?> g</div>
+                <div style="font-size:0.76rem;color:#777;">Protéines</div>
+            </div>
+            <div style="background:#e3f2fd;border-radius:8px;padding:14px;text-align:center;border:1px solid #bbdefb;">
+                <div style="font-size:1.4rem;">🦴</div>
+                <div style="font-size:1.1rem;font-weight:700;color:#1565c0;"><?= $valeursNutri['calcium'] ?> mg</div>
+                <div style="font-size:0.76rem;color:#777;">Calcium</div>
+            </div>
+            <div style="background:#fff3e0;border-radius:8px;padding:14px;text-align:center;border:1px solid #ffe0b2;">
+                <div style="font-size:1.4rem;">⚡</div>
+                <div style="font-size:1.1rem;font-weight:700;color:#f57c00;"><?= $valeursNutri['glucides'] ?> g</div>
+                <div style="font-size:0.76rem;color:#777;">Glucides</div>
+            </div>
+            <div style="background:#fce4ec;border-radius:8px;padding:14px;text-align:center;border:1px solid #f8bbd0;">
+                <div style="font-size:1.4rem;">🫧</div>
+                <div style="font-size:1.1rem;font-weight:700;color:#c62828;"><?= $valeursNutri['lipides'] ?> g</div>
+                <div style="font-size:0.76rem;color:#777;">Lipides</div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Nutri-Score -->
+        <?php if (isset($nutriScore) && $nutriScore['lettre'] !== '?'): ?>
+        <div class="section-title">🏅 Nutri-Score</div>
+
+        <?php
+        // Définir l'animation de clignotement selon la lettre
+        $animNom = match($nutriScore['lettre']) {
+            'A', 'B' => 'clignote-vert',
+            'C'      => 'clignote-jaune',
+            'D'      => 'clignote-orange',
+            'E'      => 'clignote-rouge',
+            default  => 'clignote-vert',
+        };
+        ?>
+
+        <style>
+        @keyframes clignote-vert   { 0%,100%{box-shadow:0 0 0 0 rgba(26,122,26,0);}  50%{box-shadow:0 0 18px 8px rgba(26,122,26,.55);} }
+        @keyframes clignote-jaune  { 0%,100%{box-shadow:0 0 0 0 rgba(245,200,0,0);}  50%{box-shadow:0 0 18px 8px rgba(245,200,0,.6);} }
+        @keyframes clignote-orange { 0%,100%{box-shadow:0 0 0 0 rgba(224,120,0,0);}  50%{box-shadow:0 0 18px 8px rgba(224,120,0,.6);} }
+        @keyframes clignote-rouge  { 0%,100%{box-shadow:0 0 0 0 rgba(211,47,47,0);}  50%{box-shadow:0 0 18px 8px rgba(211,47,47,.6);} }
+        </style>
+
+        <div style="background:#fff;border-radius:12px;border:2px solid #e0e0e0;padding:20px;margin-bottom:20px;">
+
+            <!-- Barre des 5 lettres -->
+            <div style="display:flex;gap:6px;align-items:center;margin-bottom:16px;">
+                <?php foreach (['A','B','C','D','E'] as $l):
+                    $configs = [
+                        'A' => ['bg'=>'#1a7a1a','size'=>'2rem'],
+                        'B' => ['bg'=>'#5aab1f','size'=>'1.8rem'],
+                        'C' => ['bg'=>'#f5c800','size'=>'1.6rem'],
+                        'D' => ['bg'=>'#e07800','size'=>'1.6rem'],
+                        'E' => ['bg'=>'#d32f2f','size'=>'1.6rem'],
+                    ];
+                    $isActive = ($l === $nutriScore['lettre']);
+                    $cfg = $configs[$l];
+                ?>
+                <div style="
+                    background:<?= $cfg['bg'] ?>;
+                    color:#fff;
+                    width:<?= $isActive ? '52px' : '38px' ?>;
+                    height:<?= $isActive ? '52px' : '38px' ?>;
+                    border-radius:8px;
+                    display:flex;align-items:center;justify-content:center;
+                    font-size:<?= $isActive ? '1.5rem' : '1rem' ?>;
+                    font-weight:900;
+                    opacity:<?= $isActive ? '1' : '0.35' ?>;
+                    transition:all .2s;
+                    <?= $isActive ? 'animation:'.$animNom.' 1.2s ease-in-out infinite;transform:scale(1.1);' : '' ?>
+                "><?= $l ?></div>
+                <?php endforeach; ?>
+
+                <!-- Label -->
+                <div style="margin-left:14px;">
+                    <div style="font-size:1.1rem;font-weight:800;color:<?= $nutriScore['bg'] ?>;">
+                        <?= $nutriScore['lettre'] ?> — <?= $nutriScore['label'] ?>
+                    </div>
+                    <div style="font-size:0.78rem;color:#888;margin-top:2px;">
+                        Score calculé : <?= $nutriScore['score'] ?> pts
+                        (<?= $nutriScore['details']['ptsNeg'] ?> négatifs − <?= $nutriScore['details']['ptsPos'] ?> positifs)
+                    </div>
+                </div>
+            </div>
+
+            <!-- Détail du calcul -->
+            <div style="background:#f9f9f9;border-radius:8px;padding:12px;font-size:0.82rem;color:#555;">
+                <strong style="color:#333;">Calcul basé sur 100g de recette :</strong>
+                <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;">
+                    <span>💪 Protéines : <strong><?= $nutriScore['details']['proteines'] ?>g</strong></span>
+                    <span>🦴 Calcium : <strong><?= $nutriScore['details']['calcium'] ?>mg</strong></span>
+                    <span>⚡ Glucides : <strong><?= $nutriScore['details']['glucides'] ?>g</strong></span>
+                    <span>🫧 Lipides : <strong><?= $nutriScore['details']['lipides'] ?>g</strong></span>
+                    <span>🔥 Calories : <strong><?= $nutriScore['details']['calories'] ?> kcal</strong></span>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- Actions -->
         <div class="show-actions">
             <a href="/2A35/Admin/recette/edit/<?= $recette['id'] ?>" class="btn-edit-s">✏️ Modifier</a>

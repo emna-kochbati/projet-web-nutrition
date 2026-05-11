@@ -863,7 +863,7 @@ tr.just-banned {
 </head>
 <body>
 
-<?php include __DIR__ . '/../partials/sidebar.php'; ?>
+<?php include 'view/back/partials/sidebar.php'; ?>
 
 <div class="content-area">
 
@@ -1152,7 +1152,7 @@ function fetchUsers() {
     document.getElementById('usersTable').style.display = 'none';
     document.getElementById('emptyState').style.display = 'none';
 
-    fetch('/ProjetWeb-User/index.php?url=Admin/searchUsers&' + params)
+    fetch('/2A35/index.php?url=Admin/searchUsers&' + params)
         .then(r => r.json())
         .then(data => {
             document.getElementById('spinner').style.display = 'none';
@@ -1275,7 +1275,7 @@ function cycleStatus(id, current, el) {
 }
 
 function updateStatus(id, newStatus, el) {
-    fetch('/ProjetWeb-User/index.php?url=Admin/toggleStatus', {
+    fetch('/2A35/index.php?url=Admin/toggleStatus', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `id=${id}&status=${newStatus}`
@@ -1306,7 +1306,7 @@ function updateStatus(id, newStatus, el) {
 ================================================================ */
 function confirmDelete(id) {
     if (!confirm('Supprimer cet utilisateur ?')) return;
-    window.location = `/ProjetWeb-User/index.php?url=Admin/deleteUser/${id}`;
+    window.location = `/2A35/index.php?url=Admin/deleteUser/${id}`;
 }
 
 /* ================================================================
@@ -1333,7 +1333,7 @@ function openModal(mode, user = null) {
     if (mode === 'add') {
         document.getElementById('modalTitle').textContent = '➕ Ajouter un utilisateur';
         document.getElementById('modalSub').textContent   = 'Remplissez les informations ci-dessous';
-        form.action = '/ProjetWeb-User/index.php?url=Admin/addUser';
+        form.action = '/2A35/index.php?url=Admin/addUser';
         form.reset();
         pwdOpt.style.display = 'none';
         saveBtn.style.display = 'block';
@@ -1342,7 +1342,7 @@ function openModal(mode, user = null) {
     } else if (mode === 'edit') {
         document.getElementById('modalTitle').textContent = '✏️ Modifier utilisateur';
         document.getElementById('modalSub').textContent   = `Modification de ${user.nom}`;
-        form.action = `/ProjetWeb-User/index.php?url=Admin/updateUser/${user.id}`;
+        form.action = `/2A35/index.php?url=Admin/updateUser/${user.id}`;
         fillModal(user);
         pwdOpt.style.display = 'inline';
         saveBtn.style.display = 'block';
