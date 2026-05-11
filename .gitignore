@@ -6,3 +6,4 @@ assets/img/*
 !assets/img/.gitkeep
 node_modules/
 .DS_Store
+vendor/
