@@ -35,7 +35,10 @@
                     </div>
                 </form>
             </div>
-            <div class="col-md-auto mt-3 mt-md-0">
+            <div class="col-md-auto mt-3 mt-md-0 d-flex gap-2">
+                <a href="/2A35/Event/myEvents" class="btn btn-primary py-3 px-4 shadow-sm" style="border-radius: 30px; font-weight: 600;">
+                    <i class="fa fa-calendar-check me-2"></i> My Events
+                </a>
                 <button type="button" class="btn btn-secondary py-3 px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#statsModal" style="border-radius: 30px; font-weight: 600;">
                     <i class="fa fa-chart-pie me-2"></i> View Statistics
                 </button>

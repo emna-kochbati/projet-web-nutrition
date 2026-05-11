@@ -69,7 +69,7 @@ class EventTypeController {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $imagePath = $this->handleImageUpload($_FILES['image']);
             $this->createEventType($_POST['label'], $imagePath);
-            header('Location: /2A35/back/EventType');
+            header('Location: /2A35/Admin/evenement_type');
             exit;
         }
     }
@@ -91,7 +91,7 @@ class EventTypeController {
             }
             
             $this->updateEventType($id, $_POST['label'], $imagePath);
-            header('Location: /2A35/back/EventType');
+            header('Location: /2A35/Admin/evenement_type');
             exit;
         }
     }
@@ -101,7 +101,7 @@ class EventTypeController {
             $this->deleteEventType($id);
         } catch (Exception $e) {
         }
-        header('Location: /2A35/back/EventType');
+        header('Location: /2A35/Admin/evenement_type');
         exit;
     }
 }

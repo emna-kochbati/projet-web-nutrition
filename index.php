@@ -1,31 +1,42 @@
 <?php
-// 1. Grab the URL parts
-$url = isset($_GET['url']) ? explode('/', rtrim($_GET['url'], '/')) : ['Home'];
+session_start();
 
-if (strtolower($url[0]) === 'back') {
-    $controllerName = isset($url[1]) ? ucfirst($url[1]) . 'Controller' : 'DashboardController';
-    $controllerFile = "Controller/back/" . $controllerName . ".php";
-    $method = isset($url[2]) ? $url[2] : 'index';
-    $params = array_slice($url, 3);
-} else {
-    $controllerName = ucfirst($url[0]) . 'Controller';
-    $controllerFile = "Controller/" . $controllerName . ".php";
-    $method = isset($url[1]) ? $url[1] : 'index';
-    $params = array_slice($url, 2);
-}
+$url = $_GET['url'] ?? 'Home/index';
+$url = explode('/', trim($url, '/'));
 
-// 3. Check if the file exists before loading
-if (file_exists($controllerFile)) {
-    require_once $controllerFile;
-    $controller = new $controllerName();
+$controllerName = ucfirst($url[0]) . 'Controller';
+$method         = $url[1] ?? 'index';
+$params         = array_slice($url, 2);
 
-    // 4. Check if the method exists (e.g., 'show', 'add', 'edit')
-    if (method_exists($controller, $method)) {
-        // Pass the rest of the URL parts as parameters (like an ID)
-        call_user_func_array([$controller, $method], $params);
-    } else {
-        echo "404 - Method '$method' not found in $controllerName";
+$paths = [
+    __DIR__ . "/Controller/$controllerName.php",
+    __DIR__ . "/Controllers/$controllerName.php"
+];
+
+$controllerFile = null;
+foreach ($paths as $path) {
+    if (file_exists($path)) {
+        $controllerFile = $path;
+        break;
     }
-} else {
-    echo "404 - Controller $controllerName not found in $controllerFile";
 }
+
+if (!$controllerFile) {
+    http_response_code(404);
+    die("Controller introuvable");
+}
+
+require_once $controllerFile;
+
+if (!class_exists($controllerName)) {
+    die("Classe introuvable");
+}
+
+$controller = new $controllerName();
+
+if (!method_exists($controller, $method)) {
+    http_response_code(404);
+    die("Méthode introuvable");
+}
+
+call_user_func_array([$controller, $method], $params);

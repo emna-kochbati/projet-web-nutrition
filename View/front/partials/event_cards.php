@@ -56,7 +56,9 @@ $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_
 
                 <div class="d-flex gap-2">
                     <a class="btn btn-outline-primary py-2 px-3 flex-grow-1" href="/2A35/Event/show/<?= $event['id'] ?>" style="border-radius: 5px; font-weight: bold;">Details</a>
-                    <?php if ($canRegister): ?>
+                    <?php if ($this->isRegistered($event['id'])): ?>
+                        <a class="btn btn-danger py-2 px-3 flex-grow-1" href="/2A35/Event/unregister/<?= $event['id'] ?>" style="border-radius: 5px; font-weight: bold;">Unregister</a>
+                    <?php elseif ($canRegister): ?>
                         <a class="btn btn-primary py-2 px-3 flex-grow-1" href="/2A35/Event/register/<?= $event['id'] ?>" style="border-radius: 5px; font-weight: bold;">Register</a>
                     <?php else: ?>
                         <button class="btn btn-secondary py-2 px-3 flex-grow-1 disabled" style="border-radius: 5px; font-weight: bold; cursor: not-allowed;">Full/Closed</button>

@@ -38,7 +38,7 @@
                                 </button>
                             </div>
                             <div id="ai-description-text">
-                                <p class="mb-0">Loading AI description...</p>
+                                <p class="mb-0"><?= !empty($event['description']) ? htmlspecialchars($event['description']) : 'No description available yet. Click regenerate to create one with AI.' ?></p>
                             </div>
                         </div>
                     </div>
@@ -103,7 +103,11 @@
                     <?php 
                         $canRegister = $this->hasAvailablePlaces($event) && !$this->isPast($event);
                     ?>
-                    <?php if ($canRegister): ?>
+                    <?php if ($this->isRegistered($event['id'])): ?>
+                        <a href="/2A35/Event/unregister/<?= $event['id'] ?>" class="btn btn-danger w-100 py-3 mb-3" style="border-radius: 10px; font-weight: 700; font-size: 1.1rem;">
+                            <i class="fa fa-times-circle me-2"></i>Unregister from Event
+                        </a>
+                    <?php elseif ($canRegister): ?>
                         <a href="/2A35/Event/register/<?= $event['id'] ?>" class="btn btn-primary w-100 py-3 mb-3" style="border-radius: 10px; font-weight: 700; font-size: 1.1rem;">
                             <i class="fa fa-check-circle me-2"></i>Register for Event
                         </a>
@@ -112,6 +116,10 @@
                             <i class="fa fa-times-circle me-2"></i>Registration Closed
                         </button>
                     <?php endif; ?>
+                    
+                    <a href="/2A35/Event/myEvents" class="btn btn-outline-primary w-100 py-2 mb-2" style="border-radius: 10px;">
+                        <i class="fa fa-calendar-check me-2"></i>My Events
+                    </a>
                     
                     <button class="btn btn-outline-secondary w-100 py-2" style="border-radius: 10px;">
                         <i class="fa fa-share-alt me-2"></i>Share Event
@@ -191,8 +199,10 @@ $(document).ready(function() {
     $('#generate-desc-btn').on('click', generateDescription);
     $('#generate-faq-btn').on('click', generateFaq);
 
-    // Run automatically on load
-    generateDescription();
+    // Run automatically on load only if empty
+    if ($('#ai-description-text p').text().includes('No description available')) {
+        generateDescription();
+    }
 });
 </script>
 

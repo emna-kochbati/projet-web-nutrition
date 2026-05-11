@@ -165,11 +165,46 @@ class EventController {
     }
 
     public function register($id) {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if (!isset($_SESSION['user'])) {
+            header('Location: /2A35/index.php?url=User/auth');
+            exit;
+        }
+
+        $userId = $_SESSION['user']['id'];
         $event = $this->getById($id);
+
         if ($event) {
-            // LOGIQUE MÉTIER : Vérifier si l'inscription est possible via les méthodes du contrôleur
             if ($this->hasAvailablePlaces($event) && !$this->isPast($event)) {
-                $this->decrementAvailablePlaces($id);
+                // Check if already registered
+                $check = $this->db->prepare('SELECT id FROM event_registrations WHERE user_id = ? AND event_id = ?');
+                $check->execute([$userId, $id]);
+                
+                if (!$check->fetch()) {
+                    // Start transaction
+                    $this->db->beginTransaction();
+                    try {
+                        // Insert registration
+                        $stmt = $this->db->prepare('INSERT INTO event_registrations (user_id, event_id, created_at) VALUES (?, ?, NOW())');
+                        $stmt->execute([$userId, $id]);
+
+                        // Decrement places
+                        $this->decrementAvailablePlaces($id);
+
+                        $this->db->commit();
+                        $_SESSION['success'] = "Inscription réussie !";
+                    } catch (Exception $e) {
+                        $this->db->rollBack();
+                        $_SESSION['error'] = "Erreur lors de l'inscription.";
+                    }
+                } else {
+                    $_SESSION['error'] = "Vous êtes déjà inscrit à cet événement.";
+                }
+            } else {
+                $_SESSION['error'] = "Cet événement n'est plus disponible.";
             }
         }
         
@@ -177,7 +212,86 @@ class EventController {
         exit;
     }
 
-    /* --- LOGIQUE MÉTIER (Déplacée du Modèle) --- */
+    public function myEvents() {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if (!isset($_SESSION['user'])) {
+            header('Location: /2A35/index.php?url=User/auth');
+            exit;
+        }
+
+        $userId = $_SESSION['user']['id'];
+        
+        $stmt = $this->db->prepare('
+            SELECT e.*, t.label AS type_label, t.image AS type_image, r.created_at as registration_date
+            FROM event_registrations r
+            JOIN event e ON r.event_id = e.id
+            JOIN event_type t ON e.id_type = t.id
+            WHERE r.user_id = ?
+            ORDER BY r.created_at DESC
+        ');
+        $stmt->execute([$userId]);
+        $registrations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        require_once 'View/front/my_events.php';
+    }
+
+    public function unregister($id) {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if (!isset($_SESSION['user'])) {
+            header('Location: /2A35/index.php?url=User/auth');
+            exit;
+        }
+
+        $userId = $_SESSION['user']['id'];
+        
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare('DELETE FROM event_registrations WHERE user_id = ? AND event_id = ?');
+            $stmt->execute([$userId, $id]);
+
+            if ($stmt->rowCount() > 0) {
+                $this->incrementAvailablePlaces($id);
+                $_SESSION['success'] = "Désinscription réussie.";
+            }
+            
+            $this->db->commit();
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            $_SESSION['error'] = "Erreur lors de la désinscription.";
+        }
+
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/2A35/Event'));
+        exit;
+    }
+
+    public function isRegistered($eventId) {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if (!isset($_SESSION['user'])) {
+            return false;
+        }
+
+        $userId = $_SESSION['user']['id'];
+        $stmt = $this->db->prepare('SELECT 1 FROM event_registrations WHERE user_id = ? AND event_id = ?');
+        $stmt->execute([$userId, $eventId]);
+        return (bool)$stmt->fetch();
+    }
+
+    private function incrementAvailablePlaces($id) {
+        $stmt = $this->db->prepare(
+            'UPDATE event SET number_of_participants = number_of_participants + 1 WHERE id = :id'
+        );
+        return $stmt->execute(['id' => (int) $id]);
+    }
+
 
     public function hasAvailablePlaces(array $event): bool {
         return (int)$event['number_of_participants'] > 0;
@@ -264,7 +378,13 @@ class EventController {
 
         $prompt = "Rédige une description accrocheuse et professionnelle de 3 phrases pour un événement nommé '" . $event['name'] . "' de type '" . $event['type_label'] . "' se déroulant à " . $event['location'] . ". Le ton doit être enthousiaste et inciter les gens à participer.";
         
-        echo $this->callGemini($prompt);
+        $description = $this->callGemini($prompt);
+
+        // Update the database with the new description
+        $stmt = $this->db->prepare('UPDATE event SET description = ? WHERE id = ?');
+        $stmt->execute([$description, $id]);
+        
+        echo $description;
         exit;
     }
 

@@ -1,4 +1,6 @@
+```html
 <style>
+/* ====== SIDEBAR CSS INCHANGÉ ====== */
 .sidebar {
     position: fixed;
     left: 0;
@@ -47,7 +49,6 @@
     margin: 0;
 }
 
-/* Item principal */
 .nav-item {
     margin: 2px 8px;
 }
@@ -77,7 +78,41 @@
     color: white;
 }
 
-.nav-link .nav-left {
+/* ═══ BOUTON DÉCONNEXION ═══ */
+.nav-logout {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #ffcdd2 !important;
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    justify-content: flex-start;
+    margin: 2px 8px;
+}
+
+.nav-logout:hover {
+    background: rgba(255, 255, 255, 0.18) !important;
+    color: white !important;
+}
+
+.nav-logout i {
+    transition: transform 0.25s ease;
+}
+
+.nav-logout:hover i {
+    transform: translateX(3px);
+}
+
+.nav-left {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -88,7 +123,6 @@
     transition: transform 0.2s;
 }
 
-/* Sous-menu */
 .sub-menu {
     list-style: none;
     padding: 0 0 0 10px;
@@ -110,7 +144,6 @@
     color: rgba(255,255,255,0.8);
     font-size: 0.85rem;
     margin: 2px 0;
-    transition: background 0.2s;
 }
 
 .sub-menu li a:hover {
@@ -118,24 +151,12 @@
     color: white;
 }
 
-/* Section active (menu ouvert) */
-.nav-item.active > .nav-link {
-    background: rgba(255,255,255,0.2);
-    color: white;
-}
-
-.nav-item.active > .nav-link .nav-arrow {
-    transform: rotate(90deg);
-}
-
-/* Séparateur */
 .nav-divider {
     height: 1px;
     background: rgba(255,255,255,0.12);
     margin: 8px 14px;
 }
 
-/* Footer sidebar */
 .sidebar-footer {
     padding: 12px 15px;
     border-top: 1px solid rgba(255,255,255,0.15);
@@ -144,36 +165,67 @@
     text-align: center;
 }
 
-/* Contenu principal décalé */
 .content-area {
     margin-left: 220px;
+}
+
+/* Active state indicator */
+.nav-link.active {
+    background: rgba(255,255,255,0.22);
+    border-left: 3px solid #ffffff;
 }
 </style>
 
 <aside class="sidebar">
-    <!-- Header -->
+
+    <!-- HEADER -->
     <div class="sidebar-header">
-        <div class="site-name">🥗 NutriSmart</div>
+        <div class="site-name">🥗 EcoNutri</div>
     </div>
 
-    <!-- Navigation -->
     <nav>
         <ul>
-            <!-- Dashboard -->
+
+            <!-- DASHBOARD GLOBAL -->
             <li class="nav-item">
-                <a href="/2A35/Admin/dashboard" class="nav-link <?= ($active_menu ?? '') === 'dashboard' ? 'active' : '' ?>">
+                <a href="/ProjetWeb-User/Admin/dashboard" class="nav-link <?= ($_GET['url'] ?? '') === 'Admin/dashboard' ? 'active' : '' ?>">
                     <span class="nav-left">📊 Dashboard</span>
                 </a>
             </li>
 
             <div class="nav-divider"></div>
 
+            <!-- ================= USER ================= -->
+            <li class="nav-item">
+                <div class="nav-link <?= ($_GET['url'] ?? '') === 'Admin/users' || ($_GET['url'] ?? '') === 'Admin/dashboard' ? 'active' : '' ?>" onclick="toggleMenu('user')">
+                    <span class="nav-left">👤 Utilisateur</span>
+                    <span class="nav-arrow" id="arrow-user">▶</span>
+                </div>
+
+                <ul class="sub-menu <?= ($_GET['url'] ?? '') === 'Admin/users' || ($_GET['url'] ?? '') === 'Admin/dashboard' ? 'open' : '' ?>" id="sub-user">
+
+                    <!-- DASHBOARD USER -->
+                    <li>
+                        <a href="/ProjetWeb-User/Admin/dashboard">
+                            📊 Dashboard
+                        </a>
+                    </li>
+
+                    <!-- GESTION USER -->
+                    <li>
+                        <a href="/ProjetWeb-User/Admin/users">
+                            👥 Gestion Utilisateur
+                        </a>
+                    </li>
+
+                </ul>
+            </li>
+
+            <div class="nav-divider"></div>
+
+            <!-- ====== MODULES ====== -->
             <?php
             $sections = [
-                'utilisateur' => ['👤 Utilisateur', [
-                    ['label' => '📋 Liste',    'url' => '/2A35/Admin/utilisateur'],
-                    ['label' => '➕ Nouveau',  'url' => '/2A35/Admin/utilisateur/create'],
-                ]],
                 'partenaire' => ['🤝 Partenaire', [
                     ['label' => '📋 Liste',    'url' => '/2A35/Admin/partenaire'],
                     ['label' => '➕ Nouveau',  'url' => '/2A35/Admin/partenaire/create'],
@@ -181,29 +233,32 @@
                 'recette' => ['🍽️ Recette', [
                     ['label' => '📋 Liste des recettes',  'url' => '/2A35/Admin/recette'],
                     ['label' => '➕ Nouvelle recette',    'url' => '/2A35/Admin/recette/create'],
-                    ['label' => '🥦 Liste ingrédients',  'url' => '/2A35/Admin/ingredient'],
-                    ['label' => '➕ Nouvel ingrédient',  'url' => '/2A35/Admin/ingredient/create'],
                 ]],
                 'programme' => ['🏋️ Programme', [
                     ['label' => '📋 Liste',    'url' => '/2A35/Admin/programme'],
                     ['label' => '➕ Nouveau',  'url' => '/2A35/Admin/programme/create'],
                 ]],
                 'evenement' => ['📅 Événement', [
-                    ['label' => '📋 Liste des événements',    'url' => '/2A35/back/event'],
-                    ['label' => '➕ Nouvel événement',  'url' => '/2A35/back/event/create'],
-                    ['label' => '🏷️ Liste types',    'url' => '/2A35/back/eventType'],
-                    ['label' => '➕ Nouveau type',  'url' => '/2A35/back/eventType/create'],
+                    ['label' => '📋 Liste',          'url' => '/2A35/Admin/evenement'],
+                    ['label' => '➕ Nouveau',        'url' => '/2A35/Admin/evenement/create'],
+                    ['label' => '🏷️ Types',          'url' => '/2A35/Admin/evenement_type'],
+                    ['label' => '➕ Nouveau Type',   'url' => '/2A35/Admin/evenement_type/create'],
+                ]],
+                'restaurant' => ['🍴 Restaurant', [
+                    ['label' => '📋 Liste',    'url' => '/2A35/Admin/restaurant'],
+                    ['label' => '➕ Nouveau',  'url' => '/2A35/Admin/restaurant/create'],
                 ]],
             ];
 
             foreach ($sections as $key => [$label, $items]):
-                $isActive = ($active_menu ?? '') === $key;
+                $isActive = isset($_GET['url']) && stripos($_GET['url'], 'Admin/' . $key) !== false;
             ?>
-            <li class="nav-item <?= $isActive ? 'active' : '' ?>">
+            <li class="nav-item">
                 <div class="nav-link <?= $isActive ? 'active' : '' ?>" onclick="toggleMenu('<?= $key ?>')">
                     <span class="nav-left"><?= $label ?></span>
                     <span class="nav-arrow" id="arrow-<?= $key ?>">▶</span>
                 </div>
+
                 <ul class="sub-menu <?= $isActive ? 'open' : '' ?>" id="sub-<?= $key ?>">
                     <?php foreach ($items as $item): ?>
                     <li><a href="<?= $item['url'] ?>"><?= $item['label'] ?></a></li>
@@ -214,12 +269,13 @@
 
             <div class="nav-divider"></div>
 
-            <!-- Login -->
+            <!-- ═══ DÉCONNEXION DIRECTE ═══ -->
             <li class="nav-item">
-                <a href="/2A35/Home" class="nav-link">
-                    <span class="nav-left">🔐 Connexion</span>
+                <a href="/ProjetWeb-User/index.php?url=User/logout" class="nav-logout">
+                    <span class="nav-left"><i class="fa fa-right-from-bracket"></i> Déconnexion</span>
                 </a>
             </li>
+
         </ul>
     </nav>
 
@@ -228,34 +284,24 @@
     </div>
 </aside>
 
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
 <script>
+/* ═══ TOGGLE MENU ═══ */
 function toggleMenu(key) {
-    const sub   = document.getElementById('sub-' + key);
-    const arrow = document.getElementById('arrow-' + key);
-    const item  = sub.closest('.nav-item');
+    const sub   = document.getElementById("sub-" + key);
+    const arrow = document.getElementById("arrow-" + key);
+    if (!sub || !arrow) return;
 
-    const isOpen = sub.classList.contains('open');
+    const isOpen = sub.classList.contains("open");
 
-    // Fermer tous les autres
-    document.querySelectorAll('.sub-menu').forEach(s => s.classList.remove('open'));
-    document.querySelectorAll('.nav-arrow').forEach(a => a.style.transform = '');
-    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll(".sub-menu").forEach(s => s.classList.remove("open"));
+    document.querySelectorAll(".nav-arrow").forEach(a => a.style.transform = "");
 
     if (!isOpen) {
-        sub.classList.add('open');
-        arrow.style.transform = 'rotate(90deg)';
-        item.classList.add('active');
+        sub.classList.add("open");
+        arrow.style.transform = "rotate(90deg)";
     }
 }
-
-// Ouvrir automatiquement le menu actif au chargement
-document.addEventListener('DOMContentLoaded', function() {
-    const activeItem = document.querySelector('.nav-item.active');
-    if (activeItem) {
-        const sub   = activeItem.querySelector('.sub-menu');
-        const arrow = activeItem.querySelector('.nav-arrow');
-        if (sub)   sub.classList.add('open');
-        if (arrow) arrow.style.transform = 'rotate(90deg)';
-    }
-});
 </script>
+```

@@ -79,7 +79,7 @@ class EventController {
     public function store() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->createEvent($_POST['name'], $_POST['id_type'], $_POST['date'], $_POST['location'], $_POST['number_of_participants']);
-            header('Location: /2A35/back/Event');
+            header('Location: /2A35/Admin/evenement');
             exit;
         }
     }
@@ -94,14 +94,14 @@ class EventController {
     public function update($id) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->updateEvent($id, $_POST['name'], $_POST['id_type'], $_POST['date'], $_POST['location'], $_POST['number_of_participants']);
-            header('Location: /2A35/back/Event');
+            header('Location: /2A35/Admin/evenement');
             exit;
         }
     }
 
     public function delete($id) {
         $this->deleteEvent($id);
-        header('Location: /2A35/back/Event');
+        header('Location: /2A35/Admin/evenement');
         exit;
     }
 }
