@@ -46,7 +46,7 @@ class UserController
 
             $_SESSION['user'] = $user;
 
-            if ($user['role'] === 'admin') {
+            if (strtolower(trim($user['role'])) === 'admin') {
                 header("Location: index.php?url=Admin/dashboard");
             } else {
                 header("Location: index.php?url=User/dashboard");

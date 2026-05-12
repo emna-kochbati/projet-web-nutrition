@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", function () {
             saveBtn.style.display = "block";
 
             document.getElementById("userForm").action =
-                "/ProjetWeb-User/index.php?url=Admin/updateUser/" + user.id;
+                "/2A35/index.php?url=Admin/updateUser/" + user.id;
         }
     };
 

@@ -8,7 +8,7 @@
             <!-- LOGO + DESCRIPTION -->
             <div class="col-lg-3 col-md-6">
 
-                <img src="/ProjetWeb-User/assets/img/logo.png" style="height:50px; margin-bottom:15px;" alt="EcoNutri">
+                <img src="/2A35/assets/img/logo.png" style="height:50px; margin-bottom:15px;" alt="EcoNutri">
 
                 <p>
                     EcoNutri est une plateforme intelligente dédiée à la nutrition, au sport et au bien-être.
@@ -42,16 +42,16 @@
     <?php include 'View/front/chatbot.php'; ?>
 
 
-<script src="/ProjetWeb-User/assets/lib/wow/wow.min.js"></script>
-<script src="/ProjetWeb-User/assets/lib/easing/easing.min.js"></script>
-<script src="/ProjetWeb-User/assets/lib/waypoints/waypoints.min.js"></script>
-<script src="/ProjetWeb-User/assets/lib/owlcarousel/owl.carousel.min.js"></script>
+<script src="/2A35/assets/lib/wow/wow.min.js"></script>
+<script src="/2A35/assets/lib/easing/easing.min.js"></script>
+<script src="/2A35/assets/lib/waypoints/waypoints.min.js"></script>
+<script src="/2A35/assets/lib/owlcarousel/owl.carousel.min.js"></script>
 
 <!-- AUTH JS avant main.js pour eviter que l'erreur WOW bloque auth -->
-<script src="/ProjetWeb-User/assets/js/auth.js"></script>
-<script src="/ProjetWeb-User/assets/js/profile.js"></script>
+<script src="/2A35/assets/js/auth.js"></script>
+<script src="/2A35/assets/js/profile.js"></script>
 
-<script src="/ProjetWeb-User/assets/js/main.js"></script>
+<script src="/2A35/assets/js/main.js"></script>
 
 </body>
 </html>

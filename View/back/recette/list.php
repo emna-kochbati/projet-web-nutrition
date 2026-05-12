@@ -60,20 +60,40 @@ tbody td { padding:11px 16px; vertical-align:middle; }
 <?php if ($success): ?><div class="alert alert-success">✅ <?= htmlspecialchars($success) ?></div><?php endif; ?>
 <?php if ($error):   ?><div class="alert alert-error">❌ <?= htmlspecialchars($error) ?></div><?php endif; ?>
 
+<?php
+$stats = $stats ?? ['total' => 0, 'faciles' => 0, 'moy_kcal' => 0, 'moy_duree' => 0];
+$stTotal   = (int)($stats['total'] ?? 0);
+$stFaciles = (int)($stats['faciles'] ?? 0);
+?>
 <div class="stats">
-    <div class="stat-card"><span class="stat-icon">🍽️</span><div><div class="stat-num"><?= count($recettes) ?></div><div class="stat-lbl">Total</div></div></div>
-    <div class="stat-card"><span class="stat-icon">🟢</span><div><div class="stat-num"><?= count(array_filter($recettes, fn($r) => $r['difficulte']==='facile')) ?></div><div class="stat-lbl">Faciles</div></div></div>
-    <div class="stat-card"><span class="stat-icon">🔥</span><div><div class="stat-num"><?= count($recettes)>0 ? round(array_sum(array_column($recettes,'calories'))/count($recettes)) : 0 ?></div><div class="stat-lbl">Moy. kcal</div></div></div>
-    <div class="stat-card"><span class="stat-icon">⏱️</span><div><div class="stat-num"><?= count($recettes)>0 ? round(array_sum(array_column($recettes,'duree'))/count($recettes)) : 0 ?> min</div><div class="stat-lbl">Durée moy.</div></div></div>
+    <div class="stat-card"><span class="stat-icon">🍽️</span><div><div class="stat-num"><?= $stTotal ?></div><div class="stat-lbl">Total (filtre)</div></div></div>
+    <div class="stat-card"><span class="stat-icon">🟢</span><div><div class="stat-num"><?= $stFaciles ?></div><div class="stat-lbl">Faciles</div></div></div>
+    <div class="stat-card"><span class="stat-icon">🔥</span><div><div class="stat-num"><?= $stTotal > 0 ? round((float)($stats['moy_kcal'] ?? 0)) : 0 ?></div><div class="stat-lbl">Moy. kcal</div></div></div>
+    <div class="stat-card"><span class="stat-icon">⏱️</span><div><div class="stat-num"><?= $stTotal > 0 ? round((float)($stats['moy_duree'] ?? 0)) : 0 ?> min</div><div class="stat-lbl">Durée moy.</div></div></div>
 </div>
 
 <form class="search-form" method="GET" action="/2A35/Admin/recette">
-    <input type="text" name="search" placeholder="Rechercher une recette..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
+    <input type="text" id="searchInput" name="search" placeholder="Rechercher par nom..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>" autocomplete="off">
+    <select id="categorieFilter" name="categorie" style="padding:10px 14px; border:2px solid var(--border); border-radius:6px; font-size:0.9rem; outline:none; min-width:160px;">
+        <option value="">Toutes catégories</option>
+        <?php foreach (['petit-dejeuner'=>'Petit-déjeuner','dejeuner'=>'Déjeuner','diner'=>'Dîner','collation'=>'Collation','dessert'=>'Dessert','vegetarien'=>'Végétarien','regime'=>'Régime','sportif'=>'Sportif'] as $v=>$l): ?>
+            <option value="<?= $v ?>" <?= ($_GET['categorie'] ?? '') === $v ? 'selected' : '' ?>><?= $l ?></option>
+        <?php endforeach; ?>
+    </select>
+    <select id="difficulteFilter" name="difficulte" style="padding:10px 14px; border:2px solid var(--border); border-radius:6px; font-size:0.9rem; outline:none; min-width:140px;">
+        <option value="">Toutes difficultés</option>
+        <option value="facile"    <?= ($_GET['difficulte'] ?? '') === 'facile'    ? 'selected' : '' ?>>🟢 Facile</option>
+        <option value="moyen"     <?= ($_GET['difficulte'] ?? '') === 'moyen'     ? 'selected' : '' ?>>🟡 Moyen</option>
+        <option value="difficile" <?= ($_GET['difficulte'] ?? '') === 'difficile' ? 'selected' : '' ?>>🔴 Difficile</option>
+    </select>
     <button type="submit" class="btn-orange">🔍 Rechercher</button>
-    <?php if (!empty($_GET['search'])): ?>
+    <?php if (!empty($_GET['search']) || !empty($_GET['categorie']) || !empty($_GET['difficulte'])): ?>
         <a href="/2A35/Admin/recette" class="btn-clear">✕ Effacer</a>
     <?php endif; ?>
 </form>
+
+<!-- Résultats AJAX -->
+<div id="ajaxResults"></div>
 
 <div class="table-wrap">
 <?php if (empty($recettes)): ?>
@@ -81,7 +101,7 @@ tbody td { padding:11px 16px; vertical-align:middle; }
 <?php else: ?>
     <table>
         <thead>
-            <tr><th>#</th><th>Image</th><th>Nom</th><th>Catégorie</th><th>Durée</th><th>Difficulté</th><th>Calories</th><th>Actions</th></tr>
+            <tr><th>#</th><th>Image</th><th>Nom</th><th>Description</th><th>Catégorie</th><th>Durée</th><th>Difficulté</th><th>Calories</th><th>Actions</th></tr>
         </thead>
         <tbody>
         <?php foreach ($recettes as $r): ?>
@@ -89,6 +109,13 @@ tbody td { padding:11px 16px; vertical-align:middle; }
                 <td><?= $r['id'] ?></td>
                 <td><?php if ($r['image']): ?><img src="/2A35/assets/uploads/recettes/<?= htmlspecialchars($r['image']) ?>" class="rec-img" alt=""><?php else: ?><div class="no-img">🍽️</div><?php endif; ?></td>
                 <td><strong><?= htmlspecialchars($r['nom']) ?></strong></td>
+                <td style="max-width:180px; color:#555; font-size:0.85rem;">
+                    <?php if (!empty($r['description'])): ?>
+                        <?= htmlspecialchars(mb_strimwidth($r['description'], 0, 50, '...')) ?>
+                    <?php else: ?>
+                        <span style="color:#bbb; font-style:italic;">—</span>
+                    <?php endif; ?>
+                </td>
                 <td><span class="badge b-cat"><?= htmlspecialchars($r['categorie']) ?></span></td>
                 <td>⏱ <?= $r['duree'] ?> min</td>
                 <td><?php $bc=match($r['difficulte']){'facile'=>'b-easy','moyen'=>'b-med','difficile'=>'b-hard',default=>'b-easy'}; ?><span class="badge <?= $bc ?>"><?= $r['difficulte'] ?></span></td>
@@ -106,6 +133,48 @@ tbody td { padding:11px 16px; vertical-align:middle; }
     </table>
 <?php endif; ?>
 </div>
+
+<!-- Pagination -->
+<?php
+$page       = $page ?? 1;
+$totalPages = $totalPages ?? 1;
+$search     = $search ?? '';
+$categorie  = $categorie ?? '';
+$difficulte = $difficulte ?? '';
+?>
+<?php if ($totalPages > 1): ?>
+<style>
+.pagination-wrap { display:flex; justify-content:center; align-items:center; gap:10px; margin-top:28px; flex-wrap:wrap; }
+.page-btn {
+    width:44px; height:44px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:0.95rem; cursor:pointer;
+    text-decoration:none; transition:all .2s;
+    border:2px solid #a5d6a7; color:#2e7d32; background:#fff;
+}
+.page-btn:hover { background:#e8f5e9; border-color:#2e7d32; color:#2e7d32; transform:scale(1.08); }
+.page-btn.active { background:#2e7d32; border-color:#2e7d32; color:#fff; box-shadow:0 4px 12px rgba(46,125,50,.35); }
+.page-btn.disabled { border-color:#e0e0e0; color:#bbb; cursor:default; pointer-events:none; }
+</style>
+<div class="pagination-wrap">
+    <?php
+    $baseUrl = '/2A35/Admin/recette?page=';
+    $qs = '';
+    if ($search)     $qs .= '&search='.urlencode($search);
+    if ($categorie)  $qs .= '&categorie='.urlencode($categorie);
+    if ($difficulte) $qs .= '&difficulte='.urlencode($difficulte);
+    ?>
+    <!-- Précédent -->
+    <a href="<?= $baseUrl.($page-1).$qs ?>" class="page-btn <?= $page<=1 ? 'disabled':'' ?>">«</a>
+
+    <?php for ($i=1; $i<=$totalPages; $i++): ?>
+        <a href="<?= $baseUrl.$i.$qs ?>" class="page-btn <?= $i===$page ? 'active':'' ?>"><?= $i ?></a>
+    <?php endfor; ?>
+
+    <!-- Suivant -->
+    <a href="<?= $baseUrl.($page+1).$qs ?>" class="page-btn <?= $page>=$totalPages ? 'disabled':'' ?>">»</a>
+</div>
+<?php endif; ?>
 
 <div class="modal-bg" id="modalDel">
     <div class="modal">
@@ -127,6 +196,89 @@ function confirmer(id, nom) {
 document.getElementById('modalDel').addEventListener('click', function(e) {
     if (e.target === this) this.classList.remove('show');
 });
+
+// ── Recherche AJAX dynamique ──────────────────────────────────────────────────
+const searchInput     = document.getElementById('searchInput');
+const categorieFilter = document.getElementById('categorieFilter');
+const difficulteFilter= document.getElementById('difficulteFilter');
+const tableWrap       = document.querySelector('.table-wrap');
+const ajaxResults     = document.getElementById('ajaxResults');
+
+function rechercheAjax() {
+    const search     = searchInput.value.trim();
+    const categorie  = categorieFilter.value;
+    const difficulte = difficulteFilter.value;
+
+    // Si tout est vide, afficher le tableau normal
+    if (!search && !categorie && !difficulte) {
+        tableWrap.style.display = '';
+        ajaxResults.innerHTML   = '';
+        return;
+    }
+
+    const url = `/2A35/Admin/recette/ajax?search=${encodeURIComponent(search)}&categorie=${encodeURIComponent(categorie)}&difficulte=${encodeURIComponent(difficulte)}`;
+
+    fetch(url)
+        .then(r => r.json())
+        .then(recettes => {
+            tableWrap.style.display = 'none';
+
+            if (recettes.length === 0) {
+                ajaxResults.innerHTML = '<div style="background:#fff;border-radius:10px;padding:40px;text-align:center;color:#999;box-shadow:0 2px 12px rgba(0,0,0,.07);">Aucune recette trouvée.</div>';
+                return;
+            }
+
+            const diffClass = { facile:'b-easy', moyen:'b-med', difficile:'b-hard' };
+
+            let html = `<div class="table-wrap">
+                <table>
+                    <thead><tr><th>#</th><th>Image</th><th>Nom</th><th>Description</th><th>Catégorie</th><th>Durée</th><th>Difficulté</th><th>Calories</th><th>Actions</th></tr></thead>
+                    <tbody>`;
+
+            recettes.forEach(r => {
+                const img = r.image
+                    ? `<img src="/2A35/assets/uploads/recettes/${r.image}" class="rec-img" alt="">`
+                    : `<div class="no-img">🍽️</div>`;
+                const desc = r.description ? r.description.substring(0, 50) + (r.description.length > 50 ? '...' : '') : '<span style="color:#bbb;font-style:italic;">—</span>';
+                const dc   = diffClass[r.difficulte] || 'b-easy';
+
+                html += `<tr>
+                    <td>${r.id}</td>
+                    <td>${img}</td>
+                    <td><strong>${r.nom}</strong></td>
+                    <td style="max-width:180px;color:#555;font-size:.85rem;">${desc}</td>
+                    <td><span class="badge b-cat">${r.categorie}</span></td>
+                    <td>⏱ ${r.duree} min</td>
+                    <td><span class="badge ${dc}">${r.difficulte}</span></td>
+                    <td>🔥 ${r.calories} kcal</td>
+                    <td>
+                        <div class="actions">
+                            <a href="/2A35/Admin/recette/show/${r.id}" class="btn-voir">👁 Voir</a>
+                            <a href="/2A35/Admin/recette/edit/${r.id}" class="btn-edit">✏️ Modifier</a>
+                            <button class="btn-del" onclick="confirmer(${r.id}, '${r.nom.replace(/'/g,"\\'")}')">🗑 Supprimer</button>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+
+            html += `</tbody></table></div>`;
+            ajaxResults.innerHTML = html;
+        })
+        .catch(() => {
+            ajaxResults.innerHTML = '<div style="color:red;padding:10px;">Erreur de recherche.</div>';
+        });
+}
+
+// Déclencher à chaque frappe (avec délai 300ms)
+let timer;
+searchInput.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(rechercheAjax, 300);
+});
+
+// Déclencher aussi au changement des selects
+categorieFilter.addEventListener('change',  rechercheAjax);
+difficulteFilter.addEventListener('change', rechercheAjax);
 </script>
 
 <?php $content = ob_get_clean(); require_once 'View/back/layout.php'; ?>
