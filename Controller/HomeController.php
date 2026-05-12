@@ -1,9 +1,13 @@
-<?php
-require_once 'Model/Restaurant.php';
+<?php   
 
 class HomeController {
-    public function index(): void {
-        $restaurants = (new Restaurant())->getAll();
+
+    public function index() {
+
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+    }
+
         require_once 'View/front/home.php';
     }
 }

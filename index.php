@@ -1,41 +1,42 @@
 <?php
 session_start();
 
-// 1. Grab the URL parts
-$url = isset($_GET['url']) ? explode('/', rtrim($_GET['url'], '/')) : ['Home'];
+$url = $_GET['url'] ?? 'Home/index';
+$url = explode('/', trim($url, '/'));
 
-// 2. Handle /Admin prefix — strip it and shift the array
-$offset = 0;
-if (strtolower($url[0]) === 'admin') {
-    $offset = 1;
-}
+$controllerName = ucfirst($url[0]) . 'Controller';
+$method         = $url[1] ?? 'index';
+$params         = array_slice($url, 2);
 
-// 3. Format the Controller name
-// Front routes use a "Front" suffix to separate from back controllers
-$segment = $url[$offset] ?? 'Home';
-$isAdmin = $offset === 1;
+$paths = [
+    __DIR__ . "/Controller/$controllerName.php",
+    __DIR__ . "/Controllers/$controllerName.php"
+];
 
-if (!$isAdmin && in_array(strtolower($segment), ['restaurant'])) {
-    $controllerName = ucfirst($segment) . 'FrontController';
-} else {
-    $controllerName = ucfirst($segment) . 'Controller';
-}
-$controllerFile = "Controller/" . $controllerName . ".php";
-
-// 4. Check if the file exists before loading
-if (file_exists($controllerFile)) {
-    require_once $controllerFile;
-    $controller = new $controllerName();
-
-    // 5. Method (e.g., index, create, store, edit, update, delete, show)
-    $method = $url[$offset + 1] ?? 'index';
-
-    if (method_exists($controller, $method)) {
-        $params = array_slice($url, $offset + 2);
-        call_user_func_array([$controller, $method], $params);
-    } else {
-        echo "404 - Method '$method' not found in $controllerName";
+$controllerFile = null;
+foreach ($paths as $path) {
+    if (file_exists($path)) {
+        $controllerFile = $path;
+        break;
     }
-} else {
-    echo "404 - Controller $controllerName not found";
 }
+
+if (!$controllerFile) {
+    http_response_code(404);
+    die("Controller introuvable");
+}
+
+require_once $controllerFile;
+
+if (!class_exists($controllerName)) {
+    die("Classe introuvable");
+}
+
+$controller = new $controllerName();
+
+if (!method_exists($controller, $method)) {
+    http_response_code(404);
+    die("Méthode introuvable");
+}
+
+call_user_func_array([$controller, $method], $params);

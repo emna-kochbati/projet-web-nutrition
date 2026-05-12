@@ -1,148 +1,132 @@
 <?php
-$page_title  = 'Recettes';
+$page_title  = 'Gestion des Recettes';
 $active_menu = 'recette';
 ob_start();
 ?>
-
 <style>
-.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
-.btn-primary { background:#2e7d32; color:#fff; padding:9px 18px; border-radius:6px; text-decoration:none; font-weight:600; font-size:.9rem; }
-.btn-primary:hover { background:#1b5e20; }
-.btn-danger  { background:#c62828; color:#fff; padding:5px 12px; border-radius:5px; border:none; cursor:pointer; font-size:.82rem; }
-.btn-edit    { background:#1565c0; color:#fff; padding:5px 12px; border-radius:5px; text-decoration:none; font-size:.82rem; }
-.alert-success { background:#e8f5e9; border-left:4px solid #2e7d32; padding:12px 16px; border-radius:6px; margin-bottom:18px; color:#1b5e20; }
-.alert-error   { background:#ffebee; border-left:4px solid #c62828; padding:12px 16px; border-radius:6px; margin-bottom:18px; color:#b71c1c; }
-.search-bar { display:flex; gap:10px; margin-bottom:20px; align-items:center; }
-.search-bar input { flex:1; padding:9px 14px; border:1px solid #ccc; border-radius:6px; font-size:.9rem; }
-#search-spinner { display:none; color:#2e7d32; font-size:.85rem; }
-table { width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.07); }
-thead { background:#2e7d32; color:#fff; }
-th, td { padding:12px 16px; text-align:left; font-size:.88rem; }
-tbody tr:nth-child(even) { background:#f9f9f9; }
+:root { --green:#2e7d32; --green-l:#4caf50; --orange:#f57c00; --red:#c62828; --border:#e0e0e0; }
+.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; }
+.page-header h2 { font-size:1.5rem; font-weight:700; margin:0; }
+.btn-green { background:var(--green); color:#fff; padding:10px 20px; border-radius:6px; text-decoration:none; font-weight:600; font-size:0.9rem; }
+.btn-green:hover { background:var(--green-l); color:#fff; }
+.alert { padding:12px 18px; border-radius:6px; margin-bottom:16px; font-weight:600; }
+.alert-success { background:#e8f5e9; color:var(--green); border-left:4px solid var(--green); }
+.alert-error   { background:#ffebee; color:var(--red);   border-left:4px solid var(--red); }
+.stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-bottom:22px; }
+.stat-card { background:#fff; border-radius:10px; padding:16px 18px; box-shadow:0 2px 8px rgba(0,0,0,.06); display:flex; align-items:center; gap:12px; }
+.stat-icon { font-size:1.8rem; }
+.stat-num  { font-size:1.5rem; font-weight:700; color:var(--green); }
+.stat-lbl  { font-size:0.78rem; color:#777; }
+.search-form { display:flex; gap:10px; margin-bottom:18px; }
+.search-form input { flex:1; padding:10px 14px; border:2px solid var(--border); border-radius:6px; font-size:0.9rem; outline:none; }
+.search-form input:focus { border-color:var(--green); }
+.btn-orange { background:var(--orange); color:#fff; border:none; padding:10px 18px; border-radius:6px; cursor:pointer; font-weight:600; }
+.btn-clear  { background:#e0e0e0; color:#333; padding:10px 14px; border-radius:6px; text-decoration:none; font-weight:600; }
+.table-wrap { background:#fff; border-radius:10px; box-shadow:0 2px 12px rgba(0,0,0,.07); overflow:hidden; }
+table { width:100%; border-collapse:collapse; font-size:0.9rem; }
+thead { background:var(--green); color:#fff; }
+thead th { padding:13px 16px; text-align:left; font-weight:600; }
+tbody tr { border-bottom:1px solid var(--border); transition:background .15s; }
 tbody tr:hover { background:#f1f8e9; }
-.badge-cat { display:inline-block; padding:3px 10px; border-radius:12px; font-size:.78rem; font-weight:600; background:#e8f5e9; color:#2e7d32; }
+tbody td { padding:11px 16px; vertical-align:middle; }
+.rec-img { width:52px; height:52px; object-fit:cover; border-radius:6px; border:2px solid var(--border); }
+.no-img  { width:52px; height:52px; background:#f5f5f5; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:1.4rem; border:2px solid var(--border); }
+.badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.76rem; font-weight:700; text-transform:capitalize; }
+.b-cat  { background:#e8f5e9; color:var(--green); }
+.b-easy { background:#e8f5e9; color:var(--green); }
+.b-med  { background:#fff3e0; color:var(--orange); }
+.b-hard { background:#ffebee; color:var(--red); }
 .actions { display:flex; gap:6px; }
-.img-thumb { width:48px; height:48px; object-fit:cover; border-radius:6px; }
-.no-img { width:48px; height:48px; background:#eee; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; }
-#result-count { font-size:.85rem; color:#888; margin-bottom:10px; }
+.btn-voir { background:#1565c0; color:#fff; padding:5px 11px; border-radius:5px; text-decoration:none; font-size:0.8rem; font-weight:600; }
+.btn-edit { background:var(--orange); color:#fff; padding:5px 11px; border-radius:5px; text-decoration:none; font-size:0.8rem; font-weight:600; }
+.btn-del  { background:var(--red); color:#fff; padding:5px 11px; border-radius:5px; border:none; cursor:pointer; font-size:0.8rem; font-weight:600; }
+.empty { text-align:center; padding:50px; color:#999; }
+.empty span { font-size:3rem; display:block; margin-bottom:10px; }
+.modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9999; align-items:center; justify-content:center; }
+.modal-bg.show { display:flex; }
+.modal { background:#fff; border-radius:10px; padding:30px; max-width:400px; width:90%; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,.2); }
+.modal h3 { margin:0 0 10px; }
+.modal p  { color:#555; margin-bottom:22px; }
+.modal-btns { display:flex; gap:12px; justify-content:center; }
+.btn-ann  { background:#e0e0e0; color:#333; padding:10px 22px; border:none; border-radius:6px; cursor:pointer; font-weight:600; }
+.btn-conf { background:var(--red); color:#fff; padding:10px 22px; border:none; border-radius:6px; cursor:pointer; font-weight:600; }
 </style>
 
-<?php if (!empty($success)): ?>
-    <div class="alert-success">✅ <?= htmlspecialchars($success) ?></div>
-<?php endif; ?>
-<?php if (!empty($error)): ?>
-    <div class="alert-error">❌ <?= htmlspecialchars($error) ?></div>
-<?php endif; ?>
-
 <div class="page-header">
-    <h2 style="font-size:1.3rem;color:#1a1a1a;">🥘 Liste des Recettes</h2>
-    <a href="/2A35/Admin/recette/create" class="btn-primary">➕ Nouvelle Recette</a>
+    <h2>🍽️ Gestion des Recettes</h2>
+    <a href="/2A35/Admin/recette/create" class="btn-green">＋ Nouvelle Recette</a>
 </div>
 
-<div class="search-bar">
-    <input type="text" id="search-input" placeholder="Rechercher par nom…" autocomplete="off">
-    <span id="search-spinner">⏳ Recherche…</span>
-</div>
-<div id="result-count"><?= count($recettes) ?> recette<?= count($recettes) > 1 ? 's' : '' ?> trouvée<?= count($recettes) > 1 ? 's' : '' ?></div>
+<?php if ($success): ?><div class="alert alert-success">✅ <?= htmlspecialchars($success) ?></div><?php endif; ?>
+<?php if ($error):   ?><div class="alert alert-error">❌ <?= htmlspecialchars($error) ?></div><?php endif; ?>
 
-<div id="table-container">
-    <?php if (empty($recettes)): ?>
-        <p style="text-align:center;color:#888;padding:40px;">Aucune recette trouvée.</p>
-    <?php else: ?>
+<div class="stats">
+    <div class="stat-card"><span class="stat-icon">🍽️</span><div><div class="stat-num"><?= count($recettes) ?></div><div class="stat-lbl">Total</div></div></div>
+    <div class="stat-card"><span class="stat-icon">🟢</span><div><div class="stat-num"><?= count(array_filter($recettes, fn($r) => $r['difficulte']==='facile')) ?></div><div class="stat-lbl">Faciles</div></div></div>
+    <div class="stat-card"><span class="stat-icon">🔥</span><div><div class="stat-num"><?= count($recettes)>0 ? round(array_sum(array_column($recettes,'calories'))/count($recettes)) : 0 ?></div><div class="stat-lbl">Moy. kcal</div></div></div>
+    <div class="stat-card"><span class="stat-icon">⏱️</span><div><div class="stat-num"><?= count($recettes)>0 ? round(array_sum(array_column($recettes,'duree'))/count($recettes)) : 0 ?> min</div><div class="stat-lbl">Durée moy.</div></div></div>
+</div>
+
+<form class="search-form" method="GET" action="/2A35/Admin/recette">
+    <input type="text" name="search" placeholder="Rechercher une recette..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
+    <button type="submit" class="btn-orange">🔍 Rechercher</button>
+    <?php if (!empty($_GET['search'])): ?>
+        <a href="/2A35/Admin/recette" class="btn-clear">✕ Effacer</a>
+    <?php endif; ?>
+</form>
+
+<div class="table-wrap">
+<?php if (empty($recettes)): ?>
+    <div class="empty"><span>🍽️</span><p>Aucune recette. <a href="/2A35/Admin/recette/create">Ajouter la première !</a></p></div>
+<?php else: ?>
     <table>
         <thead>
-            <tr><th>#</th><th>Image</th><th>Nom</th><th>Catégorie</th><th>Temps</th><th>Calories</th><th>Actions</th></tr>
+            <tr><th>#</th><th>Image</th><th>Nom</th><th>Catégorie</th><th>Durée</th><th>Difficulté</th><th>Calories</th><th>Actions</th></tr>
         </thead>
         <tbody>
         <?php foreach ($recettes as $r): ?>
             <tr>
                 <td><?= $r['id'] ?></td>
-                <td>
-                    <?php if (!empty($r['image'])): ?>
-                        <img src="/2A35/assets/uploads/recettes/<?= htmlspecialchars($r['image']) ?>" class="img-thumb" alt="">
-                    <?php else: ?>
-                        <div class="no-img">🥘</div>
-                    <?php endif; ?>
-                </td>
+                <td><?php if ($r['image']): ?><img src="/2A35/assets/uploads/recettes/<?= htmlspecialchars($r['image']) ?>" class="rec-img" alt=""><?php else: ?><div class="no-img">🍽️</div><?php endif; ?></td>
                 <td><strong><?= htmlspecialchars($r['nom']) ?></strong></td>
-                <td><span class="badge-cat"><?= htmlspecialchars($r['categorie'] ?? '—') ?></span></td>
-                <td><?= $r['temps_preparation'] ? $r['temps_preparation'].' min' : '—' ?></td>
-                <td><?= $r['calories'] ? $r['calories'].' kcal' : '—' ?></td>
+                <td><span class="badge b-cat"><?= htmlspecialchars($r['categorie']) ?></span></td>
+                <td>⏱ <?= $r['duree'] ?> min</td>
+                <td><?php $bc=match($r['difficulte']){'facile'=>'b-easy','moyen'=>'b-med','difficile'=>'b-hard',default=>'b-easy'}; ?><span class="badge <?= $bc ?>"><?= $r['difficulte'] ?></span></td>
+                <td>🔥 <?= $r['calories'] ?> kcal</td>
                 <td>
                     <div class="actions">
+                        <a href="/2A35/Admin/recette/show/<?= $r['id'] ?>" class="btn-voir">👁 Voir</a>
                         <a href="/2A35/Admin/recette/edit/<?= $r['id'] ?>" class="btn-edit">✏️ Modifier</a>
-                        <form method="POST" action="/2A35/Admin/recette/delete/<?= $r['id'] ?>" onsubmit="return confirm('Supprimer cette recette ?')">
-                            <button type="submit" class="btn-danger">🗑 Supprimer</button>
-                        </form>
+                        <button class="btn-del" onclick="confirmer(<?= $r['id'] ?>, '<?= htmlspecialchars(addslashes($r['nom'])) ?>')">🗑 Supprimer</button>
                     </div>
                 </td>
             </tr>
         <?php endforeach; ?>
         </tbody>
     </table>
-    <?php endif; ?>
+<?php endif; ?>
+</div>
+
+<div class="modal-bg" id="modalDel">
+    <div class="modal">
+        <h3>⚠️ Confirmer la suppression</h3>
+        <p>Supprimer <strong id="nomRec"></strong> ? Cette action est irréversible.</p>
+        <div class="modal-btns">
+            <button class="btn-ann" onclick="document.getElementById('modalDel').classList.remove('show')">Annuler</button>
+            <form id="formDel" method="POST"><button type="submit" class="btn-conf">Supprimer</button></form>
+        </div>
+    </div>
 </div>
 
 <script>
-let timer = null;
-document.getElementById('search-input').addEventListener('input', function () {
-    clearTimeout(timer);
-    const q = this.value.trim();
-    timer = setTimeout(() => {
-        document.getElementById('search-spinner').style.display = 'inline';
-        fetch('/2A35/Admin/recette/search?q=' + encodeURIComponent(q), {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(r => r.json())
-        .then(data => {
-            document.getElementById('search-spinner').style.display = 'none';
-            const n = data.length;
-            document.getElementById('result-count').textContent =
-                n + ' recette' + (n > 1 ? 's' : '') + ' trouvée' + (n > 1 ? 's' : '');
-            renderTable(data);
-        })
-        .catch(() => document.getElementById('search-spinner').style.display = 'none');
-    }, 300);
+function confirmer(id, nom) {
+    document.getElementById('nomRec').textContent = nom;
+    document.getElementById('formDel').action = '/2A35/Admin/recette/delete/' + id;
+    document.getElementById('modalDel').classList.add('show');
+}
+document.getElementById('modalDel').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('show');
 });
-
-function renderTable(rows) {
-    if (rows.length === 0) {
-        document.getElementById('table-container').innerHTML =
-            '<p style="text-align:center;color:#888;padding:40px;">Aucune recette trouvée.</p>';
-        return;
-    }
-    let html = `<table><thead><tr><th>#</th><th>Image</th><th>Nom</th><th>Catégorie</th><th>Temps</th><th>Calories</th><th>Actions</th></tr></thead><tbody>`;
-    rows.forEach(r => {
-        const img = r.image
-            ? `<img src="/2A35/assets/uploads/recettes/${esc(r.image)}" class="img-thumb" alt="">`
-            : `<div class="no-img">🥘</div>`;
-        html += `<tr>
-            <td>${r.id}</td>
-            <td>${img}</td>
-            <td><strong>${esc(r.nom)}</strong></td>
-            <td><span class="badge-cat">${esc(r.categorie || '—')}</span></td>
-            <td>${r.temps_preparation ? r.temps_preparation+' min' : '—'}</td>
-            <td>${r.calories ? r.calories+' kcal' : '—'}</td>
-            <td><div class="actions">
-                <a href="/2A35/Admin/recette/edit/${r.id}" class="btn-edit">✏️ Modifier</a>
-                <form method="POST" action="/2A35/Admin/recette/delete/${r.id}" onsubmit="return confirm('Supprimer ?')">
-                    <button type="submit" class="btn-danger">🗑 Supprimer</button>
-                </form>
-            </div></td>
-        </tr>`;
-    });
-    html += '</tbody></table>';
-    document.getElementById('table-container').innerHTML = html;
-}
-
-function esc(str) {
-    const d = document.createElement('div');
-    d.appendChild(document.createTextNode(str));
-    return d.innerHTML;
-}
 </script>
 
-<?php
-$content = ob_get_clean();
-require_once 'View/back/layout.php';
-?>
+<?php $content = ob_get_clean(); require_once 'View/back/layout.php'; ?>
